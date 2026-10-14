@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/app-icon/cleonpdf.png" alt="CleonPDF app icon: a glowing C around an open book marked PDF, on a dark blue tile" width="128">
+  <img src="assets/app-icon/cleonpdf.svg" alt="CleonPDF app icon: a glowing C around an open book marked PDF, on a dark blue tile" width="128">
 </p>
 
 <h1 align="center">CleonPDF</h1>
