@@ -1,7 +1,10 @@
 //! `cargo xtask version [set X.Y.Z[-pre]]`: the workspace version, the single source of truth.
 //!
 //! The version lives in `[workspace.package] version` in the root `Cargo.toml`; every crate
-//! inherits it with `version.workspace = true`, and the packaging scripts read it from here.
+//! inherits it with `version.workspace = true`, and the packaging scripts read it from here. The
+//! workspace's own crates are also listed in `[workspace.dependencies]` with a path and the same
+//! version, and `set` keeps those in step: otherwise a new minor version (0.8.0 to 0.9.0, or any
+//! move downwards) no longer satisfies `^0.8.0` and every build fails.
 
 use std::path::Path;
 
@@ -15,13 +18,25 @@ pub fn read(manifest: &str) -> Result<String, String> {
     Ok(v)
 }
 
-/// `manifest` with the workspace version replaced; everything else is byte-for-byte unchanged.
+/// `manifest` with the workspace version replaced, in `[workspace.package]` and in the
+/// `[workspace.dependencies]` entries for the workspace's own crates (those with a `path` and the
+/// old version). Everything else is byte-for-byte unchanged.
 pub fn replace(manifest: &str, new: &str) -> Result<String, String> {
     validate(new)?;
+    let old = read(manifest)?;
     let (idx, _) = find_line(manifest)?;
+    let old_req = format!("version = \"{old}\"");
+    let new_req = format!("version = \"{new}\"");
+    let mut in_dependencies = false;
     let mut out = String::with_capacity(manifest.len() + 8);
     for (i, line) in manifest.split_inclusive('\n').enumerate() {
-        if i == idx {
+        let t = line.trim();
+        if t.starts_with('[') {
+            in_dependencies = t == "[workspace.dependencies]";
+        }
+        if in_dependencies && t.contains("path = \"") && line.contains(&old_req) {
+            out.push_str(&line.replace(&old_req, &new_req));
+        } else if i == idx {
             let eol = if line.ends_with("\r\n") {
                 "\r\n"
             } else if line.ends_with('\n') {
@@ -117,6 +132,10 @@ mod tests {
 
     const MANIFEST: &str = "[workspace]\nmembers = [\"a\"]\n\n[workspace.package]\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[workspace.dependencies]\nfoo = { version = \"1\" }\n";
 
+    /// With the workspace's own crates listed as path dependencies, and an external crate that
+    /// happens to have the same version.
+    const WITH_MEMBERS: &str = "[workspace.package]\nversion = \"0.8.0\"\n\n[workspace.dependencies]\napp-core = { path = \"crates/core\", version = \"0.8.0\" }\napp-ui = { path = \"crates/ui\", version = \"0.8.0\", default-features = false }\nexternal = { version = \"0.8.0\" }\n\n[patch.crates-io]\nvendored = { path = \"vendor/v\", version = \"0.8.0\" }\n";
+
     #[test]
     fn reads_the_workspace_version() {
         assert_eq!(read(MANIFEST).unwrap(), "0.1.0");
@@ -129,6 +148,35 @@ mod tests {
         assert_eq!(read(&out).unwrap(), "1.2.3-rc.1");
         assert_eq!(out, MANIFEST.replace("version = \"0.1.0\"", "version = \"1.2.3-rc.1\""));
         assert!(out.contains("foo = { version = \"1\" }"));
+    }
+
+    #[test]
+    fn keeps_the_workspace_crates_in_step() {
+        // Down to 0.1.0, where `^0.8.0` would no longer match and cargo would refuse to build.
+        let out = replace(WITH_MEMBERS, "0.1.0").unwrap();
+        assert_eq!(read(&out).unwrap(), "0.1.0");
+        assert!(out.contains("app-core = { path = \"crates/core\", version = \"0.1.0\" }"));
+        assert!(out.contains("app-ui = { path = \"crates/ui\", version = \"0.1.0\", default-features = false }"));
+        assert!(out.contains("external = { version = \"0.8.0\" }"), "a crates.io dependency keeps its version");
+        assert!(out.contains("vendored = { path = \"vendor/v\", version = \"0.8.0\" }"), "only [workspace.dependencies]");
+    }
+
+    #[test]
+    fn the_real_manifest_lists_its_crates_at_the_workspace_version() {
+        let text = std::fs::read_to_string(crate::gates::root().join("Cargo.toml")).unwrap();
+        let version = read(&text).unwrap();
+        let mut members = 0;
+        let mut in_dependencies = false;
+        for line in text.lines() {
+            let t = line.trim();
+            if t.starts_with('[') {
+                in_dependencies = t == "[workspace.dependencies]";
+            } else if in_dependencies && t.contains("path = \"crates/") {
+                members += 1;
+                assert!(t.contains(&format!("version = \"{version}\"")), "{t}");
+            }
+        }
+        assert!(members > 10, "found only {members} workspace crates");
     }
 
     #[test]
