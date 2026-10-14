@@ -12,17 +12,17 @@
 //! can't hold (outside WinAnsi in Helvetica, or beyond U+FFFF in a UCS-2 CMap) is drawn as `?`, as
 //! Acrobat keeps a value its field font can't show: the value itself is stored as typed,
 //! [`field_appearance_drawn`] returns the first such character, and the caller marks the widget
-//! (`pdfcraft_fonts::UNDRAWN_MARK`) and asks other viewers to redraw the field
-//! (`/NeedAppearances`). Widths use the approximate metrics of `pdfcraft-fonts` (Helvetica, or one
+//! (`cleonpdf_fonts::UNDRAWN_MARK`) and asks other viewers to redraw the field
+//! (`/NeedAppearances`). Widths use the approximate metrics of `cleonpdf-fonts` (Helvetica, or one
 //! em per full-width character in composite fonts).
 //!
 //! `/MK /R` (0, 90, 180, 270, counterclockwise) lays the content out in the upright box and sets
 //! the appearance `/Matrix` so that box lands on the widget rectangle. Any other value is 0, and
 //! rotation 0 leaves `/Matrix` off.
 
-use pdfcraft_cos::{Dict, Document, Object, Stream};
-use pdfcraft_fonts::pdf::Metrics;
-use pdfcraft_fonts::{UnicodeCMap, cjk_width, helvetica_width, literal, win_ansi, wrap_with};
+use cleonpdf_cos::{Dict, Document, Object, Stream};
+use cleonpdf_fonts::pdf::Metrics;
+use cleonpdf_fonts::{UnicodeCMap, cjk_width, helvetica_width, literal, win_ansi, wrap_with};
 
 use crate::{Field, FieldKind, Widget, acroform, flags};
 
@@ -148,7 +148,7 @@ impl FontText {
     /// [`field_appearance_drawn`], so that `?` is never silent (AGENTS.md §4).
     fn first_unencodable(&self, s: &str) -> Option<char> {
         match self {
-            Self::WinAnsi => pdfcraft_fonts::first_undrawable(s),
+            Self::WinAnsi => cleonpdf_fonts::first_undrawable(s),
             Self::Simple(metrics) => {
                 s.chars().map(|c| if c == '\t' { ' ' } else { c }).find(|c| metrics.encode(c.encode_utf8(&mut [0; 4])).is_none())
             }
@@ -298,7 +298,7 @@ pub fn field_appearance_as(doc: &Document, f: &Field, w: &Widget, values: &[Stri
 }
 
 /// [`field_appearance_as`] with the first character it drew as `?` because the field's font can't
-/// hold it: the form's font is a simple (WinAnsi) font, Helvetica stands in for one PdfCraft can't
+/// hold it: the form's font is a simple (WinAnsi) font, Helvetica stands in for one CleonPDF can't
 /// write with (an embedded subset, `Identity-H`), or a UCS-2 CMap meets a character beyond U+FFFF.
 pub fn field_appearance_drawn(doc: &Document, f: &Field, w: &Widget, values: &[String], format: bool) -> (Stream, Option<char>) {
     // The Format event: what is shown, not what is stored.

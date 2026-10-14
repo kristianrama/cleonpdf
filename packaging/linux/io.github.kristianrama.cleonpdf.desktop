@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=CleonPDF
+GenericName=PDF Editor
+Comment=Read, organize, combine, split and secure PDFs
+Exec=cleonpdf %U
+TryExec=cleonpdf
+Icon=io.github.kristianrama.cleonpdf
+Terminal=false
+StartupNotify=true
+StartupWMClass=io.github.kristianrama.cleonpdf
+Categories=Office;Viewer;
+Keywords=pdf;viewer;editor;annotate;sign;forms;merge;split;
+MimeType=application/pdf;

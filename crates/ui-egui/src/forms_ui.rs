@@ -6,9 +6,9 @@
 
 use std::collections::HashSet;
 
+use cleonpdf_engine::{Edit, FieldValue, FormField, FormFieldKind, FormWidget, field_flags};
+use cleonpdf_render::DocInfo;
 use egui::{Color32, CornerRadius, Rect, Stroke, vec2};
-use pdfcraft_engine::{Edit, FieldValue, FormField, FormFieldKind, FormWidget, field_flags};
-use pdfcraft_render::DocInfo;
 
 use crate::canvas::{DocView, PageXform};
 use crate::theme::Tokens;
@@ -48,7 +48,7 @@ pub struct FormView {
     /// A message for the app to show (e.g. "buttons run JavaScript").
     pub notice: Option<FormNotice>,
     /// A push button was clicked: (its field name, what it does).
-    pub button: Option<(String, pdfcraft_engine::form_scripts::ButtonAction)>,
+    pub button: Option<(String, cleonpdf_engine::form_scripts::ButtonAction)>,
 }
 
 /// A form message for the app to show, with document data kept separate so the visible
@@ -178,7 +178,7 @@ const MONTHS: [&str; 12] = ["January", "February", "March", "April", "May", "Jun
 /// The date picker under a focused date field. Returns the picked date, formatted with the
 /// field's own format.
 fn calendar(ctx: &egui::Context, view: &mut DocView, field: egui::Rect, fmt: &str, today: (i64, u32, u32)) -> Option<String> {
-    use pdfcraft_engine::form_scripts::{DateTime, format_date, parse_date};
+    use cleonpdf_engine::form_scripts::{DateTime, format_date, parse_date};
     let fx = view.forms.focus.as_mut()?;
     let (mut y, mut m) = fx.calendar.unwrap_or_else(|| match parse_date(&fx.text, fmt) {
         Some(d) => (d.y, d.m),
@@ -401,7 +401,7 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, f
                 }
             });
             // Date fields: a calendar under the field (Acrobat's date picker).
-            if let pdfcraft_engine::form_scripts::Format::Date(fmt) = &f.actions.format
+            if let cleonpdf_engine::form_scripts::Format::Date(fmt) = &f.actions.format
                 && let Some(picked) = calendar(ctx, view, rect, fmt, today)
             {
                 if let Some(fx) = view.forms.focus.as_mut() {

@@ -2,12 +2,12 @@
 //! properties"): Appearance (colour, fill, opacity, line thickness, note icon), General (author,
 //! subject, modified) and Review History (status changes), with Acrobat's Locked box.
 
+use cleonpdf_engine::{CommentProps, Edit, LineEnding, NoteIcon};
 use egui::{Align, Layout};
-use pdfcraft_engine::{CommentProps, Edit, LineEnding, NoteIcon};
 
 use crate::comments::swatch_grid;
 use crate::theme::{self, Tokens};
-use crate::{PdfCraftApp, widgets};
+use crate::{CleonPdfApp, widgets};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PropsTab {
@@ -44,7 +44,7 @@ fn ending_label(ending: LineEnding) -> &'static str {
     }
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     /// Attach file: ask for a file (or take `attach_override`) and attach it at `at`.
     pub fn attach_file_comment(&mut self, page: usize, at: [f64; 2]) {
         match self.attach_override.take() {
@@ -69,8 +69,8 @@ impl PdfCraftApp {
     /// Add a file attachment comment at `at` on `page` of the active document.
     fn add_attachment_comment(&mut self, page: usize, at: [f64; 2], file: String, data: Vec<u8>) {
         let tool = crate::comments::CommentTool::Attach;
-        let shape = pdfcraft_engine::Shape::Attachment { at, icon: pdfcraft_engine::AttachIcon::PushPin, file, data };
-        let edit = Edit::AddAnnotation(pdfcraft_engine::NewAnnotation {
+        let shape = cleonpdf_engine::Shape::Attachment { at, icon: cleonpdf_engine::AttachIcon::PushPin, file, data };
+        let edit = Edit::AddAnnotation(cleonpdf_engine::NewAnnotation {
             page,
             shape,
             style: self.comment_prefs.style(tool),
@@ -147,7 +147,7 @@ pub fn edits(d: &PropsDraft) -> Vec<Edit> {
 }
 
 /// Draw the dialog; returns (apply, cancel).
-pub(crate) fn body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (bool, bool) {
+pub(crate) fn body(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> (bool, bool) {
     let history: Vec<(String, String, String)> = app
         .active_ids()
         .and_then(|(_, id)| app.session.get(id))
@@ -246,7 +246,7 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (boo
                 ui.add(crate::widgets::line(&mut e.subject).desired_width(280.0)).labelled_by(l.id);
                 ui.end_row();
                 ui.label(tl!("Modified"));
-                ui.label(e.modified.as_deref().map(pdfcraft_render::pretty_date).unwrap_or_else(|| "—".into()));
+                ui.label(e.modified.as_deref().map(cleonpdf_render::pretty_date).unwrap_or_else(|| "—".into()));
                 ui.end_row();
             });
         }

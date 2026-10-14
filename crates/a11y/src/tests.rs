@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pdfcraft_cos::{Document, Object};
+use cleonpdf_cos::{Document, Object};
 
 use super::*;
 
@@ -62,7 +62,7 @@ fn autotag_text_writes_marked_content_and_parent_tree_across_pages() {
     assert_eq!(entries[2].as_int(), Some(1));
     assert_eq!(entries[1].as_array().unwrap().len(), 2);
     assert_eq!(entries[3].as_array().unwrap().len(), 1);
-    for page in pdfcraft_model::pages(&doc) {
+    for page in cleonpdf_model::pages(&doc) {
         let content = page.dict.get(b"Contents").unwrap();
         let stream = doc.resolve(content);
         let Object::Stream(stream) = &*stream else { panic!("marked page content") };
@@ -73,7 +73,7 @@ fn autotag_text_writes_marked_content_and_parent_tree_across_pages() {
     let report = check(&doc, &Options::default());
     assert_eq!(status(&report, Rule::TaggedPdf), Status::Passed);
     assert_eq!(status(&report, Rule::TaggedContent), Status::Passed);
-    let bytes = pdfcraft_cos::write_incremental(&doc, &pdfcraft_cos::SaveOptions::default()).unwrap();
+    let bytes = cleonpdf_cos::write_incremental(&doc, &cleonpdf_cos::SaveOptions::default()).unwrap();
     let reopened = Document::open(Arc::new(bytes)).unwrap();
     assert_eq!(tags(&reopened).len(), 4);
     assert_eq!(status(&check(&reopened, &Options::default()), Rule::TaggedContent), Status::Passed);
@@ -229,7 +229,7 @@ fn structure_doc(objects: &[String]) -> Document {
 fn reachable_tag_properties_round_trip_and_reject_unrelated_objects() {
     let mut doc =
         structure_doc(&["<< /S /Document /K [4 0 R] >>".into(), "<< /S /Figure /T (Old) /Alt (A chart) >>".into(), "<< /S /Figure >>".into()]);
-    let tag = pdfcraft_cos::ObjRef::new(4, 0);
+    let tag = cleonpdf_cos::ObjRef::new(4, 0);
     let listed = tags(&doc);
     assert_eq!(listed.len(), 2);
     assert_eq!(listed[1].object, tag);
@@ -253,8 +253,8 @@ fn reachable_tag_properties_round_trip_and_reject_unrelated_objects() {
     assert_eq!(tags(&doc)[1].title, None);
     assert!(matches!(set_tag_property(&mut doc, tag, TagProperty::Type, None), Err(TagError::InvalidType)));
     assert!(matches!(set_tag_property(&mut doc, tag, TagProperty::Type, Some("bad type")), Err(TagError::InvalidType)));
-    assert!(matches!(set_tag_property(&mut doc, pdfcraft_cos::ObjRef::new(5, 0), TagProperty::Title, Some("No")), Err(TagError::NotATag(_))));
-    assert!(matches!(set_tag_property(&mut doc, pdfcraft_cos::ObjRef::new(4, 1), TagProperty::Title, Some("No")), Err(TagError::NotATag(_))));
+    assert!(matches!(set_tag_property(&mut doc, cleonpdf_cos::ObjRef::new(5, 0), TagProperty::Title, Some("No")), Err(TagError::NotATag(_))));
+    assert!(matches!(set_tag_property(&mut doc, cleonpdf_cos::ObjRef::new(4, 1), TagProperty::Title, Some("No")), Err(TagError::NotATag(_))));
 }
 
 #[test]
@@ -531,37 +531,37 @@ fn sibling_tags_move_in_reading_order_without_changing_content() {
     let mut doc = figures_doc();
     let before: Vec<_> = tags(&doc).into_iter().map(|tag| tag.object.num).collect();
     assert_eq!(before, [6, 7, 8]);
-    let content = doc.get(pdfcraft_cos::ObjRef::new(4, 0));
-    move_tag(&mut doc, pdfcraft_cos::ObjRef::new(8, 0), pdfcraft_cos::ObjRef::new(7, 0), TagPlacement::Before).unwrap();
+    let content = doc.get(cleonpdf_cos::ObjRef::new(4, 0));
+    move_tag(&mut doc, cleonpdf_cos::ObjRef::new(8, 0), cleonpdf_cos::ObjRef::new(7, 0), TagPlacement::Before).unwrap();
     assert_eq!(tags(&doc).into_iter().map(|tag| tag.object.num).collect::<Vec<_>>(), [6, 8, 7]);
-    assert_eq!(doc.get(pdfcraft_cos::ObjRef::new(4, 0)), content, "page content stays unchanged");
+    assert_eq!(doc.get(cleonpdf_cos::ObjRef::new(4, 0)), content, "page content stays unchanged");
     assert_eq!(
-        move_tag(&mut doc, pdfcraft_cos::ObjRef::new(8, 0), pdfcraft_cos::ObjRef::new(7, 0), TagPlacement::Before),
+        move_tag(&mut doc, cleonpdf_cos::ObjRef::new(8, 0), cleonpdf_cos::ObjRef::new(7, 0), TagPlacement::Before),
         Err(TagError::AlreadyThere)
     );
-    move_tag(&mut doc, pdfcraft_cos::ObjRef::new(8, 0), pdfcraft_cos::ObjRef::new(7, 0), TagPlacement::After).unwrap();
+    move_tag(&mut doc, cleonpdf_cos::ObjRef::new(8, 0), cleonpdf_cos::ObjRef::new(7, 0), TagPlacement::After).unwrap();
     assert_eq!(tags(&doc).into_iter().map(|tag| tag.object.num).collect::<Vec<_>>(), [6, 7, 8]);
     assert_eq!(
-        move_tag(&mut doc, pdfcraft_cos::ObjRef::new(8, 0), pdfcraft_cos::ObjRef::new(6, 0), TagPlacement::Before),
+        move_tag(&mut doc, cleonpdf_cos::ObjRef::new(8, 0), cleonpdf_cos::ObjRef::new(6, 0), TagPlacement::Before),
         Err(TagError::NotSiblings)
     );
     assert_eq!(
-        move_tag(&mut doc, pdfcraft_cos::ObjRef::new(8, 1), pdfcraft_cos::ObjRef::new(7, 0), TagPlacement::Before),
+        move_tag(&mut doc, cleonpdf_cos::ObjRef::new(8, 1), cleonpdf_cos::ObjRef::new(7, 0), TagPlacement::Before),
         Err(TagError::NotSiblings)
     );
-    doc.update_dict(pdfcraft_cos::ObjRef::new(6, 0), |d| {
+    doc.update_dict(cleonpdf_cos::ObjRef::new(6, 0), |d| {
         d.set(
             b"K".to_vec(),
-            pdfcraft_cos::Object::Array(vec![
-                pdfcraft_cos::Object::Ref(pdfcraft_cos::ObjRef::new(7, 0)),
-                pdfcraft_cos::Object::Ref(pdfcraft_cos::ObjRef::new(8, 0)),
-                pdfcraft_cos::Object::Ref(pdfcraft_cos::ObjRef::new(7, 0)),
+            cleonpdf_cos::Object::Array(vec![
+                cleonpdf_cos::Object::Ref(cleonpdf_cos::ObjRef::new(7, 0)),
+                cleonpdf_cos::Object::Ref(cleonpdf_cos::ObjRef::new(8, 0)),
+                cleonpdf_cos::Object::Ref(cleonpdf_cos::ObjRef::new(7, 0)),
             ]),
         );
     })
     .unwrap();
     assert_eq!(
-        move_tag(&mut doc, pdfcraft_cos::ObjRef::new(8, 0), pdfcraft_cos::ObjRef::new(7, 0), TagPlacement::After),
+        move_tag(&mut doc, cleonpdf_cos::ObjRef::new(8, 0), cleonpdf_cos::ObjRef::new(7, 0), TagPlacement::After),
         Err(TagError::AmbiguousChildren)
     );
 }
@@ -576,7 +576,7 @@ fn setting_alt_text_and_marking_decorative() {
     assert_eq!(r.result(Rule::FiguresAltText).unwrap().status, Status::Passed);
     set_alt(&mut doc, f[0].obj, None).unwrap();
     assert_eq!(figures(&doc)[0].alt, None);
-    assert_eq!(set_alt(&mut doc, pdfcraft_cos::ObjRef::new(6, 0), Some("x")), Err(AltError::NotAFigure(6)));
+    assert_eq!(set_alt(&mut doc, cleonpdf_cos::ObjRef::new(6, 0), Some("x")), Err(AltError::NotAFigure(6)));
     // Decorative: the figure leaves the tags and its content becomes an artifact.
     mark_decorative(&mut doc, f[0].obj).unwrap();
     let left = figures(&doc);
@@ -584,15 +584,15 @@ fn setting_alt_text_and_marking_decorative() {
     assert_eq!(left[0].alt.as_deref(), Some("A bar"));
     let r = check(&doc, &Options { rules: [Rule::FiguresAltText, Rule::TaggedContent].into(), pages: None });
     assert_eq!(failed(&r), Vec::<Rule>::new(), "{:?}", r.results);
-    let pages = pdfcraft_model::pages(&doc);
+    let pages = cleonpdf_model::pages(&doc);
     let c = doc.resolve(pages[0].dict.get(b"Contents").unwrap());
-    let pdfcraft_cos::Object::Stream(c) = &*c else { panic!("one content stream") };
+    let cleonpdf_cos::Object::Stream(c) = &*c else { panic!("one content stream") };
     let text = String::from_utf8(c.decoded().unwrap()).unwrap();
     assert!(text.contains("/Artifact BMC") && !text.contains("/MCID 0"), "{text}");
 }
 
-fn ref_(n: u32) -> Option<pdfcraft_cos::ObjRef> {
-    Some(pdfcraft_cos::ObjRef::new(n, 0))
+fn ref_(n: u32) -> Option<cleonpdf_cos::ObjRef> {
+    Some(cleonpdf_cos::ObjRef::new(n, 0))
 }
 
 /// Two tagged pages: role-mapped and nested headings, actual text, a ToUnicode font, a heading

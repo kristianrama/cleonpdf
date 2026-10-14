@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use pdfcraft_cos::{Algorithm, Auth, CosError, Document, NewEncryption, ObjRef, Object, PdfString, SaveOptions, write_full, write_incremental};
+use cleonpdf_cos::{Algorithm, Auth, CosError, Document, NewEncryption, ObjRef, Object, PdfString, SaveOptions, write_full, write_incremental};
 
 const SECRET: &str = "BT /F1 18 Tf 20 100 Td (Secret page) Tj ET";
 
@@ -210,7 +210,7 @@ fn qpdf_agrees() {
         eprintln!("qpdf not installed; skipping");
         return;
     }
-    let dir = std::env::temp_dir().join(format!("pdfcraft-enc-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("cleonpdf-enc-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     for alg in ALL {
         let path = dir.join(format!("{alg:?}.pdf"));
@@ -235,18 +235,18 @@ fn signature_contents_stay_unencrypted() {
         let mut doc = Document::open(Arc::new(fixture())).unwrap();
         let hex = |b: &[u8]| Object::String(PdfString { bytes: b.to_vec(), hex: true });
         let byte_range = Object::Array([0, 10, 20, 30].into_iter().map(Object::Int).collect());
-        let mut sig = pdfcraft_cos::Dict::new();
+        let mut sig = cleonpdf_cos::Dict::new();
         sig.set(b"Type".to_vec(), Object::name("Sig"));
         sig.set(b"Contents".to_vec(), hex(&[0x30, 0x82, 0xDE, 0xAD]));
         sig.set(b"ByteRange".to_vec(), byte_range.clone());
         sig.set(b"Name".to_vec(), PdfString::literal(b"Signer Name".to_vec()));
         let sig = doc.add(Object::Dict(sig));
         // No /Type: still a signature dictionary by its /Contents and /ByteRange.
-        let mut untyped = pdfcraft_cos::Dict::new();
+        let mut untyped = cleonpdf_cos::Dict::new();
         untyped.set(b"Contents".to_vec(), hex(&[0x30, 0x82, 0xBE, 0xEF]));
         untyped.set(b"ByteRange".to_vec(), byte_range);
         let untyped = doc.add(Object::Dict(untyped));
-        let mut note = pdfcraft_cos::Dict::new();
+        let mut note = cleonpdf_cos::Dict::new();
         note.set(b"Type".to_vec(), Object::name("Annot"));
         note.set(b"Contents".to_vec(), PdfString::literal(b"Private note".to_vec()));
         let note = doc.add(Object::Dict(note));

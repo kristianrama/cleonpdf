@@ -4,7 +4,7 @@ use std::time::Duration;
 use egui_kittest::Harness;
 use serde_json::{Value, json};
 
-use crate::{PdfCraftApp, control::ControlClient, open_worker};
+use crate::{CleonPdfApp, control::ControlClient, open_worker};
 
 fn fixture(pages: usize) -> Vec<u8> {
     let mut objects = vec!["<< /Type /Catalog /Pages 2 0 R >>".to_string()];
@@ -32,11 +32,11 @@ fn fixture(pages: usize) -> Vec<u8> {
 }
 
 #[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
-fn harness() -> (Harness<'static, PdfCraftApp>, ControlClient) {
+fn harness() -> (Harness<'static, CleonPdfApp>, ControlClient) {
     let slot: Arc<Mutex<Option<ControlClient>>> = Arc::default();
     let saved = slot.clone();
     let mut harness = Harness::builder().with_size(egui::vec2(1000.0, 700.0)).build_eframe(move |creation| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").expect("language preference");
         *saved.lock().expect("control-client slot") = Some(app.attach_control(&creation.egui_ctx));
         app.open_bytes("existing.pdf", None, fixture(3)).expect("existing document");
@@ -47,7 +47,7 @@ fn harness() -> (Harness<'static, PdfCraftApp>, ControlClient) {
 }
 
 #[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
-fn request(harness: &mut Harness<'static, PdfCraftApp>, client: &ControlClient, method: &str, params: Value) -> Value {
+fn request(harness: &mut Harness<'static, CleonPdfApp>, client: &ControlClient, method: &str, params: Value) -> Value {
     let reply = client.send(method, params);
     for _ in 0..5 {
         harness.step();
@@ -65,7 +65,7 @@ fn open_prepare_keeps_control_and_existing_tabs_live_until_atomic_commit() {
     let (gate, started, release, finished) = open_worker::prepare_gate();
     harness.state_mut().open_prepare_gate = Some(gate);
 
-    let path = std::env::temp_dir().join(format!("pdfcraft-open-worker-{}.pdf", std::process::id()));
+    let path = std::env::temp_dir().join(format!("cleonpdf-open-worker-{}.pdf", std::process::id()));
     std::fs::write(&path, fixture(2)).expect("write test PDF");
     let open_reply = request(&mut harness, &client, "ui.open", json!({ "path": path.to_string_lossy() }));
     assert_eq!(open_reply["pending"], true);
@@ -99,12 +99,12 @@ impl Drop for ToolOpenFile {
 
 #[allow(clippy::expect_used)]
 fn tool_open_file(case: &str, extension: &str, bytes: &[u8]) -> ToolOpenFile {
-    let path = std::env::temp_dir().join(format!("pdfcraft-open-tool-{}-{case}.{extension}", std::process::id()));
+    let path = std::env::temp_dir().join(format!("cleonpdf-open-tool-{}-{case}.{extension}", std::process::id()));
     std::fs::write(&path, bytes).expect("write the synthetic tool input");
     ToolOpenFile(path)
 }
 
-fn tool_open_harness() -> Harness<'static, PdfCraftApp> {
+fn tool_open_harness() -> Harness<'static, CleonPdfApp> {
     let (mut harness, _) = harness();
     harness.state_mut().close_tab(0);
     harness.run_steps(2);
@@ -118,7 +118,7 @@ struct HeldToolOpen {
 }
 
 impl HeldToolOpen {
-    fn install(harness: &mut Harness<'static, PdfCraftApp>) -> Self {
+    fn install(harness: &mut Harness<'static, CleonPdfApp>) -> Self {
         let (gate, started, release, finished) = open_worker::prepare_gate();
         harness.state_mut().open_prepare_gate = Some(gate);
         Self { started, release, finished }
@@ -130,14 +130,14 @@ impl HeldToolOpen {
     }
 
     #[allow(clippy::expect_used)]
-    fn complete(&self, harness: &mut Harness<'static, PdfCraftApp>) {
+    fn complete(&self, harness: &mut Harness<'static, CleonPdfApp>) {
         self.release.send(()).expect("release the native preparation");
         self.finished.recv_timeout(Duration::from_secs(5)).expect("the native open returned its result");
         harness.run_steps(2);
     }
 }
 
-fn choose_export_tool(harness: &mut Harness<'static, PdfCraftApp>, file: &ToolOpenFile) {
+fn choose_export_tool(harness: &mut Harness<'static, CleonPdfApp>, file: &ToolOpenFile) {
     harness.state_mut().pick_override = Some(vec![file.0.to_string_lossy().into_owned()]);
     harness.state_mut().run_command("export.text");
     harness.run_steps(2);
@@ -171,8 +171,8 @@ fn chosen_tool_runs_after_preparation(extension: &str, bytes: Vec<u8>) {
     } else {
         assert!(chosen.dirty && chosen.path.is_none(), "conversion produces a new unsaved PDF");
         assert_eq!(chosen.info.pages.len(), 1);
-        let mut renderer = pdfcraft_render::PageRenderer::new(chosen.bytes.clone(), Default::default());
-        let output = renderer.render(pdfcraft_render::RenderRequest { page: 0, kind: pdfcraft_render::RequestKind::Text, ..Default::default() });
+        let mut renderer = cleonpdf_render::PageRenderer::new(chosen.bytes.clone(), Default::default());
+        let output = renderer.render(cleonpdf_render::RenderRequest { page: 0, kind: cleonpdf_render::RequestKind::Text, ..Default::default() });
         let text = output.text.expect("read the converted text").plain_text();
         assert_eq!(text.split_whitespace().collect::<Vec<_>>().join(" "), std::str::from_utf8(&bytes).expect("synthetic input is UTF-8"));
     }
@@ -192,10 +192,10 @@ fn a_chosen_tool_runs_on_converted_text_only_after_native_preparation_commits() 
 
 #[allow(clippy::expect_used)]
 fn encrypted_tool_fixture() -> Vec<u8> {
-    let mut session = pdfcraft_engine::Session::new();
+    let mut session = cleonpdf_engine::Session::new();
     let id = session.open("secret.pdf", None, Arc::new(fixture(2)), None).expect("open the synthetic PDF");
     session
-        .apply(id, pdfcraft_engine::Edit::Protect(pdfcraft_engine::Protection { open_password: Some("tool-password".into()), ..Default::default() }))
+        .apply(id, cleonpdf_engine::Edit::Protect(cleonpdf_engine::Protection { open_password: Some("tool-password".into()), ..Default::default() }))
         .expect("encrypt the synthetic PDF");
     session.save_bytes(id).expect("write the encrypted synthetic PDF").as_ref().clone()
 }
@@ -353,7 +353,7 @@ fn assert_tool_runs_after_background_open(extension: &str, bytes: Vec<u8>, pages
     harness.state_mut().close_tab(0);
     let (gate, started, release, finished) = open_worker::prepare_gate();
     harness.state_mut().open_prepare_gate = Some(gate);
-    let path = std::env::temp_dir().join(format!("pdfcraft-tool-worker-{}.{extension}", std::process::id()));
+    let path = std::env::temp_dir().join(format!("cleonpdf-tool-worker-{}.{extension}", std::process::id()));
     std::fs::write(&path, &bytes).expect("write picked document");
     harness.state_mut().pick_override = Some(vec![path.to_string_lossy().into_owned()]);
     harness.state_mut().run_command("export.text");
@@ -391,7 +391,7 @@ fn a_startup_document_waits_for_an_active_document_to_prepare() {
     harness.state_mut().close_tab(0);
     let (gate, started, release, finished) = open_worker::prepare_gate();
     harness.state_mut().open_prepare_gate = Some(gate);
-    let path = std::env::temp_dir().join(format!("pdfcraft-startup-worker-{}.pdf", std::process::id()));
+    let path = std::env::temp_dir().join(format!("cleonpdf-startup-worker-{}.pdf", std::process::id()));
     std::fs::write(&path, fixture(2)).expect("write chosen document");
     harness.state_mut().open_path(&path.to_string_lossy());
     started.recv_timeout(Duration::from_secs(5)).expect("chosen document reached preparation");

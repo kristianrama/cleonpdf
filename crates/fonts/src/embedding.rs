@@ -3,7 +3,7 @@
 
 use std::fmt::Write as _;
 
-use pdfcraft_cos::{Dict, Document, Object, PdfString, Stream};
+use cleonpdf_cos::{Dict, Document, Object, PdfString, Stream};
 use skrifa::{
     FontRef, MetadataProvider,
     instance::{LocationRef, Size},

@@ -1,9 +1,9 @@
 //! The Crop tool (Acrobat: Edit ▸ Crop pages): drag a rectangle on a page to crop it to that
 //! rectangle; double-click a page to open Set Page Boxes for it.
 
+use cleonpdf_engine::{BoxSpec, Edit, PageBox};
+use cleonpdf_render::DocInfo;
 use egui::{Color32, CornerRadius, Pos2, Rect, Stroke};
-use pdfcraft_engine::{BoxSpec, Edit, PageBox};
-use pdfcraft_render::DocInfo;
 
 use crate::canvas::{DocView, PageXform};
 

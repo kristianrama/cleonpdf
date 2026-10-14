@@ -1,6 +1,6 @@
 [package]
-name = "pdfcraft-geom"
-description = "Geometry primitives for PdfCraft (points, rects, page transforms)"
+name = "cleonpdf-geom"
+description = "Geometry primitives for CleonPDF (points, rects, page transforms)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

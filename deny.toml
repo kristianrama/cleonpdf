@@ -39,7 +39,7 @@ allow-git = ["https://github.com/storytold/craft-libs", "https://github.com/stor
 [advisories]
 yanked = "warn"
 ignore = [
-    # Marvin (RSA private-key timing side channel, no fixed `rsa` release). pdfcraft-sign uses
+    # Marvin (RSA private-key timing side channel, no fixed `rsa` release). cleonpdf-sign uses
     # `rsa` only for public-key signature verification, which the advisory does not affect; RSA
     # private-key operations use aws-lc-rs on native targets and are refused in the browser
     # (ADR-0009). Revisit when a fixed `rsa` ships.
@@ -59,7 +59,7 @@ allow = ["OFL-1.1", "Ubuntu-font-1.0"]
 # winprint (craft-print's Windows spooler, #1107) lists reqwest as a build-dependency for its
 # PDFium download, which only runs with its `pdfium` feature; craft-print turns that off. The CA
 # bundle reqwest brings is CDLA-Permissive-2.0 data and is compiled into winprint's build script
-# only, never into PdfCraft. Remove when winprint makes those build-dependencies optional.
+# only, never into CleonPDF. Remove when winprint makes those build-dependencies optional.
 [[licenses.exceptions]]
 crate = "webpki-root-certs"
 allow = ["CDLA-Permissive-2.0"]

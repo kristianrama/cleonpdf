@@ -4,7 +4,7 @@
 //! text, from a
 //! document's working file (so unsaved edits and hidden layers are respected, as on screen).
 
-use pdfcraft_render::{PageRenderer, RenderRequest, RequestKind};
+use cleonpdf_render::{PageRenderer, RenderRequest, RequestKind};
 
 use crate::Document;
 
@@ -20,7 +20,7 @@ pub struct Exporter {
 #[derive(Clone)]
 pub struct ExportSource {
     pub bytes: std::sync::Arc<Vec<u8>>,
-    pub config: pdfcraft_render::RenderConfig,
+    pub config: cleonpdf_render::RenderConfig,
     pub pages: usize,
     /// Each page's displayed size in points (after `/Rotate` and `/UserUnit`).
     pub sizes: Vec<(f32, f32)>,
@@ -40,13 +40,13 @@ impl Document {
 
 /// Export all images: the images `pages` (0-based) use, each once, skipping those under
 /// `min_side` pixels on their shorter side. JPEGs come out unchanged, other images as PNG.
-pub fn extract_images(src: &ExportSource, pages: &[usize], min_side: u32) -> Result<pdfcraft_create::ImageExport, String> {
-    let doc = pdfcraft_cos::Document::open_with_password(src.bytes.clone(), src.config.password.as_deref()).map_err(|e| e.to_string())?;
-    Ok(pdfcraft_create::extract_images(&doc, pages, min_side))
+pub fn extract_images(src: &ExportSource, pages: &[usize], min_side: u32) -> Result<cleonpdf_create::ImageExport, String> {
+    let doc = cleonpdf_cos::Document::open_with_password(src.bytes.clone(), src.config.password.as_deref()).map_err(|e| e.to_string())?;
+    Ok(cleonpdf_create::extract_images(&doc, pages, min_side))
 }
 
 /// The file name for the `index`-th (1-based) exported image: `<stem>_Page_<n>_Image_<index>.<ext>`.
-pub fn image_file_name(stem: &str, image: &pdfcraft_create::ExtractedImage, index: usize) -> String {
+pub fn image_file_name(stem: &str, image: &cleonpdf_create::ExtractedImage, index: usize) -> String {
     format!("{stem}_Page_{}_Image_{index:04}.{}", image.page + 1, image.extension)
 }
 
@@ -67,7 +67,7 @@ impl Exporter {
     pub fn dpi_used(&self, page: usize, dpi: f64) -> f64 {
         let dpi = dpi.clamp(18.0, 1200.0);
         match self.sizes.get(page) {
-            Some(&(w, h)) => f64::from(pdfcraft_render::effective_scale(w, h, (dpi / 72.0) as f32)) * 72.0,
+            Some(&(w, h)) => f64::from(cleonpdf_render::effective_scale(w, h, (dpi / 72.0) as f32)) * 72.0,
             None => dpi,
         }
     }

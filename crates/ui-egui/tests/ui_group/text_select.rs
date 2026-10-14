@@ -1,9 +1,9 @@
 //! Issue #295: quick clicks on text widen the selection, as in Acrobat: two clicks select a
 //! word, three the line, four all the text on the page.
 
+use cleonpdf_ui_egui::CleonPdfApp;
 use egui::{Event, Modifiers, MouseWheelUnit, PointerButton, Pos2, TouchPhase};
 use egui_kittest::Harness;
-use pdfcraft_ui_egui::PdfCraftApp;
 
 /// One 300×200 page with two lines of Helvetica text.
 fn two_lines() -> Vec<u8> {
@@ -26,14 +26,14 @@ trailer << /Root 1 0 R >>
 
 /// The page on screen and the pointer over the "u" of "quick". Frames are 1/60 s: a click takes
 /// two frames (press, release), and egui counts a double-click only within 0.3 s.
-fn harness(setup: impl FnOnce(&mut PdfCraftApp) + 'static) -> (Harness<'static, PdfCraftApp>, Pos2) {
+fn harness(setup: impl FnOnce(&mut CleonPdfApp) + 'static) -> (Harness<'static, CleonPdfApp>, Pos2) {
     harness_with(two_lines(), setup)
 }
 
 /// `harness` with another document; the pointer ends over glyph 5 of its first page.
-fn harness_with(pdf: Vec<u8>, setup: impl FnOnce(&mut PdfCraftApp) + 'static) -> (Harness<'static, PdfCraftApp>, Pos2) {
+fn harness_with(pdf: Vec<u8>, setup: impl FnOnce(&mut CleonPdfApp) + 'static) -> (Harness<'static, CleonPdfApp>, Pos2) {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_step_dt(1.0 / 60.0).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("lines.pdf", None, pdf).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -55,7 +55,7 @@ fn harness_with(pdf: Vec<u8>, setup: impl FnOnce(&mut PdfCraftApp) + 'static) ->
 }
 
 /// Press and release without moving or leaving the page.
-fn click(h: &mut Harness<'static, PdfCraftApp>, pos: Pos2) {
+fn click(h: &mut Harness<'static, CleonPdfApp>, pos: Pos2) {
     for pressed in [true, false] {
         h.event(Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE });
     }
@@ -112,7 +112,7 @@ fn quick_clicks_with_the_highlighter_mark_only_the_word() {
 }
 
 /// Press at `from`, move to `to` and release there.
-fn drag(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'static, CleonPdfApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
     h.run_steps(1);
     for k in 1..=4 {
@@ -124,7 +124,7 @@ fn drag(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
 }
 
 /// Click at `pos` with Shift held.
-fn shift_click(h: &mut Harness<'static, PdfCraftApp>, pos: Pos2) {
+fn shift_click(h: &mut Harness<'static, CleonPdfApp>, pos: Pos2) {
     h.event(Event::ModifiersChanged(Modifiers::SHIFT));
     h.hover_at(pos);
     h.run_steps(1);
@@ -140,7 +140,7 @@ fn shift_click(h: &mut Harness<'static, PdfCraftApp>, pos: Pos2) {
 #[test]
 fn shift_click_extends_the_selection_from_its_anchor() {
     let (mut h, _) = harness(|_| {});
-    let glyph = |h: &Harness<'static, PdfCraftApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
+    let glyph = |h: &Harness<'static, CleonPdfApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
     // Drag over "quick" (glyphs 4..=8).
     let (q, k) = (glyph(&h, 4), glyph(&h, 8));
     drag(&mut h, q, k);
@@ -213,7 +213,7 @@ fn bottom_lines(n: usize) -> Vec<u8> {
 }
 
 /// Press at `from` and move to `to`, keeping the button down.
-fn press_and_move(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
+fn press_and_move(h: &mut Harness<'static, CleonPdfApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
     h.run_steps(1);
     for k in 1..=4 {
@@ -223,13 +223,13 @@ fn press_and_move(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
 }
 
 /// One wheel event, with time to scroll (egui spreads a wheel line over a few frames).
-fn wheel(h: &mut Harness<'static, PdfCraftApp>, unit: MouseWheelUnit, dy: f32) {
+fn wheel(h: &mut Harness<'static, CleonPdfApp>, unit: MouseWheelUnit, dy: f32) {
     h.event(Event::MouseWheel { unit, delta: egui::vec2(0.0, dy), phase: TouchPhase::Move, modifiers: Modifiers::NONE });
     h.run_steps(10);
 }
 
 /// The top edge of `page` on screen.
-fn page_top(h: &Harness<'static, PdfCraftApp>, page: usize) -> f32 {
+fn page_top(h: &Harness<'static, CleonPdfApp>, page: usize) -> f32 {
     h.state().views[0].page_screen_rect(page).expect("page on screen").min.y
 }
 
@@ -242,7 +242,7 @@ fn a_selection_drag_keeps_scrolling_over_the_gap_and_the_next_page() {
         app.set_option("layout", "continuous").unwrap();
         app.set_option("zoom", "200").unwrap();
     });
-    let glyph = |h: &Harness<'static, PdfCraftApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
+    let glyph = |h: &Harness<'static, CleonPdfApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
     // "ends" (glyphs 7..=10) in "Page 1 ends with this line".
     let (from, to) = (glyph(&h, 7), glyph(&h, 10));
     press_and_move(&mut h, from, to);

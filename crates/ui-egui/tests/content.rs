@@ -1,18 +1,18 @@
 //! Edit a PDF ▸ Add content in the real shell (egui_kittest): type text onto a page, move it,
 //! restyle it from the panel, add an image, delete with the keyboard.
 
+use cleonpdf_ui_egui::{CleonPdfApp, QuickTool};
 use egui::{Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::{PdfCraftApp, QuickTool};
 
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, CleonPdfApp> {
     harness_bytes(include_bytes!("data/form.pdf").to_vec())
 }
 
-fn harness_bytes(bytes: Vec<u8>) -> Harness<'static, PdfCraftApp> {
+fn harness_bytes(bytes: Vec<u8>) -> Harness<'static, CleonPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, bytes.clone()).unwrap();
         app.set_option("zoom", "150").unwrap();
@@ -28,13 +28,13 @@ fn harness_bytes(bytes: Vec<u8>) -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn at(h: &Harness<'static, PdfCraftApp>, x: f32, y: f32) -> Pos2 {
+fn at(h: &Harness<'static, CleonPdfApp>, x: f32, y: f32) -> Pos2 {
     let r = h.state().views[0].page_screen_rect(0).expect("on screen");
     let k = r.width() / 300.0;
     r.min + egui::vec2(x * k, y * k)
 }
 
-fn click(h: &mut Harness<'static, PdfCraftApp>, p: Pos2) {
+fn click(h: &mut Harness<'static, CleonPdfApp>, p: Pos2) {
     h.hover_at(p);
     h.run_steps(1);
     h.drag_at(p);
@@ -43,13 +43,13 @@ fn click(h: &mut Harness<'static, PdfCraftApp>, p: Pos2) {
     h.run_steps(3);
 }
 
-fn added(h: &Harness<'static, PdfCraftApp>) -> Vec<pdfcraft_engine::Added> {
+fn added(h: &Harness<'static, CleonPdfApp>) -> Vec<cleonpdf_engine::Added> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().added.clone()
 }
 
 /// A click whose press and release arrive in the same frame, as a quick real mouse click does.
-fn quick_click(h: &mut Harness<'static, PdfCraftApp>, p: Pos2) {
+fn quick_click(h: &mut Harness<'static, CleonPdfApp>, p: Pos2) {
     h.hover_at(p);
     h.run_steps(1);
     for pressed in [true, false] {
@@ -58,11 +58,11 @@ fn quick_click(h: &mut Harness<'static, PdfCraftApp>, p: Pos2) {
     h.run_steps(3);
 }
 
-fn texts(h: &Harness<'static, PdfCraftApp>) -> Vec<String> {
+fn texts(h: &Harness<'static, CleonPdfApp>) -> Vec<String> {
     added(h)
         .into_iter()
         .filter_map(|a| match a.content {
-            pdfcraft_engine::AddedContent::Text(t) => Some(t.text),
+            cleonpdf_engine::AddedContent::Text(t) => Some(t.text),
             _ => None,
         })
         .collect()
@@ -115,7 +115,7 @@ fn typing_moving_styling_and_deleting_added_content() {
     h.run_steps(3);
     let a = added(&h);
     assert_eq!(a.len(), 1);
-    let pdfcraft_engine::AddedContent::Text(t) = &a[0].content else { panic!() };
+    let cleonpdf_engine::AddedContent::Text(t) = &a[0].content else { panic!() };
     assert_eq!(t.text, "Reviewed");
     assert_eq!(h.state().quick_tool, QuickTool::Select);
     h.run_steps(2);
@@ -124,7 +124,7 @@ fn typing_moving_styling_and_deleting_added_content() {
     h.get_by_label("B").click();
     h.run_steps(3);
 
-    let pdfcraft_engine::AddedContent::Text(t) = &added(&h)[0].content else { panic!() };
+    let cleonpdf_engine::AddedContent::Text(t) = &added(&h)[0].content else { panic!() };
     assert!(t.bold);
     {
         let s = h.state();
@@ -152,11 +152,11 @@ fn typing_moving_styling_and_deleting_added_content() {
     h.get_by_label("Rotate clockwise").click();
     h.run_steps(3);
     let a = added(&h);
-    let pdfcraft_engine::AddedContent::Image(img) = &a[0].content else { panic!() };
+    let cleonpdf_engine::AddedContent::Image(img) = &a[0].content else { panic!() };
     assert_eq!((img.rotation, img.rect), (3, [140.0, 185.0, 160.0, 215.0]));
     h.get_by_label("Flip horizontal").click();
     h.run_steps(3);
-    let pdfcraft_engine::AddedContent::Image(img) = &added(&h)[0].content else { panic!() };
+    let cleonpdf_engine::AddedContent::Image(img) = &added(&h)[0].content else { panic!() };
     assert!(img.flip_h);
 }
 
@@ -172,7 +172,7 @@ fn text_the_standard_fonts_cant_draw_stays_in_the_editor() {
     h.event(egui::Event::Text("Hello 世界".into()));
     h.run_steps(2);
     h.get_by_label_contains("can't draw “世” (U+4E16)");
-    if let Ok(dir) = std::env::var("PDFCRAFT_SHOTS") {
+    if let Ok(dir) = std::env::var("CLEONPDF_SHOTS") {
         h.render().unwrap().save(format!("{dir}/undrawable-text.png")).unwrap();
     }
     h.get_by_label("Done adding text").click();
@@ -201,7 +201,7 @@ fn text_the_standard_fonts_cant_draw_stays_in_the_editor() {
 #[test]
 fn a_kept_draft_goes_with_its_deleted_page() {
     let mut h = harness();
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::InsertBlankPage { at: 1, width: 612.0, height: 792.0 }));
+    assert!(h.state_mut().apply_edit(cleonpdf_engine::Edit::InsertBlankPage { at: 1, width: 612.0, height: 792.0 }));
     h.run_steps(2);
     assert!(h.state_mut().execute("edit.text"));
     h.state_mut().views[0].go_to_page(1);
@@ -211,18 +211,18 @@ fn a_kept_draft_goes_with_its_deleted_page() {
     h.event(egui::Event::Text("日本語".into()));
     h.run_steps(2);
     assert_eq!(h.state().views[0].content.draft.as_ref().map(|d| (d.page, d.text.as_str())), Some((1, "日本語")));
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::DeletePages { pages: vec![1] }));
+    assert!(h.state_mut().apply_edit(cleonpdf_engine::Edit::DeletePages { pages: vec![1] }));
     h.run_steps(2);
     assert!(h.state().views[0].content.draft.is_none());
 }
 
 #[test]
 fn typing_thai_text_keeps_marks_and_commits_to_page() {
-    if pdfcraft_fonts::document_thai_font().is_none() {
+    if cleonpdf_fonts::document_thai_font().is_none() {
         return;
     }
-    let fonts = pdfcraft_ui_egui::theme::font_definitions();
-    let face = pdfcraft_fonts::document_thai_font().unwrap();
+    let fonts = cleonpdf_ui_egui::theme::font_definitions();
+    let face = cleonpdf_fonts::document_thai_font().unwrap();
     assert!(fonts.families[&egui::FontFamily::Proportional].contains(&face.name()));
     let mut h = harness();
     assert!(h.state_mut().execute("edit.text"));
@@ -237,7 +237,7 @@ fn typing_thai_text_keeps_marks_and_commits_to_page() {
 }
 
 /// The screen rectangle of an added item's display-space box (y up, from the page's bottom).
-fn item_on_screen(h: &Harness<'static, PdfCraftApp>, r: [f64; 4]) -> egui::Rect {
+fn item_on_screen(h: &Harness<'static, CleonPdfApp>, r: [f64; 4]) -> egui::Rect {
     let s = h.state();
     let ph = s.session.get(s.views[0].id).unwrap().info.pages[0].height;
     let page = s.views[0].page_screen_rect(0).expect("on screen");
@@ -261,14 +261,14 @@ fn probe(r: egui::Rect) -> egui::Rect {
 }
 
 /// Ink in the probes of the text's first and dragged places.
-fn ink_at(h: &mut Harness<'static, PdfCraftApp>, from: egui::Rect, to: egui::Rect) -> (usize, usize) {
+fn ink_at(h: &mut Harness<'static, CleonPdfApp>, from: egui::Rect, to: egui::Rect) -> (usize, usize) {
     let pixels = h.render().unwrap();
     (ink(&pixels, probe(from)), ink(&pixels, probe(to)))
 }
 
 /// Types text, finishes it, and drags it up without releasing, until the drag preview shows.
 /// Returns the text's box, its screen rectangles before and after, and the pointer.
-fn drag_added_text(h: &mut Harness<'static, PdfCraftApp>) -> ([f64; 4], egui::Rect, egui::Rect, Pos2) {
+fn drag_added_text(h: &mut Harness<'static, CleonPdfApp>) -> ([f64; 4], egui::Rect, egui::Rect, Pos2) {
     assert!(h.state_mut().execute("edit.text"));
     h.run_steps(2);
     let p = at(h, 40.0, 300.0);
@@ -314,7 +314,7 @@ fn drag_added_text(h: &mut Harness<'static, PdfCraftApp>) -> ([f64; 4], egui::Re
 fn dragged_text_follows_the_pointer_before_release() {
     let mut h = harness();
     let (rect, from, to, end) = drag_added_text(&mut h);
-    if let Ok(dir) = std::env::var("PDFCRAFT_SHOTS") {
+    if let Ok(dir) = std::env::var("CLEONPDF_SHOTS") {
         h.render().unwrap().save(format!("{dir}/added-text-drag.png")).unwrap();
     }
     let (old, new) = ink_at(&mut h, from, to);

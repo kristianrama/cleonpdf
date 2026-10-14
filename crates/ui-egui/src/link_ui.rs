@@ -2,13 +2,13 @@
 //! (go to a page, open a web page) in Link Properties; with the Link tool, existing links show
 //! their outlines, a click selects one, a double-click edits it and Delete removes it.
 
+use cleonpdf_engine::{Edit, LinkAction, LinkHighlight, LinkItem, LinkStyle};
+use cleonpdf_render::DocInfo;
 use egui::{Color32, CornerRadius, Pos2, Rect, Stroke};
-use pdfcraft_engine::{Edit, LinkAction, LinkHighlight, LinkItem, LinkStyle};
-use pdfcraft_render::DocInfo;
 
 use crate::canvas::{DocView, PageXform};
 use crate::theme::{self, Tokens};
-use crate::{PdfCraftApp, widgets};
+use crate::{CleonPdfApp, widgets};
 
 const LINK_BLUE: Color32 = Color32::from_rgb(0x14, 0x73, 0xE6);
 
@@ -145,7 +145,7 @@ pub(crate) fn keys(ctx: &egui::Context, view: &mut DocView) {
     }
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     /// Open Link Properties for a new link area or an existing link.
     pub(crate) fn open_link_props(&mut self, page: usize, rect: Option<[f64; 4]>, index: Option<usize>) {
         let Some((_, id)) = self.active_ids() else { return };
@@ -341,7 +341,7 @@ pub(crate) fn edit_for(d: &LinkDraft) -> Edit {
 #[cfg(test)]
 mod tests {
     use super::{LinkDraft, edit_for};
-    use pdfcraft_engine::{Edit, LinkStyle};
+    use cleonpdf_engine::{Edit, LinkStyle};
 
     #[test]
     fn appearance_edit_preserves_an_existing_unsupported_action() {

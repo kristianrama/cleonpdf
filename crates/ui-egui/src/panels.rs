@@ -1,12 +1,12 @@
 //! Left tool panel (All tools + tool sub-panels, generated from the engine catalogue) and the
 //! right-hand panels (Comments, Bookmarks, Pages, Fields, Layers, Attachments).
 
+use cleonpdf_engine::catalog::{self, Availability, TOOL_GROUPS, ToolGroup};
+use cleonpdf_render::{DocInfo, FieldKind, OutlineItem};
 use egui::{Align, Align2, Color32, CornerRadius, Layout, Rect, Sense, Stroke, pos2, vec2};
-use pdfcraft_engine::catalog::{self, Availability, TOOL_GROUPS, ToolGroup};
-use pdfcraft_render::{DocInfo, FieldKind, OutlineItem};
 
 use crate::theme::{self, Tokens};
-use crate::{LeftPanel, PdfCraftApp, RightPanel, icons, widgets};
+use crate::{CleonPdfApp, LeftPanel, RightPanel, icons, widgets};
 
 const COLLAPSED_TOOLS: usize = 14;
 
@@ -14,7 +14,7 @@ fn hue(g: &ToolGroup) -> Color32 {
     Color32::from_rgb(g.hue[0], g.hue[1], g.hue[2])
 }
 
-pub fn left_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+pub fn left_panel(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     egui::Frame::NONE.fill(t.panel).inner_margin(egui::Margin { left: 14, right: 10, top: 12, bottom: 10 }).stroke(Stroke::new(1.0, t.divider)).show(
         ui,
@@ -50,7 +50,7 @@ fn panel_header(ui: &mut egui::Ui, t: &Tokens, title: &str, back: bool) -> (bool
     (go_back, close)
 }
 
-fn all_tools(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
+fn all_tools(app: &mut CleonPdfApp, ui: &mut egui::Ui, t: &Tokens) {
     let (_, close) = panel_header(ui, t, "All tools", false);
     if close {
         app.left_open = false;
@@ -136,7 +136,7 @@ fn tool_row(ui: &mut egui::Ui, t: &Tokens, g: &ToolGroup) -> egui::Response {
     theme::hand(resp).on_hover_text(tip)
 }
 
-fn tool_detail(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'static ToolGroup) {
+fn tool_detail(app: &mut CleonPdfApp, ui: &mut egui::Ui, t: &Tokens, g: &'static ToolGroup) {
     let (back, close) = panel_header(ui, t, g.label, true);
     if back {
         app.left = LeftPanel::AllTools;
@@ -272,8 +272,8 @@ fn tool_detail(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'static
 
 /// Add a stamp: Dynamic, Sign Here and Standard Business stamps; click one, then click on the
 /// page to place it.
-fn stamp_palette(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
-    use pdfcraft_engine::{StampGroup, StampKind};
+fn stamp_palette(app: &mut CleonPdfApp, ui: &mut egui::Ui, t: &Tokens) {
+    use cleonpdf_engine::{StampGroup, StampKind};
     ui.label(egui::RichText::new(tl!("Choose a stamp, then click on the page to place it.")).small().color(t.text_faint));
     egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
         for (group, title) in [
@@ -342,7 +342,7 @@ fn stamp_palette(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
 
 /// Edit a PDF ▸ Format text: for the selected added text (one undoable change), or the style
 /// new text gets.
-fn format_section(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
+fn format_section(app: &mut CleonPdfApp, ui: &mut egui::Ui, t: &Tokens) {
     // Editing a paragraph of existing text: its formatting, applied as it changes.
     if let Some((i, _)) = app.active_ids()
         && let Some(ed) = app.views[i].line_editor.clone()
@@ -387,7 +387,7 @@ fn format_section(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
         }
         changed |= crate::edit_text_ui::extras_panel(ui, &mut ed.extras);
         if changed {
-            let edit = pdfcraft_engine::Edit::EditTextBlock { page: ed.page, block: ed.block, text: ed.text.clone(), style: ed.style() };
+            let edit = cleonpdf_engine::Edit::EditTextBlock { page: ed.page, block: ed.block, text: ed.text.clone(), style: ed.style() };
             if app.apply_edit(edit) {
                 ed.applied();
                 if let Some(doc) = app.session.get(app.views[i].id)
@@ -407,14 +407,14 @@ fn format_section(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
         let (page, index) = app.views[i].content.selected?;
         let doc = app.session.get(id)?;
         match &doc.added.iter().filter(|a| a.page == page).nth(index)?.content {
-            pdfcraft_engine::AddedContent::Image(img) => Some((page, index, img.clone())),
+            cleonpdf_engine::AddedContent::Image(img) => Some((page, index, img.clone())),
             _ => None,
         }
     });
     if let Some((page, index, img)) = image {
         match crate::content_ui::image_panel(ui, t, &img) {
             Some(crate::content_ui::ImageAction::Update(content)) => {
-                app.apply_edit(pdfcraft_engine::Edit::UpdateContent { page, index, content });
+                app.apply_edit(cleonpdf_engine::Edit::UpdateContent { page, index, content });
             }
             Some(crate::content_ui::ImageAction::Replace) => app.replace_image_dialog(page, index),
             None => {}
@@ -428,15 +428,15 @@ fn format_section(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
         let doc = app.session.get(id)?;
         let a = doc.added.iter().filter(|a| a.page == page).nth(index)?;
         match &a.content {
-            pdfcraft_engine::AddedContent::Text(text) => Some((page, index, text.clone())),
+            cleonpdf_engine::AddedContent::Text(text) => Some((page, index, text.clone())),
             _ => None,
         }
     });
     match selected {
         Some((page, index, text)) => {
             if let Some(style) = crate::content_ui::format_panel(ui, t, &text) {
-                app.text_style = pdfcraft_engine::AddedText { text: String::new(), rect: [0.0; 4], ..style.clone() };
-                app.apply_edit(pdfcraft_engine::Edit::UpdateContent { page, index, content: pdfcraft_engine::AddedContent::Text(style) });
+                app.text_style = cleonpdf_engine::AddedText { text: String::new(), rect: [0.0; 4], ..style.clone() };
+                app.apply_edit(cleonpdf_engine::Edit::UpdateContent { page, index, content: cleonpdf_engine::AddedContent::Text(style) });
             }
         }
         None if app.quick_tool == crate::QuickTool::AddText => {
@@ -456,11 +456,11 @@ fn format_section(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
 pub(crate) enum Nav {
     Page(usize),
     /// A bookmark's destination: its page and where on it.
-    Dest(usize, pdfcraft_render::DestView),
+    Dest(usize, cleonpdf_render::DestView),
     Flash(usize, [f32; 4]),
 }
 
-pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+pub fn right_panel(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let Some((index, id)) = app.active_ids() else { return };
     let Some(panel) = app.right else { return };
@@ -470,7 +470,7 @@ pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let mut attachment_action: Option<(usize, bool)> = None; // (index, open instead of save)
     let mut bm_action: Option<BmAction> = None;
     let mut bm_expand: Option<usize> = None;
-    let mut panel_edit: Option<pdfcraft_engine::Edit> = None;
+    let mut panel_edit: Option<cleonpdf_engine::Edit> = None;
     let mut field_properties = None;
     let mut panel_command: Option<&'static str> = None;
     let mut sig_action: Option<crate::sign_ui::PanelAction> = None;
@@ -589,7 +589,7 @@ pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     ui.data_mut(|d| d.insert_temp(search_id, bookmark_query.clone()));
                     ui.add_space(6.0);
                 }
-                let bookmark_query = pdfcraft_render::text::fold_case(bookmark_query.trim());
+                let bookmark_query = cleonpdf_render::text::fold_case(bookmark_query.trim());
                 let mut bookmark_matches =
                     if panel == RightPanel::Bookmarks { outline_matches(&info.outline, &bookmark_query) } else { std::collections::HashSet::new() };
                 // A new bookmark must stay nameable even when its initial title doesn't match.
@@ -691,7 +691,7 @@ pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                                         ui.set_width(ui.available_width() - 70.0);
                                         ui.add(egui::Label::new(egui::RichText::new(&a.name).font(theme::medium(13.0))).truncate());
                                         let mut meta = a.size.map(human_size).unwrap_or_default();
-                                        if let pdfcraft_render::AttachmentSource::Annotation { page, .. } = a.source {
+                                        if let cleonpdf_render::AttachmentSource::Annotation { page, .. } = a.source {
                                             let on_page = crate::i18n::fmt(
                                                 tl!("on page {label}"),
                                                 &[("label", info.pages.get(page).map(|p| p.label.as_str()).unwrap_or("?"))],
@@ -820,7 +820,7 @@ pub enum BmAction {
 }
 
 /// Matching titles plus their ancestors, keeping document paths rather than filtered indexes.
-/// `query` is folded with [`pdfcraft_render::text::fold_case`], as titles are here.
+/// `query` is folded with [`cleonpdf_render::text::fold_case`], as titles are here.
 fn outline_matches(items: &[OutlineItem], query: &str) -> std::collections::HashSet<Vec<usize>> {
     let mut matches = std::collections::HashSet::new();
     if query.is_empty() {
@@ -828,7 +828,7 @@ fn outline_matches(items: &[OutlineItem], query: &str) -> std::collections::Hash
     }
     let mut pending: Vec<_> = items.iter().enumerate().map(|(i, item)| (vec![i], item)).collect();
     while let Some((path, item)) = pending.pop() {
-        if pdfcraft_render::text::fold_case(&item.title).contains(query) {
+        if cleonpdf_render::text::fold_case(&item.title).contains(query) {
             let mut ancestor = path.clone();
             while !ancestor.is_empty() {
                 matches.insert(ancestor.clone());
@@ -1131,7 +1131,7 @@ fn delete_pages(view: &mut crate::DocView, n: usize) {
     let before = pages.iter().filter(|p| **p < view.current).count();
     view.current = view.current.saturating_sub(before).min(n.saturating_sub(pages.len() + 1));
     view.clear_page_selection(None);
-    view.pending_edit = Some(pdfcraft_engine::Edit::DeletePages { pages });
+    view.pending_edit = Some(cleonpdf_engine::Edit::DeletePages { pages });
 }
 
 /// The gap (0 = before the first page, n = after the last) the pointer points at in the Pages
@@ -1196,7 +1196,7 @@ fn page_drag(ui: &mut egui::Ui, t: &Tokens, view: &mut crate::DocView, rows: &[R
     }
     view.current = moved_index(view.current, &moving, to);
     view.selected = (to..to + moving.len()).collect();
-    view.pending_edit = Some(pdfcraft_engine::Edit::MovePages { pages: moving, to });
+    view.pending_edit = Some(cleonpdf_engine::Edit::MovePages { pages: moving, to });
 }
 
 /// The Fields panel: fields by page, in tab order. While preparing a form, each field can move
@@ -1206,11 +1206,11 @@ fn fields(
     ui: &mut egui::Ui,
     t: &Tokens,
     info: &DocInfo,
-    form: &[pdfcraft_engine::FormField],
+    form: &[cleonpdf_engine::FormField],
     preparing: bool,
     selection: &mut crate::prepare::PrepareView,
     nav: &mut Option<Nav>,
-    edit: &mut Option<pdfcraft_engine::Edit>,
+    edit: &mut Option<cleonpdf_engine::Edit>,
 ) -> Option<(String, usize)> {
     let mut properties = None;
     if info.fields.is_empty() {
@@ -1297,7 +1297,7 @@ fn fields(
                     bpress.wash(ui, r, 4, false);
                     icons::paint(ui, r.shrink(3.0).translate(bpress.offset()), icon, 15.0, t.icon);
                     if theme::hand(b).on_hover_text(tip).clicked() {
-                        *edit = Some(pdfcraft_engine::Edit::MoveInTabOrder { name: f.name.clone(), earlier });
+                        *edit = Some(cleonpdf_engine::Edit::MoveInTabOrder { name: f.name.clone(), earlier });
                     }
                 }
             }
@@ -1422,17 +1422,17 @@ mod label_column {
 #[cfg(test)]
 mod bookmark_filter {
     use super::outline_matches;
-    use pdfcraft_render::OutlineItem;
+    use cleonpdf_render::OutlineItem;
 
     fn item(title: &str, children: Vec<OutlineItem>) -> OutlineItem {
-        OutlineItem { title: title.into(), page: Some(0), view: pdfcraft_render::DestView::Top, children, open: true }
+        OutlineItem { title: title.into(), page: Some(0), view: cleonpdf_render::DestView::Top, children, open: true }
     }
 
     /// Turkish dotted and dotless i match in any case, as in Find (#892).
     #[test]
     fn titles_match_in_any_case_with_turkish_i() {
         let outline = [item("İSTANBUL ŞUBESİ", vec![item("Kış dönemi", vec![])]), item("Ankara", vec![])];
-        let fold = pdfcraft_render::text::fold_case;
+        let fold = cleonpdf_render::text::fold_case;
         assert_eq!(outline_matches(&outline, &fold("istanbul")).len(), 1);
         assert_eq!(outline_matches(&outline, &fold("şubesi")).len(), 1);
         // A child match keeps its parent: [0] and [0, 0].

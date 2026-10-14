@@ -1,8 +1,8 @@
 //! Form tools: list fields, fill them (several at once, one undo step), clear the form, and
 //! prepare a form (add, change and delete fields).
 
-use pdfcraft_engine::form_scripts::{CalcOp, Calculate, Format, Validate};
-use pdfcraft_engine::{Edit, FieldProps, FieldValue, FormField, FormFieldKind, NewField, field_flags};
+use cleonpdf_engine::form_scripts::{CalcOp, Calculate, Format, Validate};
+use cleonpdf_engine::{Edit, FieldProps, FieldValue, FormField, FormFieldKind, NewField, field_flags};
 use serde_json::{Value, json};
 
 use crate::{Args, Automation, Result, ToolError, failed};
@@ -43,8 +43,8 @@ fn format_arg(v: &Value) -> Result<Format> {
 
 /// `{"border": "#FF0000" | "none", "fill": …, "width": 1-3, "style": "solid"|…, "text_color": …,
 /// "font": "helvetica"|"times"|"courier"}`, changing only what is given.
-fn look_arg(v: &Value) -> Result<pdfcraft_engine::FieldLookPatch> {
-    use pdfcraft_engine::{BorderStyle, FieldFont, FieldLookPatch};
+fn look_arg(v: &Value) -> Result<cleonpdf_engine::FieldLookPatch> {
+    use cleonpdf_engine::{BorderStyle, FieldFont, FieldLookPatch};
     let o = v.as_object().ok_or_else(|| bad("appearance must be an object"))?;
     for key in o.keys() {
         if !["border", "fill", "text_color", "width", "style", "font"].contains(&key.as_str()) {
@@ -215,7 +215,7 @@ impl Automation {
                 }
                 if f.actions.format != Format::None {
                     o.insert("format".into(), format_json(&f.actions.format));
-                    o.insert("display".into(), json!(f.value.first().map(|v| pdfcraft_engine::form_scripts::format_value(&f.actions.format, v))));
+                    o.insert("display".into(), json!(f.value.first().map(|v| cleonpdf_engine::form_scripts::format_value(&f.actions.format, v))));
                 }
                 if let Validate::Range { min, max } = &f.actions.validate {
                     o.insert("validate".into(), json!({ "min": min, "max": max }));
@@ -410,7 +410,7 @@ impl Automation {
             options: a.get("options").map(|_| a.strs("options")).transpose()?.map(|v| v.into_iter().map(str::to_owned).collect()),
             font_size: a.opt_num("font_size")?,
             look: None,
-            appearance: a.get("appearance").map(look_arg).transpose()?.filter(|p| *p != pdfcraft_engine::FieldLookPatch::default()),
+            appearance: a.get("appearance").map(look_arg).transpose()?.filter(|p| *p != cleonpdf_engine::FieldLookPatch::default()),
             format: a.get("format").map(format_arg).transpose()?,
             validate: a.get("validate").map(validate_arg).transpose()?,
             calculate: a.get("calculate").map(calculate_arg).transpose()?,
@@ -426,7 +426,7 @@ impl Automation {
             flags: match a.get("flags") {
                 None => Vec::new(),
                 Some(v) => {
-                    use pdfcraft_engine::field_flags as ff;
+                    use cleonpdf_engine::field_flags as ff;
                     let obj = v.as_object().ok_or_else(|| bad("flags must be an object of booleans"))?;
                     let mut out = Vec::new();
                     for (k, on) in obj {
@@ -461,7 +461,7 @@ impl Automation {
             check_style: match a.opt_str("check_style")? {
                 None => None,
                 Some(s) => Some(
-                    pdfcraft_engine::CheckStyle::ALL
+                    cleonpdf_engine::CheckStyle::ALL
                         .into_iter()
                         .find(|c| c.label().eq_ignore_ascii_case(s))
                         .ok_or_else(|| bad(format!("unknown check style {s:?} (check, circle, cross, diamond, square, star)")))?,
@@ -488,10 +488,10 @@ impl Automation {
             return Ok(out);
         }
         let order = match a.str("order")? {
-            "row" | "rows" => pdfcraft_engine::TabOrder::Row,
-            "column" | "columns" => pdfcraft_engine::TabOrder::Column,
-            "structure" => pdfcraft_engine::TabOrder::Structure,
-            "annotations" | "unspecified" => pdfcraft_engine::TabOrder::Annotations,
+            "row" | "rows" => cleonpdf_engine::TabOrder::Row,
+            "column" | "columns" => cleonpdf_engine::TabOrder::Column,
+            "structure" => cleonpdf_engine::TabOrder::Structure,
+            "annotations" | "unspecified" => cleonpdf_engine::TabOrder::Annotations,
             o => return Err(bad(format!("unknown order {o:?} (row, column, structure, annotations)"))),
         };
         let mut out = self.apply(a, Edit::SetTabOrder { pages, order })?;
@@ -521,14 +521,14 @@ impl Automation {
         let path = self.resolve(a.str("path")?, true)?;
         let ext = path.extension().map(|e| e.to_string_lossy().into_owned()).unwrap_or_default();
         let format =
-            pdfcraft_engine::DataFormat::from_extension(&ext).ok_or_else(|| bad("the path must end in .xfdf, .fdf, .xml, .xdp, .csv or .txt"))?;
+            cleonpdf_engine::DataFormat::from_extension(&ext).ok_or_else(|| bad("the path must end in .xfdf, .fdf, .xml, .xdp, .csv or .txt"))?;
         let (comments, fields) = match a.opt_str("what")?.unwrap_or("all") {
             "all" => (true, true),
             "comments" => (true, false),
             "fields" => (false, true),
             w => return Err(bad(format!("unknown what {w:?} (all, comments, fields)"))),
         };
-        if comments && !matches!(format, pdfcraft_engine::DataFormat::Xfdf | pdfcraft_engine::DataFormat::Fdf) {
+        if comments && !matches!(format, cleonpdf_engine::DataFormat::Xfdf | cleonpdf_engine::DataFormat::Fdf) {
             return Err(bad("comments travel as .xfdf or .fdf; .xml, .csv and .txt hold form data (use what: fields)"));
         }
         let bytes = self.session.export_data(id, format, comments, fields).map_err(failed)?;

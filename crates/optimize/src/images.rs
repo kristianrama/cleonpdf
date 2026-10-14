@@ -2,8 +2,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use pdfcraft_content::Matrix;
-use pdfcraft_cos::{Dict, Document, ObjRef, Object, Stream};
+use cleonpdf_content::Matrix;
+use cleonpdf_cos::{Dict, Document, ObjRef, Object, Stream};
 
 use crate::{Compression, ImageSettings, OptimizeError, Report, Settings, Stage};
 
@@ -49,7 +49,7 @@ fn walk(doc: &Document, data: &[u8], resources: &Dict, ctm: Matrix, depth: usize
     }
     let xobjects = resources.get(b"XObject").map(|x| doc.resolve(x)).and_then(|x| x.as_dict().cloned()).unwrap_or_default();
     let mut stack = vec![ctm];
-    for op in pdfcraft_content::parse(data).ops {
+    for op in cleonpdf_content::parse(data).ops {
         let top = stack.last().copied().unwrap_or(ctm);
         match op.op.as_slice() {
             b"q" => stack.push(top),
@@ -110,7 +110,7 @@ pub fn effective_resolutions(doc: &Document, pages: &[ObjRef]) -> HashMap<ObjRef
     out
 }
 
-/// Colour components of a colour space PdfCraft resamples: gray (1) or RGB (3).
+/// Colour components of a colour space CleonPDF resamples: gray (1) or RGB (3).
 fn components(doc: &Document, cs: &Object) -> Option<usize> {
     let cs = doc.resolve(cs);
     match &*cs {

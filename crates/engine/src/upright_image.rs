@@ -123,11 +123,11 @@ mod tests {
         let stamp = Edit::AddCustomStamp { page: 0, rect: [100.0, 100.0, 100.0, 100.0], name: "Signature".into(), file, author: "Ada".into() };
         session.apply(id, stamp).unwrap();
         let cos = &session.get(id).unwrap().editor.as_ref().unwrap().cos;
-        let picture = pdfcraft_annot::signature_image(cos, 0, 0).unwrap().unwrap();
+        let picture = cleonpdf_annot::signature_image(cos, 0, 0).unwrap().unwrap();
         let obj = cos.get(picture);
-        let pdfcraft_cos::Object::Stream(s) = &*obj else { panic!() };
+        let cleonpdf_cos::Object::Stream(s) = &*obj else { panic!() };
         assert_eq!((s.dict.int(b"Width"), s.dict.int(b"Height")), (Some(20), Some(60)));
-        let rect = pdfcraft_annot::summaries(cos)[0].rect;
+        let rect = cleonpdf_annot::summaries(cos)[0].rect;
         assert!(((rect[2] - rect[0]) - 20.0).abs() < 0.01 && ((rect[3] - rect[1]) - 30.0).abs() < 0.01, "{rect:?}");
     }
 }

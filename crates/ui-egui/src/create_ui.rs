@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use crate::PdfCraftApp;
+use crate::CleonPdfApp;
 use crate::widgets;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -20,7 +20,7 @@ pub struct ImageImport {
     pub dpi: f64,
 }
 
-pub(crate) fn image_import_body(ui: &mut egui::Ui, app: &mut PdfCraftApp) -> (bool, bool) {
+pub(crate) fn image_import_body(ui: &mut egui::Ui, app: &mut CleonPdfApp) -> (bool, bool) {
     ui.heading(tl!("Create PDF from images"));
     let Some(draft) = app.image_import.as_mut() else { return (false, true) };
     ui.label(crate::i18n::fmt(tl!("Selected image files: {count}"), &[("count", &draft.images.len().to_string())]));
@@ -42,7 +42,7 @@ pub(crate) fn image_import_body(ui: &mut egui::Ui, app: &mut PdfCraftApp) -> (bo
 }
 
 /// File types Open accepts besides PDF (converted on open).
-pub use pdfcraft_engine::CONVERTIBLE;
+pub use cleonpdf_engine::CONVERTIBLE;
 
 /// What Create ▸ Clipboard found on the clipboard.
 #[derive(Clone, Debug, PartialEq)]
@@ -85,12 +85,12 @@ fn stem(name: &str) -> &str {
     name.rsplit_once('.').map_or(name, |(s, _)| s)
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     /// Convert a non-PDF file (image, text) into a new tab. Returns `None` when `bytes` is not
     /// something Create understands (the caller then tries to open it as a PDF).
     pub(crate) fn open_converted(&mut self, name: &str, bytes: &[u8]) -> Option<Result<(), String>> {
-        use pdfcraft_engine::SourceKind;
-        if !matches!(pdfcraft_engine::source_kind(name, bytes), Some(SourceKind::Image | SourceKind::Text)) {
+        use cleonpdf_engine::SourceKind;
+        if !matches!(cleonpdf_engine::source_kind(name, bytes), Some(SourceKind::Image | SourceKind::Text)) {
             return None;
         }
         let created = self.session.convert_to_pdf(name, &Arc::new(bytes.to_vec())).map(|(_, pdf)| pdf);
@@ -172,7 +172,7 @@ impl PdfCraftApp {
 
     /// One new document from images (tests and automation call this directly).
     pub fn create_from_images(&mut self, images: Vec<(String, Vec<u8>)>) {
-        self.create_from_images_with_resolution(images, pdfcraft_engine::ImageResolution::Embedded);
+        self.create_from_images_with_resolution(images, cleonpdf_engine::ImageResolution::Embedded);
     }
 
     /// Stage selected images for the DPI chooser; no document is created until confirmed.
@@ -203,15 +203,15 @@ impl PdfCraftApp {
     pub(crate) fn finish_image_import(&mut self) {
         let Some(draft) = self.image_import.take() else { return };
         let resolution = match draft.choice {
-            ResolutionChoice::Image => pdfcraft_engine::ImageResolution::Embedded,
-            ResolutionChoice::Default72 => pdfcraft_engine::ImageResolution::Dpi(72.0),
-            ResolutionChoice::Custom => pdfcraft_engine::ImageResolution::Dpi(draft.dpi),
+            ResolutionChoice::Image => cleonpdf_engine::ImageResolution::Embedded,
+            ResolutionChoice::Default72 => cleonpdf_engine::ImageResolution::Dpi(72.0),
+            ResolutionChoice::Custom => cleonpdf_engine::ImageResolution::Dpi(draft.dpi),
         };
         self.create_from_images_with_resolution(draft.images, resolution);
     }
 
     /// Create directly at the requested resolution (also used by UI tests).
-    pub fn create_from_images_with_resolution(&mut self, images: Vec<(String, Vec<u8>)>, resolution: pdfcraft_engine::ImageResolution) {
+    pub fn create_from_images_with_resolution(&mut self, images: Vec<(String, Vec<u8>)>, resolution: cleonpdf_engine::ImageResolution) {
         if images.is_empty() {
             return;
         }
@@ -226,16 +226,16 @@ impl PdfCraftApp {
     /// Reduce File Size: write a compacted copy with images downsampled (the open document is
     /// unchanged). It runs in the background with a progress bar, like the PDF Optimizer.
     pub(crate) fn reduce_file_size(&mut self) {
-        self.start_optimize(crate::optimize_ui::OptimizeKind::Reduce, &pdfcraft_engine::optimize::Settings::default(), &[]);
+        self.start_optimize(crate::optimize_ui::OptimizeKind::Reduce, &cleonpdf_engine::optimize::Settings::default(), &[]);
     }
 
     /// Save an optimized copy (Reduce File Size, Optimize PDF) next to the original, reporting
     /// the saving. A Reduce File Size copy that isn't smaller is not saved (#490).
     pub(crate) fn save_optimized(
         &mut self,
-        id: pdfcraft_engine::DocId,
+        id: cleonpdf_engine::DocId,
         kind: crate::optimize_ui::OptimizeKind,
-        result: Result<(Arc<Vec<u8>>, String), pdfcraft_engine::EditError>,
+        result: Result<(Arc<Vec<u8>>, String), cleonpdf_engine::EditError>,
     ) {
         let Some(doc) = self.session.get(id) else { return };
         let (before, name) = (doc.bytes.len(), format!("{} ({}).pdf", stem(&doc.name), kind.suffix()));
@@ -254,7 +254,7 @@ impl PdfCraftApp {
             );
             return;
         }
-        let saved = move |app: &mut PdfCraftApp, place: String| {
+        let saved = move |app: &mut CleonPdfApp, place: String| {
             let (b, a) = (crate::panels::human_size(before), crate::panels::human_size(after));
             if after < before {
                 let pct = 100.0 * (1.0 - after as f64 / before.max(1) as f64);

@@ -1,5 +1,5 @@
 [package]
-name = "pdfcraft-redact"
+name = "cleonpdf-redact"
 description = "Redaction (architecture §11.2): marks, apply (glyphs, images, vectors, XObjects, annotations, fields), verification"
 version.workspace = true
 edition.workspace = true
@@ -9,13 +9,13 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-pdfcraft-cos = { workspace = true }
-pdfcraft-content = { workspace = true }
-pdfcraft-fonts = { workspace = true }
-pdfcraft-model = { workspace = true }
-pdfcraft-forms = { workspace = true }
-pdfcraft-edit = { workspace = true }
-pdfcraft-annot = { workspace = true }
+cleonpdf-cos = { workspace = true }
+cleonpdf-content = { workspace = true }
+cleonpdf-fonts = { workspace = true }
+cleonpdf-model = { workspace = true }
+cleonpdf-forms = { workspace = true }
+cleonpdf-edit = { workspace = true }
+cleonpdf-annot = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

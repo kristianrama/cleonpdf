@@ -1,14 +1,14 @@
 //! Redact a PDF in the real shell (egui_kittest): the Redact tool, Redact pages, the apply
 //! confirmation and Clear all.
 
+use cleonpdf_ui_egui::{CleonPdfApp, Dialog};
 use egui::Pos2;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::{Dialog, PdfCraftApp};
 
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, CleonPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, include_bytes!("../data/form.pdf").to_vec()).unwrap();
         app.set_option("zoom", "150").unwrap();
@@ -24,13 +24,13 @@ fn harness() -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn at(h: &Harness<'static, PdfCraftApp>, x: f32, y: f32) -> Pos2 {
+fn at(h: &Harness<'static, CleonPdfApp>, x: f32, y: f32) -> Pos2 {
     let r = h.state().views[0].page_screen_rect(0).expect("on screen");
     let k = r.width() / 300.0;
     r.min + egui::vec2(x * k, y * k)
 }
 
-fn marks(h: &Harness<'static, PdfCraftApp>) -> usize {
+fn marks(h: &Harness<'static, CleonPdfApp>) -> usize {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().redaction_marks()
 }
@@ -99,19 +99,19 @@ fn redaction_codes_become_the_overlay_text() {
     h.run_steps(2);
     let prefs = &h.state().redact_prefs;
     assert_eq!(prefs.overlay_text(), "(b)(6), (b)(7)(C)", "codes in the set's order");
-    let pdfcraft_engine::Edit::AddAnnotation(a) = prefs.mark(0, vec![pdfcraft_engine::rect_quad([10.0, 10.0, 50.0, 30.0])], "T") else {
+    let cleonpdf_engine::Edit::AddAnnotation(a) = prefs.mark(0, vec![cleonpdf_engine::rect_quad([10.0, 10.0, 50.0, 30.0])], "T") else {
         panic!("a mark adds an annotation")
     };
-    assert!(matches!(a.shape, pdfcraft_engine::Shape::Redact { ref overlay, .. } if overlay == "(b)(6), (b)(7)(C)"));
+    assert!(matches!(a.shape, cleonpdf_engine::Shape::Redact { ref overlay, .. } if overlay == "(b)(6), (b)(7)(C)"));
     h.state_mut().redact_prefs.use_code = false;
     assert_eq!(h.state().redact_prefs.overlay_text(), "CONFIDENTIAL", "custom text is kept while codes are used");
 }
 
 #[test]
 fn redacting_an_imported_word_list() {
-    let memo = pdfcraft_engine::Session::new().create_from_text("memo", "Call Ada today\nAda is private\nPublic line").unwrap().to_vec();
+    let memo = cleonpdf_engine::Session::new().create_from_text("memo", "Call Ada today\nAda is private\nPublic line").unwrap().to_vec();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("memo.pdf", None, memo.clone()).unwrap();
         app
@@ -121,24 +121,24 @@ fn redacting_an_imported_word_list() {
     h.run_steps(2);
     h.get_by_label("Multiple words or phrases");
     let list = b"  Ada \n\nprivate\nAda\nabsent\n".to_vec();
-    h.state_mut().use_files(pdfcraft_ui_egui::FilePurpose::RedactWords, vec![("names.txt".into(), list)]);
+    h.state_mut().use_files(cleonpdf_ui_egui::FilePurpose::RedactWords, vec![("names.txt".into(), list)]);
     let d = &h.state().redact_search;
-    assert_eq!((d.mode, d.words.as_str()), (pdfcraft_ui_egui::RedactSearchMode::Words, "Ada\nprivate\nabsent"));
+    assert_eq!((d.mode, d.words.as_str()), (cleonpdf_ui_egui::RedactSearchMode::Words, "Ada\nprivate\nabsent"));
     h.run_steps(2);
     h.get_by_label("3 word(s) or phrase(s)");
     h.get_by_label("Mark all").click();
     h.run_steps(3);
     assert_eq!((marks(&h), h.state().redact_search.found), (3, Some(3)));
     let too_big = vec![b'a'; 2 << 20];
-    h.state_mut().use_files(pdfcraft_ui_egui::FilePurpose::RedactWords, vec![("huge.txt".into(), too_big)]);
+    h.state_mut().use_files(cleonpdf_ui_egui::FilePurpose::RedactWords, vec![("huge.txt".into(), too_big)]);
     assert_eq!(h.state().redact_search.words, "Ada\nprivate\nabsent", "an oversized list changes nothing");
 }
 
 #[test]
 fn redaction_search_can_match_case_and_whole_words() {
-    let memo = pdfcraft_engine::Session::new().create_from_text("memo", "Ada ada Adaline\nAda beta betamax").unwrap().to_vec();
+    let memo = cleonpdf_engine::Session::new().create_from_text("memo", "Ada ada Adaline\nAda beta betamax").unwrap().to_vec();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("memo.pdf", None, memo.clone()).unwrap();
         app
@@ -164,7 +164,7 @@ fn removing_hidden_information_and_sanitizing() {
     h.get_by_label("Remove hidden information");
     {
         let d = &h.state().hidden_draft;
-        let fields = d.found.iter().find(|f| f.0 == pdfcraft_engine::Hidden::FormFields).unwrap();
+        let fields = d.found.iter().find(|f| f.0 == cleonpdf_engine::Hidden::FormFields).unwrap();
         assert_eq!((fields.1, fields.2), (5, true), "five fields, checked");
     }
     h.get_by_label("Remove").click();

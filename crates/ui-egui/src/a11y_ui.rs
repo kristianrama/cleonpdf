@@ -4,13 +4,13 @@
 
 use std::collections::BTreeSet;
 
+use cleonpdf_cos::ObjRef;
+use cleonpdf_engine::DocId;
+use cleonpdf_engine::a11y::{Category, Options, Report, Rule, Status};
 use egui::{Align, Layout};
-use pdfcraft_cos::ObjRef;
-use pdfcraft_engine::DocId;
-use pdfcraft_engine::a11y::{Category, Options, Report, Rule, Status};
 
 use crate::theme::{self, Tokens};
-use crate::{Dialog, PdfCraftApp, PropsTab, RightPanel, icons, widgets};
+use crate::{CleonPdfApp, Dialog, PropsTab, RightPanel, icons, widgets};
 
 /// The options dialog's settings (kept for the session, like Acrobat's).
 #[derive(Clone, Debug, PartialEq)]
@@ -72,7 +72,7 @@ pub(crate) fn fixable(rule: Rule) -> bool {
     matches!(rule, Rule::PrimaryLanguage | Rule::Title | Rule::TabOrder)
 }
 
-pub(crate) fn options_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (bool, bool) {
+pub(crate) fn options_body(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> (bool, bool) {
     let pages = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(1, |d| d.info.pages.len().max(1));
     let o = &mut app.a11y_options;
     o.to = o.to.clamp(1, pages);
@@ -342,7 +342,7 @@ pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, state: &mut A11yState, doc: D
     action
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     /// Check for accessibility: the options first, unless they are turned off.
     pub(crate) fn start_accessibility_check(&mut self) {
         if self.a11y_options.show_dialog {
@@ -412,7 +412,7 @@ impl PdfCraftApp {
         let (y, m, d) = self.session.today();
         // The saved report reads the way the interface reads, down to its `lang` attribute.
         let lang = crate::i18n::current();
-        let html = pdfcraft_engine::a11y::report_html(report, &doc.name, &format!("{y}-{m:02}-{d:02}"), lang.code(), &crate::i18n::words);
+        let html = cleonpdf_engine::a11y::report_html(report, &doc.name, &format!("{y}-{m:02}-{d:02}"), lang.code(), &crate::i18n::words);
         let stem = doc.name.trim_end_matches(".pdf").trim_end_matches(".PDF").to_string();
         let title = tl!("Save the accessibility report").to_string();
         self.write_files(&[(format!("{stem} Accessibility Report.html"), std::sync::Arc::new(html.into_bytes()))], &title);
@@ -492,7 +492,7 @@ impl PdfCraftApp {
 #[derive(Clone, Default)]
 pub struct AltDraft {
     pub doc: Option<DocId>,
-    pub figures: Vec<pdfcraft_engine::a11y::Figure>,
+    pub figures: Vec<cleonpdf_engine::a11y::Figure>,
     pub index: usize,
     pub texts: Vec<String>,
     pub decorative: Vec<bool>,
@@ -507,7 +507,7 @@ impl std::fmt::Debug for AltDraft {
 }
 
 /// Render a figure's area for the dialog, at the preview pane's device resolution.
-fn figure_picture(ctx: &egui::Context, doc: &pdfcraft_engine::Document, f: &pdfcraft_engine::a11y::Figure) -> Option<egui::TextureHandle> {
+fn figure_picture(ctx: &egui::Context, doc: &cleonpdf_engine::Document, f: &cleonpdf_engine::a11y::Figure) -> Option<egui::TextureHandle> {
     let (page, b) = (f.page?, f.bbox?);
     let info = doc.info.pages.get(page)?;
     let (u, v) = (info.user_to_view(b[0] as f32, b[1] as f32), info.user_to_view(b[2] as f32, b[3] as f32));
@@ -515,17 +515,17 @@ fn figure_picture(ctx: &egui::Context, doc: &pdfcraft_engine::Document, f: &pdfc
     let (w, h) = ((x1 - x0).max(1.0), (y1 - y0).max(1.0));
     let ppp = ctx.pixels_per_point().max(1.0);
     let scale = ((380.0 * ppp) / w).min((220.0 * ppp) / h).clamp(0.05, 32.0);
-    let tile = pdfcraft_render::Tile {
+    let tile = cleonpdf_render::Tile {
         x: (x0 * scale).floor().max(0.0) as u32,
         y: (y0 * scale).floor().max(0.0) as u32,
         w: (w * scale).ceil().max(1.0) as u32,
         h: (h * scale).ceil().max(1.0) as u32,
     };
-    let config = pdfcraft_render::RenderConfig { password: doc.password.as_deref().map(std::sync::Arc::from), ..Default::default() };
-    let mut r = pdfcraft_render::PageRenderer::new(doc.bytes.clone(), config);
-    let out = r.render(pdfcraft_render::RenderRequest {
+    let config = cleonpdf_render::RenderConfig { password: doc.password.as_deref().map(std::sync::Arc::from), ..Default::default() };
+    let mut r = cleonpdf_render::PageRenderer::new(doc.bytes.clone(), config);
+    let out = r.render(cleonpdf_render::RenderRequest {
         page,
-        kind: pdfcraft_render::RequestKind::Pixels,
+        kind: cleonpdf_render::RequestKind::Pixels,
         tile: Some(tile),
         scale,
         tag: 0,
@@ -538,7 +538,7 @@ fn figure_picture(ctx: &egui::Context, doc: &pdfcraft_engine::Document, f: &pdfc
     Some(ctx.load_texture("alt-figure", img, egui::TextureOptions::LINEAR))
 }
 
-pub(crate) fn alt_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (bool, bool) {
+pub(crate) fn alt_body(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> (bool, bool) {
     let ctx = ui.ctx().clone();
     let doc = app.alt_draft.doc.and_then(|id| app.session.get(id));
     let d = &mut app.alt_draft;
@@ -607,7 +607,7 @@ pub(crate) fn alt_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> 
     (save, cancel)
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     /// Prepare for accessibility ▸ Add alternate text.
     pub(crate) fn start_alt_text(&mut self) {
         let Some((_, id)) = self.active_ids() else { return };
@@ -630,13 +630,13 @@ impl PdfCraftApp {
         let mut edits = Vec::new();
         for (k, f) in d.figures.iter().enumerate() {
             if d.decorative[k] {
-                edits.push(pdfcraft_engine::Edit::MarkDecorative { figure: f.obj.num });
+                edits.push(cleonpdf_engine::Edit::MarkDecorative { figure: f.obj.num });
             } else if d.texts[k].trim() != f.alt.as_deref().unwrap_or("").trim() {
-                edits.push(pdfcraft_engine::Edit::SetAltText { figure: f.obj.num, alt: Some(d.texts[k].clone()) });
+                edits.push(cleonpdf_engine::Edit::SetAltText { figure: f.obj.num, alt: Some(d.texts[k].clone()) });
             }
         }
         if !edits.is_empty() {
-            self.apply_edit(pdfcraft_engine::Edit::Batch { label: "Set alternate text".into(), edits });
+            self.apply_edit(cleonpdf_engine::Edit::Batch { label: "Set alternate text".into(), edits });
         }
     }
 }

@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use pdfcraft_cos::{SaveOptions, write_full};
+use cleonpdf_cos::{SaveOptions, write_full};
 
 use crate::{DocId, EditError, Hidden, OptimizeReport, Session, guard, optimize};
 
@@ -46,7 +46,7 @@ pub type Optimized = (Arc<Vec<u8>>, OptimizeReport);
 
 /// What an optimization needs, independent of the session.
 pub struct OptimizeJob {
-    cos: pdfcraft_cos::Document,
+    cos: cleonpdf_cos::Document,
     settings: optimize::Settings,
     discard: Vec<Hidden>,
     opts: SaveOptions,
@@ -65,7 +65,7 @@ impl Session {
             cos: editor.cos.clone(),
             settings: settings.clone(),
             discard: discard.to_vec(),
-            opts: SaveOptions { mod_date: self.now().map(pdfcraft_cos::pdf_date), ..SaveOptions::default() },
+            opts: SaveOptions { mod_date: self.now().map(cleonpdf_cos::pdf_date), ..SaveOptions::default() },
         })
     }
 }
@@ -82,7 +82,7 @@ impl OptimizeJob {
         let OptimizeJob { mut cos, settings, discard, opts } = self;
         let mut step = |stage| if progress(stage) { Ok(()) } else { Err(EditError::Cancelled) };
         step(OptimizeStage::Discarding)?;
-        let discarded = if discard.is_empty() { Vec::new() } else { pdfcraft_redact::sanitize::remove_hidden(&mut cos, &discard)? };
+        let discarded = if discard.is_empty() { Vec::new() } else { cleonpdf_redact::sanitize::remove_hidden(&mut cos, &discard)? };
         let report = optimize::optimize_with_progress(&mut cos, &settings, &mut |s| {
             step(match s {
                 optimize::Stage::Images { done, total } => OptimizeStage::Images { done, total },
@@ -95,8 +95,8 @@ impl OptimizeJob {
             e => EditError::Optimize(e.to_string()),
         })?;
         step(OptimizeStage::Merging)?;
-        let all: Vec<pdfcraft_cos::ObjRef> = cos.object_numbers().into_iter().map(|n| pdfcraft_cos::ObjRef::new(n, cos.generation(n))).collect();
-        let merged = pdfcraft_organize::dedupe_resources(&mut cos, &all, false);
+        let all: Vec<cleonpdf_cos::ObjRef> = cos.object_numbers().into_iter().map(|n| cleonpdf_cos::ObjRef::new(n, cos.generation(n))).collect();
+        let merged = cleonpdf_organize::dedupe_resources(&mut cos, &all, false);
         step(OptimizeStage::Writing)?;
         let bytes = write_full(&cos, &opts).map_err(|e| EditError::Write(e.to_string()))?;
         Ok((Arc::new(bytes), OptimizeReport { optimize: report, merged, discarded }))

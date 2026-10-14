@@ -1,6 +1,6 @@
 [package]
-name = "pdfcraft-ui-egui"
-description = "The egui shell of PdfCraft"
+name = "cleonpdf-ui-egui"
+description = "The egui shell of CleonPDF"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,12 +11,12 @@ workspace = true
 
 [dependencies]
 craft-ui = { workspace = true }
-pdfcraft-fonts = { workspace = true }
-pdfcraft-engine = { workspace = true }
-pdfcraft-cos = { workspace = true }
-pdfcraft-render = { workspace = true }
-pdfcraft-model = { workspace = true }
-pdfcraft-platform = { workspace = true }
+cleonpdf-fonts = { workspace = true }
+cleonpdf-engine = { workspace = true }
+cleonpdf-cos = { workspace = true }
+cleonpdf-render = { workspace = true }
+cleonpdf-model = { workspace = true }
+cleonpdf-platform = { workspace = true }
 egui = { workspace = true, features = ["bytemuck"] }
 egui_extras = { workspace = true }
 eframe = { workspace = true, features = ["default_fonts", "wgpu", "accesskit", "persistence", "links"] }
@@ -49,7 +49,7 @@ objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSEvent", "NSScreen"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSGeometry"] }
 # A plain fsync where a volume refuses the full flush `sync_all` asks for (SMB, FUSE); already in
-# the tree through pdfcraft-cli.
+# the tree through cleonpdf-cli.
 rustix = { version = "1", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies]
@@ -66,10 +66,10 @@ js-sys = "0.3"
 web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "HtmlIFrameElement", "HtmlImageElement", "HtmlCollection", "Node", "EventTarget"] }
 
 [dev-dependencies]
-pdfcraft-xfa = { workspace = true }
+cleonpdf-xfa = { workspace = true }
 egui_kittest = { workspace = true, features = ["eframe", "wgpu"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
-# Glyph-coverage test of the interface fonts; the same skrifa pdfcraft-fonts already uses.
+# Glyph-coverage test of the interface fonts; the same skrifa cleonpdf-fonts already uses.
 skrifa = "0.44"
 
 [build-dependencies]

@@ -1,6 +1,6 @@
 //! Properties of reachable indirect structure elements.
 
-use pdfcraft_cos::{CosError, Document, ObjRef, Object, PdfString};
+use cleonpdf_cos::{CosError, Document, ObjRef, Object, PdfString};
 
 use crate::alt;
 
@@ -114,13 +114,13 @@ pub fn move_tag(doc: &mut Document, object: ObjRef, anchor: ObjRef, placement: T
     Ok(())
 }
 
-fn text(doc: &Document, d: &pdfcraft_cos::Dict, key: &[u8]) -> Option<String> {
+fn text(doc: &Document, d: &cleonpdf_cos::Dict, key: &[u8]) -> Option<String> {
     d.get(key).map(|o| doc.resolve(o)).and_then(|o| o.as_string().map(PdfString::to_text))
 }
 
 /// List reachable, indirect tags in structure-tree order.
 pub fn tags(doc: &Document) -> Vec<TagInfo> {
-    let pages = pdfcraft_model::pages(doc);
+    let pages = cleonpdf_model::pages(doc);
     let page_index: std::collections::HashMap<ObjRef, usize> = pages.iter().enumerate().map(|(i, p)| (p.obj, i)).collect();
     alt::elements(doc)
         .into_iter()

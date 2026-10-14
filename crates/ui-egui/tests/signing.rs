@@ -1,10 +1,10 @@
 //! Use a certificate in the real shell: draw a signature, create a digital ID, sign, validate.
 
+use cleonpdf_engine::SignatureStatus;
+use cleonpdf_ui_egui::{CleonPdfApp, Dialog, QuickTool, RightPanel, SignStep};
 use egui::{Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
-use pdfcraft_engine::SignatureStatus;
-use pdfcraft_ui_egui::{Dialog, PdfCraftApp, QuickTool, RightPanel, SignStep};
 
 const FIXTURE: &[u8] = b"%PDF-1.7
 1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
@@ -21,15 +21,15 @@ trailer << /Root 1 0 R >>
 fn dir() -> std::path::PathBuf {
     static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let d = std::env::temp_dir().join(format!("pdfcraft-signing-ui-{}-{n}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("cleonpdf-signing-ui-{}-{n}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).unwrap();
     d
 }
 
-fn harness(dir: std::path::PathBuf) -> Harness<'static, PdfCraftApp> {
+fn harness(dir: std::path::PathBuf) -> Harness<'static, CleonPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("contract.pdf", None, FIXTURE.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -41,12 +41,12 @@ fn harness(dir: std::path::PathBuf) -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn at(h: &Harness<'static, PdfCraftApp>, x: f32, y: f32) -> Pos2 {
+fn at(h: &Harness<'static, CleonPdfApp>, x: f32, y: f32) -> Pos2 {
     let r = h.state().views[0].page_screen_rect(0).expect("page 1 on screen");
     pos2(r.left() + x / 300.0 * r.width(), r.top() + (200.0 - y) / 200.0 * r.height())
 }
 
-fn drag(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'static, CleonPdfApp>, from: Pos2, to: Pos2) {
     h.hover_at(from);
     h.run_steps(1);
     h.drag_at(from);
@@ -59,7 +59,7 @@ fn drag(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
     h.run_steps(3);
 }
 
-fn field<'a>(h: &'a Harness<'static, PdfCraftApp>, label: &'a str) -> egui_kittest::Node<'a> {
+fn field<'a>(h: &'a Harness<'static, CleonPdfApp>, label: &'a str) -> egui_kittest::Node<'a> {
     h.get_all_by_label(label).last().unwrap_or_else(|| panic!("no {label:?}"))
 }
 
@@ -155,7 +155,7 @@ fn drawing_a_signature_creating_an_id_signing_and_trusting() {
     assert!(v.name.contains("signed version") && v.signatures.iter().any(|x| x.signed));
     // Trusted certificates and the ID list persist.
     let saved = s.persist();
-    let mut fresh = PdfCraftApp::new();
+    let mut fresh = CleonPdfApp::new();
     fresh.set_option("language", "en").unwrap();
     fresh.restore(&saved);
     assert_eq!((fresh.digital_ids.len(), fresh.session.trusted_certificates().len()), (1, 1));
@@ -229,7 +229,7 @@ fn clicking_an_empty_signature_field_signs_it() {
     assert_eq!(h.state().dialog, Some(Dialog::Sign));
     assert_eq!(h.state().sign_draft.as_ref().and_then(|d| d.field.clone()).as_deref(), Some("Approver"));
     let entry = {
-        let id = pdfcraft_engine::sign::pkcs12::open(
+        let id = cleonpdf_engine::sign::pkcs12::open(
             &std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../sign/tests/data/ec-p256.p12")).unwrap(),
             "test",
         )
@@ -252,14 +252,14 @@ fn clicking_an_empty_signature_field_signs_it() {
 
 #[test]
 fn the_fill_and_sign_signature_or_an_image_shows_in_a_digital_signature() {
-    use pdfcraft_ui_egui::SignGraphic;
-    use pdfcraft_ui_egui::fill_sign::SavedSig;
+    use cleonpdf_ui_egui::SignGraphic;
+    use cleonpdf_ui_egui::fill_sign::SavedSig;
     let dir = dir().join("graphic");
     std::fs::create_dir_all(&dir).unwrap();
     let mut h = harness(dir.clone());
     let p12 = concat!(env!("CARGO_MANIFEST_DIR"), "/../sign/tests/data/ec-p256.p12");
-    let cert = pdfcraft_engine::sign::pkcs12::open(&std::fs::read(p12).unwrap(), "test").unwrap().certificate;
-    let sign_as = |h: &mut Harness<'static, PdfCraftApp>, rect: [f64; 4]| {
+    let cert = cleonpdf_engine::sign::pkcs12::open(&std::fs::read(p12).unwrap(), "test").unwrap().certificate;
+    let sign_as = |h: &mut Harness<'static, CleonPdfApp>, rect: [f64; 4]| {
         h.state_mut().start_signing(0, Some(rect), None, None);
         let entry = h.state_mut().add_digital_id(p12, &cert);
         let d = h.state_mut().sign_draft.as_mut().unwrap();
@@ -295,7 +295,7 @@ fn the_fill_and_sign_signature_or_an_image_shows_in_a_digital_signature() {
     let image = {
         let mut png = std::io::Cursor::new(Vec::new());
         image::RgbaImage::from_pixel(60, 20, image::Rgba([200, 0, 0, 255])).write_to(&mut png, image::ImageFormat::Png).unwrap();
-        pdfcraft_engine::SignatureImage::from_bytes(png.get_ref()).unwrap()
+        cleonpdf_engine::SignatureImage::from_bytes(png.get_ref()).unwrap()
     };
     h.state_mut().sign_draft.as_mut().unwrap().graphic = SignGraphic::Image(image.clone());
     h.run_steps(2);
@@ -307,7 +307,7 @@ fn the_fill_and_sign_signature_or_an_image_shows_in_a_digital_signature() {
     let signed = std::fs::read(dir.join("contract_signed.pdf")).unwrap();
     assert!(signed.windows(6).any(|w| w == b"/Image"), "the image is embedded");
     assert_eq!(s.session.get(s.views[0].id).unwrap().signatures.iter().filter(|x| x.signed).count(), 2);
-    let mut fresh = PdfCraftApp::new();
+    let mut fresh = CleonPdfApp::new();
     fresh.restore(&s.persist());
     assert_eq!(fresh.sign_graphic, SignGraphic::Image(image));
     // A saved choice that can't be read back falls back to the name.
@@ -317,10 +317,10 @@ fn the_fill_and_sign_signature_or_an_image_shows_in_a_digital_signature() {
 
 #[test]
 fn os_store_identities_are_not_persisted() {
-    let mut app = PdfCraftApp::new();
+    let mut app = CleonPdfApp::new();
     app.set_option("language", "en").unwrap();
     for path in ["windows:Store signer", "keychain:Store signer", "file-id.p12"] {
-        app.digital_ids.push(pdfcraft_ui_egui::DigitalIdEntry {
+        app.digital_ids.push(cleonpdf_ui_egui::DigitalIdEntry {
             path: path.into(),
             name: "Signer".into(),
             issuer: "Test issuer".into(),
@@ -333,7 +333,7 @@ fn os_store_identities_are_not_persisted() {
     let settings: serde_json::Value = serde_json::from_str(&saved).unwrap();
     assert_eq!(settings["digital_ids"].as_array().unwrap().len(), 1);
     assert_eq!(settings["digital_ids"][0]["path"], "file-id.p12");
-    let mut restored = PdfCraftApp::new();
+    let mut restored = CleonPdfApp::new();
     restored.set_option("language", "en").unwrap();
     restored.restore(&saved);
     assert_eq!(restored.digital_ids.len(), 1);
@@ -345,7 +345,7 @@ fn windows_store_identity_does_not_ask_for_a_file_password() {
     let mut h = harness(dir());
     h.state_mut().start_signing(0, None, None, None);
     // A synthetic picker entry exercises the dialog without a real Windows identity.
-    h.state_mut().digital_ids.push(pdfcraft_ui_egui::DigitalIdEntry {
+    h.state_mut().digital_ids.push(cleonpdf_ui_egui::DigitalIdEntry {
         path: "windows:No Such Signer".into(),
         name: "Store signer".into(),
         issuer: "Test issuer".into(),
@@ -361,7 +361,7 @@ fn windows_store_identity_does_not_ask_for_a_file_password() {
     h.run_steps(3);
     h.get_by_label("Sign as \"Store signer\"");
     assert_eq!(h.query_all_by_label("Digital ID password").count(), 0);
-    h.get_by_label("The key is in the Windows certificate store, which may ask to allow PdfCraft to use it.");
+    h.get_by_label("The key is in the Windows certificate store, which may ask to allow CleonPDF to use it.");
     h.get_by_label("Sign").click();
     h.run_steps(3);
     assert_eq!(h.state().dialog, Some(Dialog::Sign));
@@ -375,7 +375,7 @@ fn long_digital_id_names_stay_inside_the_picker() {
     let mut h = harness(dir());
     h.state_mut().start_signing(0, None, None, None);
     let long = "a certificate subject much longer than the picker is wide ".repeat(4);
-    h.state_mut().digital_ids.push(pdfcraft_ui_egui::DigitalIdEntry {
+    h.state_mut().digital_ids.push(cleonpdf_ui_egui::DigitalIdEntry {
         path: "windows:No Such Signer".into(),
         name: long.clone(),
         issuer: long,
@@ -412,7 +412,7 @@ fn long_digital_id_names_stay_inside_the_picker() {
 fn an_unusable_id_is_shown_with_its_reason_and_cannot_be_chosen() {
     let mut h = harness(dir());
     // Not a `windows:` path: those are replaced by the real store listing when signing starts.
-    h.state_mut().digital_ids.push(pdfcraft_ui_egui::DigitalIdEntry {
+    h.state_mut().digital_ids.push(cleonpdf_ui_egui::DigitalIdEntry {
         path: "store-test:broken".into(),
         name: "Broken signer".into(),
         issuer: String::new(),
@@ -432,7 +432,7 @@ fn an_unusable_id_is_shown_with_its_reason_and_cannot_be_chosen() {
     h.run_steps(3);
     assert_eq!(h.state().sign_draft.as_ref().unwrap().step, SignStep::Choose);
     // A usable ID after it is the one selected to begin with.
-    h.state_mut().digital_ids.push(pdfcraft_ui_egui::DigitalIdEntry {
+    h.state_mut().digital_ids.push(cleonpdf_ui_egui::DigitalIdEntry {
         path: "store-test:fine".into(),
         name: "Working signer".into(),
         issuer: "Test issuer".into(),

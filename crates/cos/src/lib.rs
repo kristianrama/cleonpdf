@@ -1,8 +1,8 @@
-//! pdfcraft-cos — the PDF object layer (L1, standalone with `pdfcraft-filters`).
+//! cleonpdf-cos — the PDF object layer (L1, standalone with `cleonpdf-filters`).
 //!
 //! Parses the COS object graph lazily and tolerantly, keeps edits in a copy-on-write overlay
 //! (cheap snapshots for undo), and writes documents back either incrementally (original bytes
-//! untouched) or as a full, garbage-collected rewrite. The PDF object graph *is* PdfCraft's
+//! untouched) or as a full, garbage-collected rewrite. The PDF object graph *is* CleonPDF's
 //! document model (plan/architecture.md §5, ADR-0010).
 //!
 //! Done: every cross-reference form (tables, streams, hybrid `/XRefStm`), object streams, repair
@@ -22,12 +22,12 @@ mod security;
 mod writer;
 
 pub use bytes::Bytes;
+pub use cleonpdf_crypt::{
+    Algorithm, Auth, Method as CryptMethod, NewEncryption, Permissions, SecurityHandler, effective_password, pdfdoc_byte, pdfdoc_char,
+};
 pub use document::{Document, Revision, SourceIdentity, XrefEntry};
 pub use object::{Dict, MAX_DECODED, Name, ObjRef, Object, PdfString, Stream};
 pub use parser::{Lexer, is_whitespace, parse_indirect};
-pub use pdfcraft_crypt::{
-    Algorithm, Auth, Method as CryptMethod, NewEncryption, Permissions, SecurityHandler, effective_password, pdfdoc_byte, pdfdoc_char,
-};
 pub use writer::{SaveOptions, pdf_date, serialize, write_full, write_incremental};
 
 #[derive(Debug, thiserror::Error, Clone, PartialEq)]

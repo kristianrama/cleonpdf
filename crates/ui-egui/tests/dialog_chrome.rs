@@ -1,9 +1,9 @@
 //! Dialog cards keep their padding, and text fields are tall enough to use.
 
+use cleonpdf_ui_egui::CleonPdfApp;
 use egui::accesskit::Role;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::PdfCraftApp;
 
 fn fixture() -> Vec<u8> {
     let objs = [
@@ -26,14 +26,14 @@ fn fixture() -> Vec<u8> {
     out
 }
 
-fn card(h: &Harness<'_, PdfCraftApp>, id: &str) -> egui::Rect {
+fn card(h: &Harness<'_, CleonPdfApp>, id: &str) -> egui::Rect {
     h.ctx.data(|d| d.get_temp(egui::Id::new(id).with("card"))).unwrap_or_else(|| panic!("missing dialog card {id}"))
 }
 
 fn protected() -> Vec<u8> {
-    let mut doc = pdfcraft_cos::Document::open(std::sync::Arc::new(fixture())).unwrap();
-    doc.set_encryption(&pdfcraft_cos::NewEncryption {
-        algorithm: pdfcraft_cos::Algorithm::Aes256,
+    let mut doc = cleonpdf_cos::Document::open(std::sync::Arc::new(fixture())).unwrap();
+    doc.set_encryption(&cleonpdf_cos::NewEncryption {
+        algorithm: cleonpdf_cos::Algorithm::Aes256,
         user_password: "pw",
         owner_password: "owner",
         permissions: -1,
@@ -41,13 +41,13 @@ fn protected() -> Vec<u8> {
         seed: [4; 32],
     })
     .unwrap();
-    pdfcraft_cos::write_full(&doc, &Default::default()).unwrap()
+    cleonpdf_cos::write_full(&doc, &Default::default()).unwrap()
 }
 
 #[test]
 fn document_properties_fields_are_tall_and_inset() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, fixture()).unwrap();
         app.set_option("dialog", "properties").unwrap();
@@ -67,7 +67,7 @@ fn document_properties_fields_are_tall_and_inset() {
 #[test]
 fn password_prompt_field_is_tall_and_inset() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("secret.pdf", None, protected()).unwrap();
         app

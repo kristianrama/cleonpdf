@@ -2,7 +2,7 @@
 
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-12 · **Change:** minor (list all registered interface languages; preserve the original coverage snapshot) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 
-Per-language status of PdfCraft's interface against Acrobat Pro's. How translations work and how to
+Per-language status of CleonPDF's interface against Acrobat Pro's. How translations work and how to
 add a language: [localization.md](localization.md). Summary in [ROADMAP.md](../ROADMAP.md).
 
 ## How this was measured
@@ -69,7 +69,7 @@ none has translated help.
 
 **14 other languages** ship (21 catalogs plus English, 22 interface languages in Preferences).
 The entry counts without percentages were measured on 2026-10-12; they are not percentages of the older 2,143-key snapshot above. Their presence does not imply a detailed linguistic or runtime review.
-Acrobat languages PdfCraft lacks: Danish, Dutch, Finnish, Norwegian, Swedish, Hebrew.
+Acrobat languages CleonPDF lacks: Danish, Dutch, Finnish, Norwegian, Swedish, Hebrew.
 
 ## Revision history
 

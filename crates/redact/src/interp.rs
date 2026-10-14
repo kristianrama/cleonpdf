@@ -20,11 +20,11 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use pdfcraft_content::{Matrix, Op, Pieces, contains, num, overlaps, serialize_ops, string};
-use pdfcraft_cos::{Dict, Document, ObjRef, Object, Stream};
+use cleonpdf_content::{Matrix, Op, Pieces, contains, num, overlaps, serialize_ops, string};
+use cleonpdf_cos::{Dict, Document, ObjRef, Object, Stream};
 
 use crate::{RedactError, Report, image, page_streams, tags};
-use pdfcraft_fonts::pdf::Metrics;
+use cleonpdf_fonts::pdf::Metrics;
 
 const MAX_DEPTH: usize = 12;
 
@@ -255,7 +255,7 @@ pub(crate) fn unlink_doomed(doc: &mut Document, doomed: &[ObjRef]) -> Result<(),
     let Some(top) = doc.root().and_then(|root| doc.get(root).as_dict().and_then(|d| d.reference(b"Pages"))) else { return Ok(()) };
     // Every page-tree node with a /Resources of its own, and the pages that draw through it
     // (the nearest such node above a page, or the page itself). Cycles are cut as in
-    // `pdfcraft_model::pages`.
+    // `cleonpdf_model::pages`.
     let mut holders: Vec<(ObjRef, Vec<ObjRef>)> = Vec::new();
     let mut seen = HashSet::new();
     let mut stack: Vec<(ObjRef, Option<usize>)> = vec![(top, None)];
@@ -277,7 +277,7 @@ pub(crate) fn unlink_doomed(doc: &mut Document, doomed: &[ObjRef]) -> Result<(),
             h.1.push(node);
         }
     }
-    let index: HashMap<ObjRef, usize> = pdfcraft_model::pages(doc).iter().enumerate().map(|(i, p)| (p.obj, i)).collect();
+    let index: HashMap<ObjRef, usize> = cleonpdf_model::pages(doc).iter().enumerate().map(|(i, p)| (p.obj, i)).collect();
     for (node, users) in holders {
         let Some(res) = doc.get(node).as_dict().and_then(|d| d.get(b"Resources")).and_then(|r| doc.resolve(r).as_dict().cloned()) else { continue };
         let mut xo = res_dict(doc, &res, b"XObject");

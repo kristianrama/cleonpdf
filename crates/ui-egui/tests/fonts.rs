@@ -1,8 +1,8 @@
 //! The interface fonts with and without the optional craft-fonts build input (`CRAFT_FONTS_DIR`).
 
+use cleonpdf_ui_egui::theme;
 use egui::epaint::text::{Fonts, TextOptions};
 use egui::{Color32, FontFamily, FontId};
-use pdfcraft_ui_egui::theme;
 
 const JAPANESE: &str = "日本語の文字";
 const CHINESE: &str = "简体中文欢迎";
@@ -23,7 +23,7 @@ fn layout_widths(fonts: &mut Fonts, text: &str) -> Vec<f32> {
 /// from a craft-fonts face placed after the app's own fonts.
 #[test]
 fn japanese_ui_text_uses_craft_fonts() {
-    if pdfcraft_fonts::ui_japanese_fonts().is_empty() {
+    if cleonpdf_fonts::ui_japanese_fonts().is_empty() {
         eprintln!("skipping japanese_ui_text_uses_craft_fonts: built without craft-fonts (set CRAFT_FONTS_DIR to run it)");
         return;
     }
@@ -33,7 +33,7 @@ fn japanese_ui_text_uses_craft_fonts() {
         let first_jp = stack.iter().position(|n| n.starts_with("BIZ UDPGothic")).expect("BIZ UDPGothic is a fallback");
         let own = stack.iter().position(|n| n == "Inter" || n == "JetBrainsMono").expect("the app's own font");
         assert!(own < first_jp, "{family:?}: {stack:?}");
-        assert!(stack[first_jp..].iter().all(|n| pdfcraft_fonts::CRAFT_FONTS.iter().any(|f| f.name() == *n)), "{stack:?}");
+        assert!(stack[first_jp..].iter().all(|n| cleonpdf_fonts::CRAFT_FONTS.iter().any(|f| f.name() == *n)), "{stack:?}");
     }
     let mut fonts = Fonts::new(TextOptions::default(), defs);
     for id in families() {
@@ -50,14 +50,14 @@ fn japanese_ui_text_uses_craft_fonts() {
 /// build input the order part still holds; glyph coverage follows the craft-fonts checkout.
 #[test]
 fn chinese_ui_text_prefers_the_chinese_face() {
-    if pdfcraft_fonts::ui_chinese_fonts().is_empty() {
+    if cleonpdf_fonts::ui_chinese_fonts().is_empty() {
         eprintln!(
             "skipping chinese_ui_text_prefers_the_chinese_face: no Hans face bundled (set CRAFT_FONTS_DIR with an allowed Chinese face to run it)"
         );
         return;
     }
     let defs = theme::font_definitions_for(true);
-    let hans: Vec<String> = pdfcraft_fonts::ui_chinese_fonts().iter().map(|f| f.name()).collect();
+    let hans: Vec<String> = cleonpdf_fonts::ui_chinese_fonts().iter().map(|f| f.name()).collect();
     for family in [FontFamily::Proportional, FontFamily::Monospace] {
         let stack = &defs.families[&family];
         let first_zh = stack.iter().position(|n| hans.iter().any(|h| h == n)).expect("a Hans face is a fallback");
@@ -78,7 +78,7 @@ fn chinese_ui_text_prefers_the_chinese_face() {
 /// face placed after the app's own fonts.
 #[test]
 fn arabic_ui_text_uses_craft_fonts() {
-    let arabic: Vec<String> = pdfcraft_fonts::ui_arabic_fonts().iter().map(|f| f.name()).collect();
+    let arabic: Vec<String> = cleonpdf_fonts::ui_arabic_fonts().iter().map(|f| f.name()).collect();
     if arabic.is_empty() {
         eprintln!("skipping arabic_ui_text_uses_craft_fonts: no Arab face bundled (set CRAFT_FONTS_DIR with an Arabic face to run it)");
         return;
@@ -101,7 +101,7 @@ fn arabic_ui_text_uses_craft_fonts() {
 /// and ష held apart by a zero-width non-joiner.
 #[test]
 fn telugu_ui_text_uses_craft_fonts() {
-    let telugu: Vec<String> = pdfcraft_fonts::CRAFT_FONTS.iter().filter(|f| f.covers("Telu")).map(|f| f.name()).collect();
+    let telugu: Vec<String> = cleonpdf_fonts::CRAFT_FONTS.iter().filter(|f| f.covers("Telu")).map(|f| f.name()).collect();
     if telugu.is_empty() {
         eprintln!("skipping telugu_ui_text_uses_craft_fonts: no Telu face bundled (set CRAFT_FONTS_DIR with a Telugu face to run it)");
         return;
@@ -131,7 +131,7 @@ fn system_fallback_fills_missing_scripts() {
     assert!(!theme::font_definitions().font_data.contains_key(theme::SYSTEM_FALLBACK));
     let defs = theme::installed_font_definitions(theme::CjkPreference::Default);
     if !defs.font_data.contains_key(theme::SYSTEM_FALLBACK) {
-        eprintln!("skipping system_fallback_fills_missing_scripts: no installed fallback font (or PDFCRAFT_SYSTEM_FONTS=0)");
+        eprintln!("skipping system_fallback_fills_missing_scripts: no installed fallback font (or CLEONPDF_SYSTEM_FONTS=0)");
         assert!(defs.families.values().all(|stack| !stack.iter().any(|n| n == theme::SYSTEM_FALLBACK)));
         return;
     }
@@ -142,7 +142,7 @@ fn system_fallback_fills_missing_scripts() {
     let mut fonts = Fonts::new(TextOptions::default(), defs);
     for id in families() {
         assert!(fonts.has_glyphs(&id, ARABIC), "{id:?} lacks {ARABIC}");
-        assert!(fonts.has_glyphs(&id, "PdfCraft"), "{id:?}");
+        assert!(fonts.has_glyphs(&id, "CleonPDF"), "{id:?}");
     }
     assert!(layout_widths(&mut fonts, ARABIC).iter().all(|w| w.is_finite() && *w > 0.0));
 }
@@ -154,7 +154,7 @@ fn system_fallback_covers_devanagari() {
     assert!(!theme::font_definitions().font_data.contains_key(theme::SYSTEM_DEVANAGARI_FALLBACK));
     let defs = theme::installed_font_definitions(theme::CjkPreference::Default);
     if !defs.font_data.contains_key(theme::SYSTEM_DEVANAGARI_FALLBACK) {
-        eprintln!("skipping system_fallback_covers_devanagari: no installed Devanagari fallback font (or PDFCRAFT_SYSTEM_FONTS=0)");
+        eprintln!("skipping system_fallback_covers_devanagari: no installed Devanagari fallback font (or CLEONPDF_SYSTEM_FONTS=0)");
         assert!(defs.families.values().all(|stack| !stack.iter().any(|n| n == theme::SYSTEM_DEVANAGARI_FALLBACK)));
         return;
     }
@@ -177,9 +177,9 @@ fn system_fallback_covers_devanagari() {
 fn system_fallback_covers_telugu() {
     assert!(!theme::font_definitions().font_data.contains_key(theme::SYSTEM_TELUGU_FALLBACK));
     let defs = theme::installed_font_definitions(theme::CjkPreference::Default);
-    let off = std::env::var_os("PDFCRAFT_SYSTEM_FONTS").is_some_and(|v| v == "0");
+    let off = std::env::var_os("CLEONPDF_SYSTEM_FONTS").is_some_and(|v| v == "0");
     if !defs.font_data.contains_key(theme::SYSTEM_TELUGU_FALLBACK) && (off || !cfg!(target_os = "macos")) {
-        eprintln!("skipping system_fallback_covers_telugu: no installed Telugu fallback font (or PDFCRAFT_SYSTEM_FONTS=0)");
+        eprintln!("skipping system_fallback_covers_telugu: no installed Telugu fallback font (or CLEONPDF_SYSTEM_FONTS=0)");
         assert!(defs.families.values().all(|stack| !stack.iter().any(|n| n == theme::SYSTEM_TELUGU_FALLBACK)));
         return;
     }
@@ -212,7 +212,7 @@ fn catalog_han(catalog: &str) -> String {
 /// catalog's characters, and draws every Han character of both Chinese catalogs.
 #[test]
 fn chinese_ui_uses_an_installed_chinese_face() {
-    if !pdfcraft_fonts::ui_chinese_fonts().is_empty() {
+    if !cleonpdf_fonts::ui_chinese_fonts().is_empty() {
         eprintln!("skipping chinese_ui_uses_an_installed_chinese_face: a Hans face is bundled");
         return;
     }
@@ -222,7 +222,7 @@ fn chinese_ui_uses_an_installed_chinese_face() {
     ] {
         let defs = theme::installed_font_definitions(cjk);
         if !defs.font_data.contains_key(theme::SYSTEM_FALLBACK) {
-            eprintln!("skipping chinese_ui_uses_an_installed_chinese_face: no installed Chinese face (or PDFCRAFT_SYSTEM_FONTS=0)");
+            eprintln!("skipping chinese_ui_uses_an_installed_chinese_face: no installed Chinese face (or CLEONPDF_SYSTEM_FONTS=0)");
             return;
         }
         for (family, stack) in &defs.families {
@@ -255,11 +255,11 @@ fn chinese_ui_uses_an_installed_chinese_face() {
 fn ui_fonts_work_without_craft_fonts() {
     let mut fonts = Fonts::new(TextOptions::default(), theme::font_definitions());
     for id in families() {
-        assert!(fonts.has_glyphs(&id, "PdfCraft"), "{id:?}");
-        assert_eq!(fonts.has_glyphs(&id, JAPANESE), !pdfcraft_fonts::ui_japanese_fonts().is_empty(), "{id:?}");
+        assert!(fonts.has_glyphs(&id, "CleonPDF"), "{id:?}");
+        assert_eq!(fonts.has_glyphs(&id, JAPANESE), !cleonpdf_fonts::ui_japanese_fonts().is_empty(), "{id:?}");
     }
     assert!(layout_widths(&mut fonts, JAPANESE).iter().all(|w| w.is_finite() && *w > 0.0));
-    assert!(layout_widths(&mut fonts, "PdfCraft").iter().all(|w| *w > 20.0));
+    assert!(layout_widths(&mut fonts, "CleonPDF").iter().all(|w| *w > 20.0));
     let ctx = egui::Context::default();
     theme::install_fonts(&ctx);
 }

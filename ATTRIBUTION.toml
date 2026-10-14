@@ -2799,7 +2799,7 @@ usage = "ArtCraft branding next to the community links (About dialog, Help menu,
 sha256 = "f87af81b6fa411da8820eed2bfdcc54c0ee9cd453b4e868c64f56c69db142d0e"
 
 [[asset]]
-path = "assets/app-icon/pdfcraft.svg"
+path = "assets/app-icon/cleonpdf.svg"
 title = "PdfCraft app icon (master vector)"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
@@ -2810,7 +2810,7 @@ usage = "Master artwork; every other app-icon file is rendered from it (packagin
 sha256 = "52b384a10a2a7fdd3145d9822972cfd568ef0cb7312549bd4399addd89d45a6d"
 
 [[asset]]
-path = "assets/app-icon/pdfcraft-small.svg"
+path = "assets/app-icon/cleonpdf-small.svg"
 title = "PdfCraft app icon (light vector)"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
@@ -2821,18 +2821,18 @@ usage = "README header and assets/app-icon/README.md"
 sha256 = "b036304c11ef5dcad36636d06ca0bf331b51e47650d25d3c916a0e1eabf544c7"
 
 [[asset]]
-path = "assets/app-icon/pdfcraft-1024.png"
+path = "assets/app-icon/cleonpdf-1024.png"
 title = "PdfCraft app icon, 1024 px on Apple's icon grid"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Runtime window/Dock icon on macOS (apps/pdfcraft/src/main.rs)"
+usage = "Runtime window/Dock icon on macOS (apps/cleonpdf/src/main.rs)"
 sha256 = "da577d3f21fbcf5c739067787a9e683be2b064d76813b5d5fec9074a7a106538"
 
 [[asset]]
-path = "assets/app-icon/pdfcraft.icns"
+path = "assets/app-icon/cleonpdf.icns"
 title = "PdfCraft app icon (macOS .icns)"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
@@ -2843,18 +2843,18 @@ usage = "macOS app bundle icon"
 sha256 = "2425148222873de241d267aba667a8b234ecdd0149f2ca8bb6e79443b743b1e8"
 
 [[asset]]
-path = "assets/app-icon/pdfcraft.ico"
+path = "assets/app-icon/cleonpdf.ico"
 title = "PdfCraft app icon (Windows .ico, 16-256 px)"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Embedded in pdfcraft.exe by apps/pdfcraft/build.rs (Explorer, taskbar, Start menu, Alt-Tab)"
+usage = "Embedded in cleonpdf.exe by apps/cleonpdf/build.rs (Explorer, taskbar, Start menu, Alt-Tab)"
 sha256 = "56daaaae9ae5389794909570885809adf5e1d9183bef2d9669ed2f9bba3ed6f5"
 
 [[asset]]
-path = "assets/app-icon/pdfcraft-document.svg"
+path = "assets/app-icon/cleonpdf-document.svg"
 title = "PdfCraft PDF document icon (master vector)"
 author = "Lucide Icons and Contributors (document outline); PdfCraft contributors (PDF badge, lettering and composition)"
 source = "https://github.com/lucide-icons/lucide (npm lucide-static 1.49.0, icons/file-text.svg); contributor-original composition (assets/app-icon/README.md)"
@@ -2865,117 +2865,117 @@ usage = "Master artwork for the Windows PDF file type icon; rendered by packagin
 sha256 = "8da8278c2b89362be0a960879d453ff879d7544d6d58e47d5389574e8dfff77b"
 
 [[asset]]
-path = "assets/app-icon/pdfcraft-document.ico"
+path = "assets/app-icon/cleonpdf-document.ico"
 title = "PdfCraft PDF document icon (Windows .ico, 16-256 px)"
 author = "Lucide Icons and Contributors (document outline); PdfCraft contributors (PDF badge, lettering and composition)"
 source = "https://github.com/lucide-icons/lucide (npm lucide-static 1.49.0, icons/file-text.svg); contributor-original composition (assets/app-icon/README.md)"
 licence = "ISC AND (MIT OR Apache-2.0)"
 licence_file = "assets/app-icon/LICENSE-document.txt"
 kind = "icon"
-usage = "Embedded in pdfcraft.exe as resource 2; the Windows installer uses it for PdfCraft.Document and Applications/pdfcraft.exe PDF file associations"
+usage = "Embedded in cleonpdf.exe as resource 2; the Windows installer uses it for PdfCraft.Document and Applications/cleonpdf.exe PDF file associations"
 sha256 = "ba3f9128b368fc6d17d376cf62dbdbc22455451c5c8c4779210d7a2a7409b9e6"
 
 [[asset]]
-path = "assets/app-icon/hicolor/16x16/apps/ai.storyteller.pdfcraft.png"
+path = "assets/app-icon/hicolor/16x16/apps/io.github.kristianrama.cleonpdf.png"
 title = "PdfCraft app icon, 16 px"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/ai.storyteller.pdfcraft.desktop)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop)"
 sha256 = "9b77095cbe75dcba6b74a1fdcd4064812850efaf7a12edebefc9ded5eabb49da"
 
 [[asset]]
-path = "assets/app-icon/hicolor/24x24/apps/ai.storyteller.pdfcraft.png"
+path = "assets/app-icon/hicolor/24x24/apps/io.github.kristianrama.cleonpdf.png"
 title = "PdfCraft app icon, 24 px"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/ai.storyteller.pdfcraft.desktop)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop)"
 sha256 = "a4cd466687f6c5cb59eef3fc564bdba1c8f0d9e324754eeebab82f18823efae7"
 
 [[asset]]
-path = "assets/app-icon/hicolor/32x32/apps/ai.storyteller.pdfcraft.png"
+path = "assets/app-icon/hicolor/32x32/apps/io.github.kristianrama.cleonpdf.png"
 title = "PdfCraft app icon, 32 px"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/ai.storyteller.pdfcraft.desktop)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop)"
 sha256 = "e22279013a5ed5c02571e1e4e9bc4cef9aa0847fcb733a285b2916fabd16bf78"
 
 [[asset]]
-path = "assets/app-icon/hicolor/48x48/apps/ai.storyteller.pdfcraft.png"
+path = "assets/app-icon/hicolor/48x48/apps/io.github.kristianrama.cleonpdf.png"
 title = "PdfCraft app icon, 48 px"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/ai.storyteller.pdfcraft.desktop)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop)"
 sha256 = "55daf2d5575f6c4e4c4975c9f1c74231178f1801963a8b19f68dfa9bc50cb22f"
 
 [[asset]]
-path = "assets/app-icon/hicolor/64x64/apps/ai.storyteller.pdfcraft.png"
+path = "assets/app-icon/hicolor/64x64/apps/io.github.kristianrama.cleonpdf.png"
 title = "PdfCraft app icon, 64 px"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/ai.storyteller.pdfcraft.desktop)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop)"
 sha256 = "2975c200f341e247b5fa18f568fb27d390e3fa01e9b2ad37acb48d0e1cc8a124"
 
 [[asset]]
-path = "assets/app-icon/hicolor/128x128/apps/ai.storyteller.pdfcraft.png"
+path = "assets/app-icon/hicolor/128x128/apps/io.github.kristianrama.cleonpdf.png"
 title = "PdfCraft app icon, 128 px"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/ai.storyteller.pdfcraft.desktop)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop)"
 sha256 = "6ef927ca252b40bc9b5d8843d84137334362f8aa1acbb1bf8c15a02affd25b2b"
 
 [[asset]]
-path = "assets/app-icon/hicolor/256x256/apps/ai.storyteller.pdfcraft.png"
+path = "assets/app-icon/hicolor/256x256/apps/io.github.kristianrama.cleonpdf.png"
 title = "PdfCraft app icon, 256 px"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/ai.storyteller.pdfcraft.desktop); runtime window icon on Windows and Linux (apps/pdfcraft/src/main.rs)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop); runtime window icon on Windows and Linux (apps/cleonpdf/src/main.rs)"
 sha256 = "cde7ee8c5ee38f9fc40a429fd9e6d99a035bcd321701fce331bb13bac126614d"
 
 [[asset]]
-path = "assets/app-icon/hicolor/512x512/apps/ai.storyteller.pdfcraft.png"
+path = "assets/app-icon/hicolor/512x512/apps/io.github.kristianrama.cleonpdf.png"
 title = "PdfCraft app icon, 512 px"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/ai.storyteller.pdfcraft.desktop)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop)"
 sha256 = "5ede733e93b96f4eb8d94299232cf2f9605fa19b0d913f95fe9828c316a2d066"
 
 [[asset]]
-path = "assets/app-icon/hicolor/scalable/apps/ai.storyteller.pdfcraft.svg"
+path = "assets/app-icon/hicolor/scalable/apps/io.github.kristianrama.cleonpdf.svg"
 title = "PdfCraft app icon (Linux scalable)"
 author = "PdfCraft contributors (drawn by the project owner in ArtCraft; vectorised with craftrules vectorize_tile.py)"
 source = "Contributor-original (see assets/app-icon/README.md)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/ai.storyteller.pdfcraft.desktop)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop)"
 sha256 = "52b384a10a2a7fdd3145d9822972cfd568ef0cb7312549bd4399addd89d45a6d"
 
 [[asset]]
-path = "docs/images/pdfcraft-bookmarks.png"
+path = "docs/images/cleonpdf-bookmarks.png"
 title = "PdfCraft screenshot: Bookmarks"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -2986,7 +2986,7 @@ usage = "README: navigation. Shows only PdfCraft UI, Lucide icons and the showca
 sha256 = "6daf2dceda8737da0c5f9e7895e5c4cc24cc845938ffca478713c2230573240d"
 
 [[asset]]
-path = "docs/images/pdfcraft-dark.png"
+path = "docs/images/cleonpdf-dark.png"
 title = "PdfCraft screenshot: Dark theme"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -2997,7 +2997,7 @@ usage = "README: themes. Shows only PdfCraft UI, Lucide icons and the showcase P
 sha256 = "18fbd4931b2a8d01a88aef0d5d0837e3cdc12aa35f8529bedbb4a930565d47e5"
 
 [[asset]]
-path = "docs/images/pdfcraft-find.png"
+path = "docs/images/cleonpdf-find.png"
 title = "PdfCraft screenshot: Find text"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3008,7 +3008,7 @@ usage = "README: search. Shows only PdfCraft UI, Lucide icons and the showcase P
 sha256 = "b52771502be4c03e2dabf107c77d5183fad7f39655146d59761dda855c2d4b52"
 
 [[asset]]
-path = "docs/images/pdfcraft-forms.png"
+path = "docs/images/cleonpdf-forms.png"
 title = "PdfCraft screenshot: Interactive form"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3019,7 +3019,7 @@ usage = "README: forms. Shows only PdfCraft UI, Lucide icons and the showcase PD
 sha256 = "f8eb7705056d32e9c8e4d3b8b197c3e500faae08672e4622d6327d2799b536e7"
 
 [[asset]]
-path = "docs/images/pdfcraft-layers.png"
+path = "docs/images/cleonpdf-layers.png"
 title = "PdfCraft screenshot: Layers"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3030,7 +3030,7 @@ usage = "README: layers. Shows only PdfCraft UI, Lucide icons and the showcase P
 sha256 = "20ff9e1c6ecc74d000a7514b82fe9e39f82c8ef5e7c1a52e9060c5ca349020d6"
 
 [[asset]]
-path = "docs/images/pdfcraft-organize.png"
+path = "docs/images/cleonpdf-organize.png"
 title = "PdfCraft screenshot: Organize pages"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3041,7 +3041,7 @@ usage = "README: organize. Shows only PdfCraft UI, Lucide icons and the showcase
 sha256 = "0a309ba73bcfccbe0106824b55fc347cc0b32293d1db68149d5eccec9c087ba1"
 
 [[asset]]
-path = "docs/images/pdfcraft-palette.png"
+path = "docs/images/cleonpdf-palette.png"
 title = "PdfCraft screenshot: Command palette"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3052,7 +3052,7 @@ usage = "README: tools. Shows only PdfCraft UI, Lucide icons and the showcase PD
 sha256 = "74867793e506c03255459e838eef0b08e485c13b7ea8a6b8de3ec16870067eda"
 
 [[asset]]
-path = "docs/images/pdfcraft-properties.png"
+path = "docs/images/cleonpdf-properties.png"
 title = "PdfCraft screenshot: Document properties"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3063,7 +3063,7 @@ usage = "README: metadata. Shows only PdfCraft UI, Lucide icons and the showcase
 sha256 = "86f293543b299fa1665db999a68978138f8d61a4082d7c5b5025498e188da459"
 
 [[asset]]
-path = "docs/images/pdfcraft-scripts.png"
+path = "docs/images/cleonpdf-scripts.png"
 title = "PdfCraft screenshot: Scripts of the world"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3074,7 +3074,7 @@ usage = "README: rendering. Shows only PdfCraft UI, Lucide icons and the showcas
 sha256 = "0dde8ed5a14dee7396379963adff517bd249c7dd0fe494c389b612e643584b15"
 
 [[asset]]
-path = "docs/images/pdfcraft-split.png"
+path = "docs/images/cleonpdf-split.png"
 title = "PdfCraft screenshot: Split dialog"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3085,7 +3085,7 @@ usage = "README: split. Shows only PdfCraft UI, Lucide icons and the showcase PD
 sha256 = "bf31e13b563ead564af968c5fae8d1c07b91ee38867d0cf1aae9e0582efc2fe5"
 
 [[asset]]
-path = "docs/images/pdfcraft-tools.png"
+path = "docs/images/cleonpdf-tools.png"
 title = "PdfCraft screenshot: All tools"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3096,7 +3096,7 @@ usage = "README: tool catalogue. Shows PdfCraft UI, Lucide icons, the showcase P
 sha256 = "61731a921902e285d40826d401f1ef25624dabb8c8ac1f8f0c09c1292a17ee1a"
 
 [[asset]]
-path = "docs/images/pdfcraft-twoup.png"
+path = "docs/images/cleonpdf-twoup.png"
 title = "PdfCraft screenshot: Two-up reading"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3107,7 +3107,7 @@ usage = "README: layouts. Shows only PdfCraft UI, Lucide icons and the showcase 
 sha256 = "a72ed1b84c827e3aa1dd3282d857b4742f02d8ff23fc39b62115c840ebad14b4"
 
 [[asset]]
-path = "docs/images/pdfcraft-viewer.png"
+path = "docs/images/cleonpdf-viewer.png"
 title = "PdfCraft screenshot: Viewer with comments"
 author = "PdfCraft contributors (generated by `cargo xtask screenshots`)"
 source = "this repository"
@@ -3264,7 +3264,7 @@ sha256 = "21808625578fe8d8cd10cb684be546dca077b27cd03a53a2f1ec11dc743c924c"
 path = "packaging/macos/dmg/background.svg"
 title = "PdfCraft macOS DMG window background"
 author = "@XusBadia"
-source = "Original work for this repository, derived from the PdfCraft app icon (assets/app-icon/pdfcraft.svg, referenced via an SVG image element, not copied)"
+source = "Original work for this repository, derived from the PdfCraft app icon (assets/app-icon/cleonpdf.svg, referenced via an SVG image element, not copied)"
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "image"

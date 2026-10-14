@@ -5,7 +5,7 @@
 //! craft-fonts, or the Simplified Chinese interface in a build without a `Hans` face (#826). A
 //! second and a third installed face, [`devanagari_fallback`] and [`telugu_fallback`], draw Hindi
 //! and Telugu when one is installed. It is
-//! read at runtime and never embedded or shipped (AGENTS.md §1.4), and `PDFCRAFT_SYSTEM_FONTS=0`
+//! read at runtime and never embedded or shipped (AGENTS.md §1.4), and `CLEONPDF_SYSTEM_FONTS=0`
 //! turns it off (published screenshots do).
 
 use std::path::{Path, PathBuf};
@@ -57,7 +57,7 @@ pub fn fallback(need: Need) -> Option<Arc<FontData>> {
 }
 
 fn load(need: Need) -> Option<Arc<FontData>> {
-    if std::env::var_os("PDFCRAFT_SYSTEM_FONTS").is_some_and(|v| v == "0") {
+    if std::env::var_os("CLEONPDF_SYSTEM_FONTS").is_some_and(|v| v == "0") {
         return None;
     }
     let (probe, max) = match need {
@@ -83,7 +83,7 @@ pub fn telugu_fallback() -> Option<Arc<FontData>> {
 }
 
 fn script_fallback(candidates: &[PathBuf], probe: char) -> Option<Arc<FontData>> {
-    if std::env::var_os("PDFCRAFT_SYSTEM_FONTS").is_some_and(|v| v == "0") {
+    if std::env::var_os("CLEONPDF_SYSTEM_FONTS").is_some_and(|v| v == "0") {
         return None;
     }
     candidates.iter().find_map(|path| read(path, probe, MAX_BYTES))

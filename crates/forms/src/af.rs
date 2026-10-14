@@ -1103,7 +1103,7 @@ mod tests {
 
 // ── push buttons ────────────────────────────────────────────────────────────────────────────
 
-/// What clicking a push button does (its mouse-up action), as far as PdfCraft can run it
+/// What clicking a push button does (its mouse-up action), as far as CleonPDF can run it
 /// without a JavaScript engine.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ButtonAction {
@@ -1132,11 +1132,11 @@ pub enum ButtonAction {
     },
     /// `app.alert("…")`.
     Alert(String),
-    /// Submit the form to a URL (not sent: PdfCraft never posts form data on its own).
+    /// Submit the form to a URL (not sent: CleonPDF never posts form data on its own).
     Submit(String),
     /// `event.target.buttonImportIcon()`: choose an image for the button (an image field).
     ImportIcon,
-    /// A script PdfCraft can't run yet.
+    /// A script CleonPDF can't run yet.
     Script(String),
 }
 
@@ -1151,7 +1151,7 @@ pub enum LayerOp {
 /// Recognise the common one-line button scripts.
 pub fn button_script(js: &str) -> ButtonAction {
     let t = js.trim();
-    // Print takes an options object whose contents don't change what PdfCraft does.
+    // Print takes an options object whose contents don't change what CleonPDF does.
     if t.starts_with("this.print(") || t.starts_with("print(") || t.contains(";this.print(") || t.contains("; this.print(") {
         return ButtonAction::Named("Print".into());
     }

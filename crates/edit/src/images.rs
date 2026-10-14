@@ -3,9 +3,9 @@
 //! `q … cm … Q` with the extra transform), replace (it draws another XObject in the same place),
 //! or delete. Only the stream that draws it is rewritten, as a new object.
 
+use cleonpdf_content::{Matrix, Op, parse, serialize_ops};
+use cleonpdf_cos::{Dict, Document, ObjRef, Object, Stream};
 use kurbo::{BezPath, Point, Shape};
-use pdfcraft_content::{Matrix, Op, parse, serialize_ops};
-use pdfcraft_cos::{Dict, Document, ObjRef, Object, Stream};
 use std::sync::Arc;
 
 use crate::EditError;
@@ -90,8 +90,8 @@ fn streams(doc: &Document, page: &Dict) -> Vec<(Object, Vec<u8>)> {
         .collect()
 }
 
-fn page_of(doc: &Document, page: usize) -> Result<pdfcraft_model::Page, EditError> {
-    pdfcraft_model::pages(doc).into_iter().nth(page).ok_or(EditError::NoSuchPage(page))
+fn page_of(doc: &Document, page: usize) -> Result<cleonpdf_model::Page, EditError> {
+    cleonpdf_model::pages(doc).into_iter().nth(page).ok_or(EditError::NoSuchPage(page))
 }
 
 fn xobjects(doc: &Document, page: &Dict) -> Dict {
@@ -571,7 +571,7 @@ fn image_transform_scope(ops: &[Op], target: usize) -> Result<Option<(usize, usi
 
 fn transform_image(
     doc: &mut Document,
-    page: &pdfcraft_model::Page,
+    page: &cleonpdf_model::Page,
     streams: &[(Object, Vec<u8>)],
     image: &PageImage,
     transform: [f64; 6],
@@ -589,7 +589,7 @@ fn transform_image(
     let data = streams.get(image.stream).ok_or_else(|| EditError::Invalid("the image stream is missing".into()))?;
     let op = parse(&data.1).ops.get(image.op).cloned().ok_or_else(|| EditError::Invalid("the image operation is missing".into()))?;
     let span = offset.checked_add(op.span.start).ok_or_else(|| EditError::Invalid("the image content is too large".into()))?;
-    let pieces = pdfcraft_content::Pieces::join(&streams.iter().map(|(_, data)| data.as_slice()).collect::<Vec<_>>());
+    let pieces = cleonpdf_content::Pieces::join(&streams.iter().map(|(_, data)| data.as_slice()).collect::<Vec<_>>());
     let ops = pieces.parse().ops;
     let target = ops
         .iter()
@@ -649,7 +649,7 @@ pub(crate) fn translate_images(doc: &mut Document, page: usize, indexes: &[usize
     let mut data = Vec::with_capacity(all.len());
     let mut inside_text = false;
     for (stream, (_, bytes)) in all.iter().enumerate() {
-        let pieces = pdfcraft_content::Pieces::join(&[bytes.as_slice()]);
+        let pieces = cleonpdf_content::Pieces::join(&[bytes.as_slice()]);
         let ops = pieces.parse().ops;
         for (index, op) in ops.iter().enumerate() {
             if op.is("BT") {

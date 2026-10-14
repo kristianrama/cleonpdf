@@ -7,13 +7,13 @@
 
 use std::sync::{Arc, Mutex};
 
+use cleonpdf_engine::optimize::{Compression, ImageSettings, QUALITIES, Settings};
+use cleonpdf_engine::optimizer::{OptimizeStage, Optimized};
+use cleonpdf_engine::{DocId, EditError, Hidden, OptimizeReport};
 use egui::{Align, Layout};
-use pdfcraft_engine::optimize::{Compression, ImageSettings, QUALITIES, Settings};
-use pdfcraft_engine::optimizer::{OptimizeStage, Optimized};
-use pdfcraft_engine::{DocId, EditError, Hidden, OptimizeReport};
 
 use crate::theme::{self, Tokens};
-use crate::{PdfCraftApp, widgets};
+use crate::{CleonPdfApp, widgets};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OptimizeTab {
@@ -226,7 +226,7 @@ pub(crate) fn body(ui: &mut egui::Ui, d: &mut OptimizeDraft, t: &Tokens) -> (boo
 }
 
 /// Audit Space Usage: bytes and share of the file per kind of content.
-pub(crate) fn audit_body(ui: &mut egui::Ui, rows: &[pdfcraft_engine::optimize::SpaceUse], t: &Tokens) -> bool {
+pub(crate) fn audit_body(ui: &mut egui::Ui, rows: &[cleonpdf_engine::optimize::SpaceUse], t: &Tokens) -> bool {
     ui.label(egui::RichText::new(tl!("Space Audit")).font(crate::theme::semibold(18.0)));
     ui.add_space(8.0);
     egui::Grid::new("space-audit").num_columns(3).striped(true).spacing([24.0, 4.0]).show(ui, |ui| {
@@ -238,7 +238,7 @@ pub(crate) fn audit_body(ui: &mut egui::Ui, rows: &[pdfcraft_engine::optimize::S
         for r in rows.iter().filter(|r| r.bytes > 0) {
             // "Patterns" also names the redaction search patterns ("模式"); the audit's PDF
             // graphics objects need their own key.
-            let category = if r.category == pdfcraft_engine::optimize::SpaceCategory::Patterns {
+            let category = if r.category == cleonpdf_engine::optimize::SpaceCategory::Patterns {
                 tl!("Patterns (graphics objects)").to_string()
             } else {
                 tl!(r.category.label()).to_string()
@@ -259,7 +259,7 @@ pub(crate) fn audit_body(ui: &mut egui::Ui, rows: &[pdfcraft_engine::optimize::S
     ok
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     /// Optimize PDF with the dialog's choices on a worker thread; the copy is saved when done.
     pub fn optimize_with_draft(&mut self) {
         let (settings, discard) = (self.optimize_draft.settings.clone(), self.optimize_draft.discard.clone());
@@ -297,7 +297,7 @@ impl PdfCraftApp {
         #[cfg(not(target_arch = "wasm32"))]
         if self.run_inline {
             work();
-        } else if let Err(e) = std::thread::Builder::new().name("pdfcraft-optimize".into()).spawn(work) {
+        } else if let Err(e) = std::thread::Builder::new().name("cleonpdf-optimize".into()).spawn(work) {
             // No worker: report the failure instead of waiting for a result that never comes.
             if let Ok(mut s) = progress.lock() {
                 s.result = Some(Err(EditError::Optimize(e.to_string())));
@@ -368,7 +368,7 @@ mod tests {
         let progress = Arc::new(Mutex::new(OptimizeProgress { stage: OptimizeStage::Images { done: 3, total: 10 }, ..Default::default() }));
         let p = progress.clone();
         let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(move |_cc| {
-            let mut app = PdfCraftApp::new();
+            let mut app = CleonPdfApp::new();
             app.set_option("language", "en").unwrap();
             app.open_bytes("notes.txt", None, b"hello".to_vec()).unwrap();
             let (_, doc) = app.active_ids().unwrap();
@@ -378,7 +378,7 @@ mod tests {
         });
         // 1.5 s (kittest steps a quarter second): the bar has eased in, the toast still shows.
         h.run_steps(6);
-        if let Ok(path) = std::env::var("PDFCRAFT_OPTIMIZE_PROGRESS_SHOT") {
+        if let Ok(path) = std::env::var("CLEONPDF_OPTIMIZE_PROGRESS_SHOT") {
             h.render().unwrap().save(path).unwrap();
         }
         h.get_by_label("Optimizing… image 4 of 10");
@@ -401,7 +401,7 @@ mod tests {
 
     #[test]
     fn a_second_run_is_refused_while_one_is_going() {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("notes.txt", None, b"hello".to_vec()).unwrap();
         let (_, doc) = app.active_ids().unwrap();

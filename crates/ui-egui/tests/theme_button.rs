@@ -1,13 +1,13 @@
 //! The title bar's theme button: a click cycles System, Light and Dark; a right-click opens the
 //! menu with the appearance settings.
 
+use cleonpdf_ui_egui::CleonPdfApp;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::PdfCraftApp;
 
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, CleonPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app
     });
@@ -15,7 +15,7 @@ fn harness() -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn preference(h: &Harness<'static, PdfCraftApp>) -> String {
+fn preference(h: &Harness<'static, CleonPdfApp>) -> String {
     format!("{:?}", h.state().theme_preference)
 }
 

@@ -3874,15 +3874,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft"
+name = "cleonpdf"
 version = "0.8.0"
 dependencies = [
  "eframe",
  "egui",
  "fmv-macos-events",
  "log",
- "pdfcraft-engine",
- "pdfcraft-ui-egui",
+ "cleonpdf-engine",
+ "cleonpdf-ui-egui",
  "pollster 1.0.1",
  "rustls-native-certs",
  "serde_json",
@@ -3896,54 +3896,54 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-a11y"
+name = "cleonpdf-a11y"
 version = "0.8.0"
 dependencies = [
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-filters",
- "pdfcraft-fonts",
- "pdfcraft-model",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-filters",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-annot"
+name = "cleonpdf-annot"
 version = "0.8.0"
 dependencies = [
  "hayro-syntax",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-model",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-audit"
+name = "cleonpdf-audit"
 version = "0.8.0"
 dependencies = [
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-edit",
- "pdfcraft-model",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-edit",
+ "cleonpdf-model",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-automation"
+name = "cleonpdf-automation"
 version = "0.8.0"
 dependencies = [
  "base64 0.22.1",
  "flate2",
  "image",
- "pdfcraft-cos",
- "pdfcraft-engine",
- "pdfcraft-fonts",
- "pdfcraft-model",
- "pdfcraft-organize",
- "pdfcraft-platform",
- "pdfcraft-render",
- "pdfcraft-xfa",
+ "cleonpdf-cos",
+ "cleonpdf-engine",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
+ "cleonpdf-organize",
+ "cleonpdf-platform",
+ "cleonpdf-render",
+ "cleonpdf-xfa",
  "png 0.18.1",
  "serde_json",
  "sha2 0.11.0",
@@ -3951,53 +3951,53 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-cli"
+name = "cleonpdf-cli"
 version = "0.8.0"
 dependencies = [
  "base64 0.22.1",
- "pdfcraft-audit",
- "pdfcraft-automation",
- "pdfcraft-cos",
- "pdfcraft-engine",
- "pdfcraft-render",
+ "cleonpdf-audit",
+ "cleonpdf-automation",
+ "cleonpdf-cos",
+ "cleonpdf-engine",
+ "cleonpdf-render",
  "rustix 1.1.5",
  "serde_json",
  "winresource",
 ]
 
 [[package]]
-name = "pdfcraft-compare"
+name = "cleonpdf-compare"
 version = "0.8.0"
 
 [[package]]
-name = "pdfcraft-content"
+name = "cleonpdf-content"
 version = "0.8.0"
 dependencies = [
- "pdfcraft-cos",
+ "cleonpdf-cos",
 ]
 
 [[package]]
-name = "pdfcraft-cos"
+name = "cleonpdf-cos"
 version = "0.8.0"
 dependencies = [
  "hayro-syntax",
- "pdfcraft-crypt",
- "pdfcraft-filters",
+ "cleonpdf-crypt",
+ "cleonpdf-filters",
  "proptest",
  "serde_json",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-create"
+name = "cleonpdf-create"
 version = "0.8.0"
 dependencies = [
  "encoding_rs",
  "hayro-syntax",
  "image",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-model",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
  "png 0.18.1",
  "thiserror 2.0.21",
  "tiff",
@@ -4005,7 +4005,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-crypt"
+name = "cleonpdf-crypt"
 version = "0.8.0"
 dependencies = [
  "aes",
@@ -4017,66 +4017,66 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-edit"
+name = "cleonpdf-edit"
 version = "0.8.0"
 dependencies = [
  "hayro-syntax",
  "kurbo 0.13.1",
- "pdfcraft-annot",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-model",
+ "cleonpdf-annot",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
  "thiserror 2.0.21",
  "unicode-bidi",
 ]
 
 [[package]]
-name = "pdfcraft-engine"
+name = "cleonpdf-engine"
 version = "0.8.0"
 dependencies = [
  "chrono",
  "icu_properties",
  "idna",
  "image",
- "pdfcraft-a11y",
- "pdfcraft-annot",
- "pdfcraft-audit",
- "pdfcraft-compare",
- "pdfcraft-cos",
- "pdfcraft-create",
- "pdfcraft-edit",
- "pdfcraft-export",
- "pdfcraft-fonts",
- "pdfcraft-forms",
- "pdfcraft-geom",
- "pdfcraft-js",
- "pdfcraft-measure",
- "pdfcraft-model",
- "pdfcraft-ocr",
- "pdfcraft-optimize",
- "pdfcraft-organize",
- "pdfcraft-preflight",
- "pdfcraft-print",
- "pdfcraft-redact",
- "pdfcraft-render",
- "pdfcraft-sign",
- "pdfcraft-xfa",
- "pdfcraft-xfdf",
+ "cleonpdf-a11y",
+ "cleonpdf-annot",
+ "cleonpdf-audit",
+ "cleonpdf-compare",
+ "cleonpdf-cos",
+ "cleonpdf-create",
+ "cleonpdf-edit",
+ "cleonpdf-export",
+ "cleonpdf-fonts",
+ "cleonpdf-forms",
+ "cleonpdf-geom",
+ "cleonpdf-js",
+ "cleonpdf-measure",
+ "cleonpdf-model",
+ "cleonpdf-ocr",
+ "cleonpdf-optimize",
+ "cleonpdf-organize",
+ "cleonpdf-preflight",
+ "cleonpdf-print",
+ "cleonpdf-redact",
+ "cleonpdf-render",
+ "cleonpdf-sign",
+ "cleonpdf-xfa",
+ "cleonpdf-xfdf",
  "png 0.18.1",
  "thiserror 2.0.21",
  "url",
 ]
 
 [[package]]
-name = "pdfcraft-export"
+name = "cleonpdf-export"
 version = "0.8.0"
 dependencies = [
  "flate2",
 ]
 
 [[package]]
-name = "pdfcraft-filters"
+name = "cleonpdf-filters"
 version = "0.8.0"
 dependencies = [
  "flate2",
@@ -4086,92 +4086,92 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-fonts"
+name = "cleonpdf-fonts"
 version = "0.8.0"
 dependencies = [
  "harfrust",
- "pdfcraft-cos",
+ "cleonpdf-cos",
  "skrifa 0.44.0",
  "unicode-bidi",
 ]
 
 [[package]]
-name = "pdfcraft-forms"
+name = "cleonpdf-forms"
 version = "0.8.0"
 dependencies = [
  "hayro-syntax",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-model",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-geom"
+name = "cleonpdf-geom"
 version = "0.8.0"
 
 [[package]]
-name = "pdfcraft-js"
+name = "cleonpdf-js"
 version = "0.8.0"
 dependencies = [
  "boa_engine",
 ]
 
 [[package]]
-name = "pdfcraft-measure"
+name = "cleonpdf-measure"
 version = "0.8.0"
 dependencies = [
- "pdfcraft-annot",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-model",
+ "cleonpdf-annot",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-model",
  "serde",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-model"
+name = "cleonpdf-model"
 version = "0.8.0"
 dependencies = [
- "pdfcraft-cos",
+ "cleonpdf-cos",
 ]
 
 [[package]]
-name = "pdfcraft-ocr"
+name = "cleonpdf-ocr"
 version = "0.8.0"
 dependencies = [
  "ocrs",
- "pdfcraft-fonts",
+ "cleonpdf-fonts",
  "rten",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-optimize"
+name = "cleonpdf-optimize"
 version = "0.8.0"
 dependencies = [
  "image",
- "pdfcraft-annot",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-model",
- "pdfcraft-render",
+ "cleonpdf-annot",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-model",
+ "cleonpdf-render",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-organize"
+name = "cleonpdf-organize"
 version = "0.8.0"
 dependencies = [
  "hayro-syntax",
- "pdfcraft-content",
- "pdfcraft-cos",
+ "cleonpdf-content",
+ "cleonpdf-cos",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-platform"
+name = "cleonpdf-platform"
 version = "0.8.0"
 dependencies = [
  "async-channel",
@@ -4180,40 +4180,40 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-preflight"
+name = "cleonpdf-preflight"
 version = "0.8.0"
 dependencies = [
- "pdfcraft-cos",
- "pdfcraft-model",
+ "cleonpdf-cos",
+ "cleonpdf-model",
 ]
 
 [[package]]
-name = "pdfcraft-print"
+name = "cleonpdf-print"
 version = "0.8.0"
 dependencies = [
  "craft-print",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-model",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-model",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-redact"
+name = "cleonpdf-redact"
 version = "0.8.0"
 dependencies = [
- "pdfcraft-annot",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-edit",
- "pdfcraft-fonts",
- "pdfcraft-forms",
- "pdfcraft-model",
+ "cleonpdf-annot",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-edit",
+ "cleonpdf-fonts",
+ "cleonpdf-forms",
+ "cleonpdf-model",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-render"
+name = "cleonpdf-render"
 version = "0.8.0"
 dependencies = [
  "bytemuck",
@@ -4224,15 +4224,15 @@ dependencies = [
  "kurbo 0.13.1",
  "log",
  "lopdf",
- "pdfcraft-cos",
- "pdfcraft-fonts",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
  "serde",
  "skrifa 0.44.0",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-sign"
+name = "cleonpdf-sign"
 version = "0.8.0"
 dependencies = [
  "aes",
@@ -4251,9 +4251,9 @@ dependencies = [
  "p384",
  "p521",
  "pbkdf2",
- "pdfcraft-annot",
- "pdfcraft-cos",
- "pdfcraft-fonts",
+ "cleonpdf-annot",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
  "rc2",
  "ripemd",
  "rsa",
@@ -4266,7 +4266,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-ui-egui"
+name = "cleonpdf-ui-egui"
 version = "0.8.0"
 dependencies = [
  "arboard",
@@ -4284,13 +4284,13 @@ dependencies = [
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
  "objc2-foundation 0.3.2",
- "pdfcraft-cos",
- "pdfcraft-engine",
- "pdfcraft-fonts",
- "pdfcraft-model",
- "pdfcraft-platform",
- "pdfcraft-render",
- "pdfcraft-xfa",
+ "cleonpdf-cos",
+ "cleonpdf-engine",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
+ "cleonpdf-platform",
+ "cleonpdf-render",
+ "cleonpdf-xfa",
  "png 0.18.1",
  "pollster 1.0.1",
  "rfd",
@@ -4308,25 +4308,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-web"
+name = "cleonpdf-web"
 version = "0.8.0"
 dependencies = [
  "eframe",
  "egui",
  "js-sys",
- "pdfcraft-ui-egui",
+ "cleonpdf-ui-egui",
  "wasm-bindgen-futures",
  "web-sys",
 ]
 
 [[package]]
-name = "pdfcraft-xfa"
+name = "cleonpdf-xfa"
 version = "0.8.0"
 dependencies = [
  "base64 0.22.1",
  "image",
- "pdfcraft-cos",
- "pdfcraft-fonts",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
  "png 0.18.1",
  "roxmltree",
  "sha2 0.11.0",
@@ -4334,13 +4334,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-xfdf"
+name = "cleonpdf-xfdf"
 version = "0.8.0"
 dependencies = [
- "pdfcraft-annot",
- "pdfcraft-cos",
- "pdfcraft-forms",
- "pdfcraft-model",
+ "cleonpdf-annot",
+ "cleonpdf-cos",
+ "cleonpdf-forms",
+ "cleonpdf-model",
  "roxmltree",
  "thiserror 2.0.21",
 ]

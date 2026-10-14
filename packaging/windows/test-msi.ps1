@@ -2,7 +2,7 @@
 .SYNOPSIS
   Check the compiled MSI's install scope, publisher, shortcuts, native UI and OCR models, without installing it.
 .EXAMPLE
-  pwsh packaging/windows/test-msi.ps1 dist/release/pdfcraft-0.2.1-windows-x64.msi
+  pwsh packaging/windows/test-msi.ps1 dist/release/cleonpdf-0.2.1-windows-x64.msi
 #>
 param([Parameter(Mandatory)] [string] $Path)
 $ErrorActionPreference = 'Stop'
@@ -35,7 +35,7 @@ function Assert-NoRow([string] $Sql, [string] $What) {
 # Test the compiled condition with Windows Installer's evaluator, in a restricted session that
 # cannot change machine state. Normal installs/repairs work, per-user overrides fail, and removal
 # of an older incorrectly scoped installation remains possible (#305).
-$scopeMessage = 'PdfCraft must be installed for all users. Run setup with administrator privileges and ALLUSERS=1; per-user installation is not supported.'
+$scopeMessage = 'CleonPDF must be installed for all users. Run setup with administrator privileges and ALLUSERS=1; per-user installation is not supported.'
 $scopeCondition = Read-Row ('SELECT `Condition` FROM `LaunchCondition` WHERE `Description` = ''' + $scopeMessage + '''') 1
 $Installer.UILevel = 2
 $session = $null
@@ -73,15 +73,15 @@ $status = Read-Row 'SELECT `Text` FROM `Control` WHERE `Dialog_` = ''InstallProg
 Assert-Equal $status[0] 'Please wait while setup completes.' 'Persistent progress message'
 Assert-NoRow 'SELECT `Event` FROM `EventMapping` WHERE `Dialog_` = ''InstallProgress'' AND `Control_` = ''Status''' 'progress text subscription'
 
-# Plain (non-advertised) shortcuts to pdfcraft.exe, each in its own component; the desktop one is
+# Plain (non-advertised) shortcuts to cleonpdf.exe, each in its own component; the desktop one is
 # gated by INSTALLDESKTOPSHORTCUT, which is secure so the UI choice reaches the
 # elevated install.
-foreach ($entry in @(@('StartMenuShortcut', 'ProgramMenuFolder', 'PdfcraftStartMenuShortcut', ''),
-                     @('DesktopShortcut', 'DesktopFolder', 'PdfcraftDesktopShortcut', 'INSTALLDESKTOPSHORTCUT = 1'))) {
+foreach ($entry in @(@('StartMenuShortcut', 'ProgramMenuFolder', 'CleonpdfStartMenuShortcut', ''),
+                     @('DesktopShortcut', 'DesktopFolder', 'CleonpdfDesktopShortcut', 'INSTALLDESKTOPSHORTCUT = 1'))) {
   $row = Read-Row ('SELECT `Directory_`, `Target`, `Icon_`, `WkDir`, `Component_` FROM `Shortcut` WHERE `Shortcut` = ''' + $entry[0] + '''') 5
   Assert-Equal $row[0] $entry[1] "$($entry[0]) directory"
-  Assert-Equal $row[1] '[#PdfcraftExe]' "$($entry[0]) target"
-  Assert-Equal $row[2] 'PdfcraftIcon.ico' "$($entry[0]) icon"
+  Assert-Equal $row[1] '[#CleonpdfExe]' "$($entry[0]) target"
+  Assert-Equal $row[2] 'CleonpdfIcon.ico' "$($entry[0]) icon"
   Assert-Equal $row[3] 'INSTALLFOLDER' "$($entry[0]) working directory"
   Assert-Equal $row[4] $entry[2] "$($entry[0]) component"
   $component = Read-Row ('SELECT `Directory_`, `Condition` FROM `Component` WHERE `Component` = ''' + $entry[2] + '''') 2
@@ -104,9 +104,9 @@ try {
   foreach ($case in @(
       @('first install', '', '', '', 1),
       @('first install, INSTALLDESKTOPSHORTCUT=0', '0', '', '', 0),
-      @('update, shortcut still there', '', '{00000000-0000-0000-0000-000000000000}', 'C:\Users\Public\Desktop\PdfCraft.lnk', 1),
+      @('update, shortcut still there', '', '{00000000-0000-0000-0000-000000000000}', 'C:\Users\Public\Desktop\CleonPDF.lnk', 1),
       @('update, shortcut deleted', '', '{00000000-0000-0000-0000-000000000000}', '', 0),
-      @('update, INSTALLDESKTOPSHORTCUT=0', '0', '{00000000-0000-0000-0000-000000000000}', 'C:\Users\Public\Desktop\PdfCraft.lnk', 0))) {
+      @('update, INSTALLDESKTOPSHORTCUT=0', '0', '{00000000-0000-0000-0000-000000000000}', 'C:\Users\Public\Desktop\CleonPDF.lnk', 0))) {
     $session.Property('INSTALLDESKTOPSHORTCUT') = $case[1]
     $session.Property('WIX_UPGRADE_DETECTED') = $case[2]
     $session.Property('EXISTINGDESKTOPSHORTCUT') = $case[3]
@@ -123,44 +123,44 @@ Assert-Equal $checkbox[1] 'INSTALLDESKTOPSHORTCUT' 'Welcome checkbox property'
 if ($checkbox[2] -notmatch 'desktop shortcut') { throw "Welcome checkbox label: '$($checkbox[2])'" }
 $checked = Read-Row 'SELECT `Value` FROM `CheckBox` WHERE `Property` = ''INSTALLDESKTOPSHORTCUT''' 1
 Assert-Equal $checked[0] '1' 'Welcome checkbox value'
-$app = Read-Row 'SELECT `KeyPath` FROM `Component` WHERE `Component` = ''PdfcraftApp''' 1
-Assert-Equal $app[0] 'PdfcraftExe' 'Shortcut executable key path'
+$app = Read-Row 'SELECT `KeyPath` FROM `Component` WHERE `Component` = ''CleonpdfApp''' 1
+Assert-Equal $app[0] 'CleonpdfExe' 'Shortcut executable key path'
 $scope = Read-Row 'SELECT `Value` FROM `Property` WHERE `Property` = ''ALLUSERS''' 1
 Assert-Equal $scope[0] '1' 'Per-machine shortcut scope'
 
 # Image context menu opens the DPI chooser; the app component owns every registry row so
 # uninstall removes it. No image default association is changed.
 foreach ($ext in @('png', 'jpg', 'jpeg', 'tif', 'tiff', 'gif', 'bmp', 'jp2', 'j2k', 'jpx')) {
-  $key = 'Software\Classes\SystemFileAssociations\.' + $ext + '\shell\PdfCraft.CreatePdf'
+  $key = 'Software\Classes\SystemFileAssociations\.' + $ext + '\shell\CleonPDF.CreatePdf'
   $menu = Read-Row ('SELECT `Value`, `Component_`, `Root` FROM `Registry` WHERE `Key` = ''' + $key + ''' AND `Name` IS NULL') 3
-  Assert-Equal $menu[0] 'Create PDF with PdfCraft…' "$ext context menu label"
-  Assert-Equal $menu[1] 'PdfcraftApp' "$ext context menu component"
+  Assert-Equal $menu[0] 'Create PDF with CleonPDF…' "$ext context menu label"
+  Assert-Equal $menu[1] 'CleonpdfApp' "$ext context menu component"
   Assert-Equal $menu[2] '2' "$ext context menu HKLM root"
   $command = Read-Row ('SELECT `Value` FROM `Registry` WHERE `Key` = ''' + $key + '\command''') 1
-  Assert-Equal $command[0] '"[#PdfcraftExe]" --create-images "%1"' "$ext context menu command"
+  Assert-Equal $command[0] '"[#CleonpdfExe]" --create-images "%1"' "$ext context menu command"
   $selection = Read-Row ('SELECT `Value` FROM `Registry` WHERE `Key` = ''' + $key + ''' AND `Name` = ''MultiSelectModel''') 1
   Assert-Equal $selection[0] 'Single' "$ext context menu selection"
 }
 
-# PDF context menu (#682): "Edit with PdfCraft" opens the file in PdfCraft. Its own component, gated
+# PDF context menu (#682): "Edit with CleonPDF" opens the file in CleonPDF. Its own component, gated
 # by INSTALLPDFCONTEXTMENU (default 1, secure, welcome checkbox), with its menu value as key path so
-# uninstall removes it. Several selected PDFs each start pdfcraft.exe "%1" (Document), which the
+# uninstall removes it. Several selected PDFs each start cleonpdf.exe "%1" (Document), which the
 # single-instance hand-off opens as tabs. The .pdf default is never set, so the user's default app
 # stays.
-$pdfKey = 'Software\Classes\SystemFileAssociations\.pdf\shell\PdfCraft.Edit'
+$pdfKey = 'Software\Classes\SystemFileAssociations\.pdf\shell\CleonPDF.Edit'
 $pdfMenu = Read-Row ('SELECT `Registry`, `Value`, `Component_`, `Root` FROM `Registry` WHERE `Key` = ''' + $pdfKey + ''' AND `Name` IS NULL') 4
-Assert-Equal $pdfMenu[1] 'Edit with PdfCraft' 'PDF context menu label'
-Assert-Equal $pdfMenu[2] 'PdfcraftPdfContextMenu' 'PDF context menu component'
+Assert-Equal $pdfMenu[1] 'Edit with CleonPDF' 'PDF context menu label'
+Assert-Equal $pdfMenu[2] 'CleonpdfPdfContextMenu' 'PDF context menu component'
 Assert-Equal $pdfMenu[3] '2' 'PDF context menu HKLM root'
-foreach ($value in @(@('Icon', '"[#PdfcraftExe]",0'), @('MultiSelectModel', 'Document'))) {
+foreach ($value in @(@('Icon', '"[#CleonpdfExe]",0'), @('MultiSelectModel', 'Document'))) {
   $row = Read-Row ('SELECT `Value`, `Component_` FROM `Registry` WHERE `Key` = ''' + $pdfKey + ''' AND `Name` = ''' + $value[0] + '''') 2
   Assert-Equal $row[0] $value[1] "PDF context menu $($value[0])"
-  Assert-Equal $row[1] 'PdfcraftPdfContextMenu' "PDF context menu $($value[0]) component"
+  Assert-Equal $row[1] 'CleonpdfPdfContextMenu' "PDF context menu $($value[0]) component"
 }
 $pdfCommand = Read-Row ('SELECT `Value`, `Component_` FROM `Registry` WHERE `Key` = ''' + $pdfKey + '\command''') 2
-Assert-Equal $pdfCommand[0] '"[#PdfcraftExe]" "%1"' 'PDF context menu command'
-Assert-Equal $pdfCommand[1] 'PdfcraftPdfContextMenu' 'PDF context menu command component'
-$pdfComponent = Read-Row 'SELECT `Condition`, `KeyPath` FROM `Component` WHERE `Component` = ''PdfcraftPdfContextMenu''' 2
+Assert-Equal $pdfCommand[0] '"[#CleonpdfExe]" "%1"' 'PDF context menu command'
+Assert-Equal $pdfCommand[1] 'CleonpdfPdfContextMenu' 'PDF context menu command component'
+$pdfComponent = Read-Row 'SELECT `Condition`, `KeyPath` FROM `Component` WHERE `Component` = ''CleonpdfPdfContextMenu''' 2
 Assert-Equal $pdfComponent[0] 'INSTALLPDFCONTEXTMENU = 1' 'PDF context menu condition'
 Assert-Equal $pdfComponent[1] $pdfMenu[0] 'PDF context menu key path'
 $pdfDefault = Read-Row 'SELECT `Value` FROM `Property` WHERE `Property` = ''INSTALLPDFCONTEXTMENU''' 1
@@ -169,7 +169,7 @@ if (($secure[0] -split ';') -notcontains 'INSTALLPDFCONTEXTMENU') { throw "INSTA
 $pdfCheckbox = Read-Row 'SELECT `Type`, `Property`, `Text` FROM `Control` WHERE `Dialog_` = ''InstallWelcome'' AND `Control` = ''PdfContextMenu''' 3
 Assert-Equal $pdfCheckbox[0] 'CheckBox' 'Welcome PDF context-menu control'
 Assert-Equal $pdfCheckbox[1] 'INSTALLPDFCONTEXTMENU' 'Welcome PDF context-menu property'
-if ($pdfCheckbox[2] -notmatch 'Edit with PdfCraft') { throw "Welcome PDF context-menu label: '$($pdfCheckbox[2])'" }
+if ($pdfCheckbox[2] -notmatch 'Edit with CleonPDF') { throw "Welcome PDF context-menu label: '$($pdfCheckbox[2])'" }
 $pdfChecked = Read-Row 'SELECT `Value` FROM `CheckBox` WHERE `Property` = ''INSTALLPDFCONTEXTMENU''' 1
 Assert-Equal $pdfChecked[0] '1' 'Welcome PDF context-menu value'
 Assert-NoRow 'SELECT `Registry` FROM `Registry` WHERE `Key` = ''Software\Classes\.pdf'' AND `Name` IS NULL' '.pdf default app'
@@ -188,7 +188,7 @@ foreach ($exit in @(@('InstallComplete', '-1'), @('InstallCancelled', '-2'), @('
 }
 $title = Read-Row 'SELECT `Text` FROM `Control` WHERE `Dialog_` = ''InstallComplete'' AND `Control` = ''Title''' 1
 if ($title[0] -notmatch 'completed successfully') { throw 'Success dialog does not confirm completion' }
-# OCR models (#103): installed into models\ beside pdfcraft.exe, where the app looks for them.
+# OCR models (#103): installed into models\ beside cleonpdf.exe, where the app looks for them.
 $modelsDir = Read-Row 'SELECT `Directory_Parent`, `DefaultDir` FROM `Directory` WHERE `Directory` = ''ModelsFolder''' 2
 Assert-Equal $modelsDir[0] 'INSTALLFOLDER' 'OCR models folder parent'
 # DefaultDir is `models`, or `SHORT|models` with a generated 8.3 name.

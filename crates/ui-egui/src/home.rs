@@ -1,11 +1,11 @@
 //! Home tab: recommended tools, open card, pinned folders and recent files (local only, never
 //! another app's list).
 
+use cleonpdf_engine::catalog;
 use egui::{Align2, CornerRadius, Rect, Sense, Stroke, vec2};
-use pdfcraft_engine::catalog;
 
 use crate::theme::{self, Tokens};
-use crate::{PdfCraftApp, icons, panels::human_size, widgets};
+use crate::{CleonPdfApp, icons, panels::human_size, widgets};
 
 const RECOMMENDED: [&str; 5] = ["organize", "comment", "form", "edit", "protect"];
 
@@ -18,11 +18,11 @@ fn card_lift(ui: &egui::Ui, t: &Tokens, rect: Rect, press: theme::Press) {
     }
 }
 
-pub fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+pub fn show(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
         egui::Frame::NONE.inner_margin(egui::Margin { left: 36, right: 36, top: 28, bottom: 28 }).show(ui, |ui| {
-            ui.label(egui::RichText::new(tl!("Welcome to PdfCraft")).font(theme::semibold(24.0)));
+            ui.label(egui::RichText::new(tl!("Welcome to CleonPDF")).font(theme::semibold(24.0)));
             ui.label(
                 egui::RichText::new(tl!("An open-source PDF workbench — local, private, and scriptable."))
                     .color(t.text_muted)
@@ -141,7 +141,7 @@ pub fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
             });
             ui.add_space(8.0);
             if app.recent.is_empty() {
-                ui.label(egui::RichText::new(tl!("Files you open in PdfCraft appear here. Drop a PDF anywhere to open it.")).color(t.text_muted));
+                ui.label(egui::RichText::new(tl!("Files you open in CleonPDF appear here. Drop a PDF anywhere to open it.")).color(t.text_muted));
             }
             let mut open = None;
             let mut remove = None;
@@ -207,7 +207,7 @@ pub fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
             ui.add_space(20.0);
             widgets::section_title(ui, tl!("Privacy"));
             ui.label(
-                egui::RichText::new(tl!("PdfCraft works offline. No telemetry, no account, and no cloud processing unless you add a provider."))
+                egui::RichText::new(tl!("CleonPDF works offline. No telemetry, no account, and no cloud processing unless you add a provider."))
                     .color(t.text_muted),
             );
         });
@@ -224,7 +224,7 @@ mod tests {
         crate::i18n::set_current(de);
         let ctx = egui::Context::default();
         ctx.set_fonts(theme::font_definitions());
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         let blurb = catalog::group("form")
             .unwrap()
             .sections

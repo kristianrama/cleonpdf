@@ -1,6 +1,6 @@
 # MCP conventions
 
-Start explicitly with `pdfcraft-cli mcp [--root DIR] [--compact]`. The server uses JSON lines on
+Start explicitly with `cleonpdf-cli mcp [--root DIR] [--compact]`. The server uses JSON lines on
 stdin/stdout, opens no port, and stops on EOF. `--root` confines all reads and writes, including
 commands invoked through the common tools. Logs stay on stderr.
 
@@ -39,8 +39,8 @@ harmlessly ignored; the server does not provide background export progress or ca
 
 ## Resources and protocol versions
 
-`pdfcraft://document` returns the session's document information (as `doc_inspect` without
-arguments), including an empty `documents` array before any PDF is opened. `pdfcraft://commands`
+`cleonpdf://document` returns the session's document information (as `doc_inspect` without
+arguments), including an empty `documents` array before any PDF is opened. `cleonpdf://commands`
 returns the command catalog (as `command_list`). Existing per-document info, text and page-image
 resources and their templates are preserved.
 

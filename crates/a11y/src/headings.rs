@@ -3,9 +3,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object};
-use pdfcraft_fonts::pdf::Metrics;
-use pdfcraft_model::Page;
+use cleonpdf_cos::{Dict, Document, ObjRef, Object};
+use cleonpdf_fonts::pdf::Metrics;
+use cleonpdf_model::Page;
 
 use crate::alt::{page_content, standard, tree_root};
 
@@ -42,7 +42,7 @@ struct Walker<'a> {
 /// The headings, in document order. Headings without text or a page are left out.
 pub fn headings(doc: &Document) -> Vec<Heading> {
     let Some(root) = tree_root(doc) else { return Vec::new() };
-    let pages = pdfcraft_model::pages(doc);
+    let pages = cleonpdf_model::pages(doc);
     let mut w = Walker {
         doc,
         role_map: root.get(b"RoleMap").map(|o| doc.resolve(o)).and_then(|o| o.as_dict().cloned()).unwrap_or_default(),
@@ -178,7 +178,7 @@ fn mcid_texts(doc: &Document, page: &Dict) -> HashMap<i64, String> {
     let mut font: Option<Vec<u8>> = None;
     let mut stack: Vec<Option<i64>> = Vec::new();
     let mut out: HashMap<i64, String> = HashMap::new();
-    for op in pdfcraft_content::parse(&page_content(doc, page)).ops {
+    for op in cleonpdf_content::parse(&page_content(doc, page)).ops {
         let id = stack.iter().rev().find_map(|m| *m);
         match op.op.as_slice() {
             b"BMC" => stack.push(None),

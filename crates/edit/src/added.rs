@@ -10,8 +10,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object, PdfString, Stream};
-use pdfcraft_fonts::{GlyphError, GlyphOutline, ShapedCluster, ShapedScript, Std14, literal, shape_arabic, shape_thai, shaped_glyph, win_ansi};
+use cleonpdf_cos::{Dict, Document, ObjRef, Object, PdfString, Stream};
+use cleonpdf_fonts::{GlyphError, GlyphOutline, ShapedCluster, ShapedScript, Std14, literal, shape_arabic, shape_thai, shaped_glyph, win_ansi};
 use unicode_bidi::{Level, ParagraphBidiInfo};
 
 use crate::{EditError, MarkKind, check, contents, n, page_list, place_tagged};
@@ -152,8 +152,8 @@ impl AddedImage {
 
     /// The matrix from image space (the unit square) to display space: crop, flip, rotate,
     /// then fill the box.
-    fn matrix(&self) -> pdfcraft_content::Matrix {
-        use pdfcraft_content::Matrix as M;
+    fn matrix(&self) -> cleonpdf_content::Matrix {
+        use cleonpdf_content::Matrix as M;
         let [l, b, r, t] = self.crop.map(|v| v.clamp(0.0, 0.45));
         let (cw, ch) = ((1.0 - l - r).max(0.05), (1.0 - b - t).max(0.05));
         let mut m = M([1.0 / cw, 0.0, 0.0, 1.0 / ch, -l / cw, -b / ch]);
@@ -213,7 +213,7 @@ pub struct Added {
     pub content: Content,
 }
 
-/// PdfCraft-owned page content discovered in one page/content traversal.
+/// CleonPDF-owned page content discovered in one page/content traversal.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct MarkerScan {
     pub marks: Vec<MarkKind>,
@@ -318,26 +318,26 @@ fn is_arabic(c: char) -> bool {
 /// face to draw it). Page-content tools refuse such text; the Add-text editor keeps it open.
 pub fn first_undrawable(t: &AddedText) -> Option<char> {
     if t.text.chars().any(is_thai) {
-        if let Some(c) = t.text.chars().find(|c| is_thai(*c) && !pdfcraft_fonts::thai_has(*c)) {
+        if let Some(c) = t.text.chars().find(|c| is_thai(*c) && !cleonpdf_fonts::thai_has(*c)) {
             return Some(c);
         }
         let rest = AddedText { text: t.text.chars().filter(|c| !is_thai(*c)).collect(), ..t.clone() };
         return first_undrawable(&rest);
     }
     // Arabic that nothing can draw: there's no face, or the face lacks it.
-    if let Some(c) = t.text.chars().find(|c| shaped_arabic(*c) && !pdfcraft_fonts::arabic_has(*c)) {
+    if let Some(c) = t.text.chars().find(|c| shaped_arabic(*c) && !cleonpdf_fonts::arabic_has(*c)) {
         return Some(c);
     }
-    if pdfcraft_fonts::document_arabic_font().is_none() || !t.text.chars().any(is_arabic) {
+    if cleonpdf_fonts::document_arabic_font().is_none() || !t.text.chars().any(is_arabic) {
         // Drawn line by line in the item's standard font (`\n` splits lines). Without the face
         // that is also how `draw` redraws an existing item, so it's checked that way.
-        return t.text.split('\n').find_map(pdfcraft_fonts::first_non_win_ansi);
+        return t.text.split('\n').find_map(cleonpdf_fonts::first_non_win_ansi);
     }
     // What `shaped_layout` leaves to the standard font, exactly as `draw_shaped` splits it.
     wrapped(t).into_iter().find_map(|(line, rtl)| {
         let (pieces, _) = shaped_layout(t, &line, rtl).ok()?;
         pieces.iter().find_map(|p| match p {
-            Piece::Latin(s) => pdfcraft_fonts::first_non_win_ansi(s),
+            Piece::Latin(s) => cleonpdf_fonts::first_non_win_ansi(s),
             Piece::Shaped(_) => None,
         })
     })
@@ -397,7 +397,7 @@ fn shaped_layout(t: &AddedText, line: &str, rtl: bool) -> Result<(Vec<Piece>, f6
         for c in text.chars().filter(|c| !is_bidi_control(*c)) {
             let script = if is_thai(c) {
                 Some(ShapedScript::Thai)
-            } else if is_arabic(c) || (run_rtl && !c.is_alphanumeric() && pdfcraft_fonts::arabic_has(c)) {
+            } else if is_arabic(c) || (run_rtl && !c.is_alphanumeric() && cleonpdf_fonts::arabic_has(c)) {
                 Some(ShapedScript::Arabic)
             } else {
                 None
@@ -442,7 +442,7 @@ fn shaped_width(t: &AddedText, s: &str, rtl: bool) -> f64 {
 
 fn arabic_error(e: GlyphError, text: &str) -> EditError {
     EditError::Invalid(match e {
-        GlyphError::NoFont => "Arabic text needs PdfCraft's Arabic font, which this build doesn't include \
+        GlyphError::NoFont => "Arabic text needs CleonPDF's Arabic font, which this build doesn't include \
                                (to build it in, set CRAFT_FONTS_DIR to a craft-fonts checkout that has an Arab face)"
             .into(),
         GlyphError::Missing => format!("the Arabic font can't show \"{text}\""),
@@ -667,7 +667,7 @@ fn type3_shaped(doc: &mut Document, clusters: &[&ShapedCluster], outlines: &Hash
             },
             |f| f.family,
         ),
-        None => "PdfCraft Shaped Text",
+        None => "CleonPDF Shaped Text",
     };
     let mut descriptor = Dict::new();
     descriptor.set(b"Type".to_vec(), Object::name("FontDescriptor"));
@@ -715,7 +715,7 @@ fn draw(doc: &mut Document, c: &Content, view: [f64; 6], taken: &Dict, existing:
             }
             let mut fonts = Dict::new();
             fonts.set(name.clone().into_bytes(), Object::Dict(font));
-            if t.text.chars().any(is_thai) || (t.text.chars().any(is_arabic) && (pdfcraft_fonts::document_arabic_font().is_some() || !existing)) {
+            if t.text.chars().any(is_thai) || (t.text.chars().any(is_arabic) && (cleonpdf_fonts::document_arabic_font().is_some() || !existing)) {
                 draw_shaped(doc, t, taken, &mut fonts, &mut out)?;
                 res.set(b"Font".to_vec(), Object::Dict(fonts));
                 out.extend_from_slice(b"Q\n");
@@ -868,7 +868,7 @@ fn with_resolved<T>(doc: &Document, object: &Object, f: impl FnOnce(&Object) -> 
     }
 }
 
-fn for_each_content_entry(doc: &Document, page: &pdfcraft_model::Page, mut visit: impl FnMut(&Object)) {
+fn for_each_content_entry(doc: &Document, page: &cleonpdf_model::Page, mut visit: impl FnMut(&Object)) {
     let Some(contents) = page.dict.get(b"Contents") else { return };
     with_resolved(doc, contents, |resolved| match resolved {
         Object::Array(entries) => {
@@ -918,7 +918,7 @@ pub fn scan_markers(doc: &Document) -> MarkerScan {
                             .get(b"UserUnit")
                             .and_then(Object::as_f64)
                             .filter(|u| u.is_finite() && *u >= 1.0)
-                            .map_or(1.0, |u| u.min(pdfcraft_model::MAX_USER_UNIT));
+                            .map_or(1.0, |u| u.min(cleonpdf_model::MAX_USER_UNIT));
                         scan.added.push(Added { page: pi, obj, content: content.scaled(page.user_unit(doc) / written) });
                     }
                 });
@@ -944,16 +944,16 @@ fn validate(c: &Content) -> Result<(), EditError> {
             if (r[2] - r[0]).abs() < 1.0 {
                 return Err(EditError::Invalid("the text box is too narrow".into()));
             }
-            if t.text.chars().any(is_thai) && pdfcraft_fonts::document_thai_font().is_none() {
+            if t.text.chars().any(is_thai) && cleonpdf_fonts::document_thai_font().is_none() {
                 return Err(thai_error(GlyphError::NoFont, &t.text));
             }
             // Without the Arabic face, `draw` decides for the Arabic letters themselves (#403): a new
             // item is refused with what's missing, and one that already holds Arabic stays movable.
             // Everything else in it is drawn in the standard font, so it still has to fit.
-            let undrawable = if t.text.chars().any(shaped_arabic) && pdfcraft_fonts::document_arabic_font().is_none() {
+            let undrawable = if t.text.chars().any(shaped_arabic) && cleonpdf_fonts::document_arabic_font().is_none() {
                 t.text.split('\n').find_map(|line| {
                     line.chars()
-                        .find(|c| !(shaped_arabic(*c) || is_thai(*c) && pdfcraft_fonts::thai_has(*c) || pdfcraft_fonts::win_ansi_encodable(*c)))
+                        .find(|c| !(shaped_arabic(*c) || is_thai(*c) && cleonpdf_fonts::thai_has(*c) || cleonpdf_fonts::win_ansi_encodable(*c)))
                 })
             } else {
                 first_undrawable(t)

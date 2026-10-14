@@ -1,5 +1,5 @@
 [package]
-name = "pdfcraft-print"
+name = "cleonpdf-print"
 description = "Printing: page selection, sizing (fit, actual, shrink, custom), multiple pages per sheet, booklets, posters, comments & forms; print-ready PDF and the system spooler"
 version.workspace = true
 edition.workspace = true
@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 craft-print = { workspace = true }
-pdfcraft-cos = { workspace = true }
-pdfcraft-content = { workspace = true }
-pdfcraft-model = { workspace = true }
+cleonpdf-cos = { workspace = true }
+cleonpdf-content = { workspace = true }
+cleonpdf-model = { workspace = true }
 thiserror = { workspace = true }

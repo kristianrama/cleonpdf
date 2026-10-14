@@ -1,12 +1,12 @@
 //! The Print dialog in the real shell (egui_kittest): settings, preview sheets, Save as PDF.
 
+use cleonpdf_ui_egui::{CleonPdfApp, Dialog};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
-use pdfcraft_ui_egui::{Dialog, PdfCraftApp};
 
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, CleonPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, include_bytes!("data/form.pdf").to_vec()).unwrap();
         app
@@ -40,7 +40,7 @@ fn current_print_page_saves_the_viewed_page_when_labels_restart() {
     }
     bytes.extend_from_slice(format!("trailer << /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objects.len() + 1).as_bytes());
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("labelled.pdf", None, bytes).unwrap();
         app
@@ -58,7 +58,7 @@ fn current_print_page_saves_the_viewed_page_when_labels_restart() {
         h.run_steps(3);
         assert_eq!(h.state().print_draft.current_page, current);
         h.get_by_label("Sheet 1 of 1");
-        let out = std::env::temp_dir().join(format!("pdfcraft-print-current-{}-{current}.pdf", std::process::id()));
+        let out = std::env::temp_dir().join(format!("cleonpdf-print-current-{}-{current}.pdf", std::process::id()));
         h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
         h.state_mut().print_draft.printer = None;
         h.run_steps(1);
@@ -67,10 +67,10 @@ fn current_print_page_saves_the_viewed_page_when_labels_restart() {
         assert_eq!(h.state().dialog, None);
         let saved = std::sync::Arc::new(std::fs::read(&out).unwrap());
         std::fs::remove_file(out).unwrap();
-        let doc = pdfcraft_cos::Document::open(saved.clone()).unwrap();
-        assert_eq!(pdfcraft_model::pages(&doc).len(), 1);
-        let mut renderer = pdfcraft_render::PageRenderer::new(saved, Default::default());
-        let shot = renderer.render(pdfcraft_render::RenderRequest { page: 0, scale: 1.0, ..Default::default() });
+        let doc = cleonpdf_cos::Document::open(saved.clone()).unwrap();
+        assert_eq!(cleonpdf_model::pages(&doc).len(), 1);
+        let mut renderer = cleonpdf_render::PageRenderer::new(saved, Default::default());
+        let shot = renderer.render(cleonpdf_render::RenderRequest { page: 0, scale: 1.0, ..Default::default() });
         assert!(shot.error.is_none(), "{:?}", shot.error);
         let center = ((shot.height / 2 * shot.width + shot.width / 2) * 4) as usize;
         assert_eq!(&shot.rgba[center..center + 3], &expected, "saved the wrong physical page for {current}");
@@ -90,7 +90,7 @@ fn print_dialog_lays_out_sheets_and_saves_a_pdf() {
     h.run_steps(2);
     h.get_by_label("Sheet 1 of 1");
     // No printer on a test machine: Save as PDF.
-    let out = std::env::temp_dir().join(format!("pdfcraft-print-test-{}.pdf", std::process::id()));
+    let out = std::env::temp_dir().join(format!("cleonpdf-print-test-{}.pdf", std::process::id()));
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.state_mut().print_draft.printer = None;
     h.run_steps(1);
@@ -98,15 +98,15 @@ fn print_dialog_lays_out_sheets_and_saves_a_pdf() {
     h.run_steps(3);
     assert_eq!(h.state().dialog, None);
     let bytes = std::fs::read(&out).expect("saved");
-    let doc = pdfcraft_cos::Document::open(std::sync::Arc::new(bytes)).unwrap();
-    assert_eq!(pdfcraft_model::pages(&doc).len(), 1);
+    let doc = cleonpdf_cos::Document::open(std::sync::Arc::new(bytes)).unwrap();
+    assert_eq!(cleonpdf_model::pages(&doc).len(), 1);
     let _ = std::fs::remove_file(out);
 }
 
 /// Pages picked beforehand are what the dialog offers to print (Acrobat's "Selected pages").
 #[test]
 fn print_dialog_prints_the_selected_pages() {
-    use pdfcraft_ui_egui::PrintWhich;
+    use cleonpdf_ui_egui::PrintWhich;
     let mut h = harness();
     let bytes = h.state().session.create_blank(200.0, 300.0, 5).unwrap();
     h.state_mut().open_bytes("five.pdf", None, bytes.as_ref().clone()).unwrap();
@@ -127,7 +127,7 @@ fn print_dialog_prints_the_selected_pages() {
     assert_eq!(h.state().print_draft.which, PrintWhich::Selected);
     h.get_by_label("Selected pages (2)");
     h.get_by_label("Sheet 1 of 2");
-    let out = std::env::temp_dir().join(format!("pdfcraft-print-selected-{}.pdf", std::process::id()));
+    let out = std::env::temp_dir().join(format!("cleonpdf-print-selected-{}.pdf", std::process::id()));
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.state_mut().print_draft.printer = None;
     h.run_steps(1);
@@ -135,8 +135,8 @@ fn print_dialog_prints_the_selected_pages() {
     h.run_steps(3);
     assert_eq!(h.state().dialog, None);
     let saved = std::fs::read(&out).expect("saved");
-    let doc = pdfcraft_cos::Document::open(std::sync::Arc::new(saved)).unwrap();
-    assert_eq!(pdfcraft_model::pages(&doc).len(), 2);
+    let doc = cleonpdf_cos::Document::open(std::sync::Arc::new(saved)).unwrap();
+    assert_eq!(cleonpdf_model::pages(&doc).len(), 2);
     let _ = std::fs::remove_file(out);
     // The selection gone, the remembered choice falls back to the whole document.
     h.state_mut().views[tab].select_pages(&[]);
@@ -151,7 +151,7 @@ fn invalid_ranges_are_explained_in_the_preview() {
     let mut h = harness();
     h.state_mut().execute("print.dialog");
     h.run_steps(2);
-    h.state_mut().print_draft.which = pdfcraft_ui_egui::PrintWhich::Range;
+    h.state_mut().print_draft.which = cleonpdf_ui_egui::PrintWhich::Range;
     h.state_mut().print_draft.range = "7".into();
     h.run_steps(2);
     h.get_by_label_contains("out of range");
@@ -159,7 +159,7 @@ fn invalid_ranges_are_explained_in_the_preview() {
 
 #[test]
 fn cut_stack_dialog_previews_saves_and_refuses_duplex() {
-    use pdfcraft_engine::print::{PageOrder, spool::Duplex};
+    use cleonpdf_engine::print::{PageOrder, spool::Duplex};
     let mut h = harness();
     // Ten source pages, generated using the headless engine.
     let bytes = h.state().session.create_blank(200.0, 300.0, 10).unwrap();
@@ -187,14 +187,14 @@ fn cut_stack_dialog_previews_saves_and_refuses_duplex() {
     assert!(!h.state_mut().print_now());
     h.state_mut().print_draft.duplex = Duplex::Off;
     h.state_mut().print_draft.printer = None;
-    let out = std::env::temp_dir().join(format!("pdfcraft-cut-stack-ui-{}.pdf", std::process::id()));
+    let out = std::env::temp_dir().join(format!("cleonpdf-cut-stack-ui-{}.pdf", std::process::id()));
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.run_steps(2);
     h.get_by_label("Save as PDF").click();
     h.run_steps(3);
     assert_eq!(h.state().dialog, None);
-    let printed = pdfcraft_cos::Document::open(std::sync::Arc::new(std::fs::read(&out).unwrap())).unwrap();
-    assert_eq!(pdfcraft_model::pages(&printed).len(), 3);
+    let printed = cleonpdf_cos::Document::open(std::sync::Arc::new(std::fs::read(&out).unwrap())).unwrap();
+    assert_eq!(cleonpdf_model::pages(&printed).len(), 3);
     let _ = std::fs::remove_file(out);
 }
 
@@ -205,7 +205,7 @@ fn a_failed_save_as_pdf_keeps_the_dialog_open() {
     h.run_steps(3);
     h.state_mut().print_draft.printer = None;
     // A folder that doesn't exist: the write fails.
-    let out = std::env::temp_dir().join(format!("pdfcraft-missing-{}", std::process::id())).join("x.pdf");
+    let out = std::env::temp_dir().join(format!("cleonpdf-missing-{}", std::process::id())).join("x.pdf");
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.run_steps(2);
     h.get_by_label("Save as PDF").click();
@@ -218,7 +218,7 @@ fn a_failed_save_as_pdf_keeps_the_dialog_open() {
 /// Properties… shows the printer driver's own options (CUPS) and sends only those changed.
 #[test]
 fn print_dialog_shows_the_printer_driver_options() {
-    use pdfcraft_engine::print::spool;
+    use cleonpdf_engine::print::spool;
     let mut h = harness();
     assert!(h.state_mut().execute("print.dialog"));
     h.run_steps(3);
@@ -258,7 +258,7 @@ fn print_dialog_shows_the_printer_driver_options() {
 /// the user has already picked a printer.
 #[test]
 fn printers_listed_in_the_background_preselect_the_default_unless_one_was_picked() {
-    use pdfcraft_engine::print::spool::Printer;
+    use cleonpdf_engine::print::spool::Printer;
     use std::sync::{Arc, Mutex};
     let mut h = harness();
     // The source waits until the test lets it answer, so the dialog is seen while it looks.
@@ -312,7 +312,7 @@ fn printers_listed_in_the_background_preselect_the_default_unless_one_was_picked
 #[test]
 fn architectural_page_can_be_matched_at_100_percent() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 1000.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         let bytes = app.session.create_blank(2592.0, 1728.0, 1).unwrap();
         app.open_bytes("architectural.pdf", None, bytes.as_ref().clone()).unwrap();
@@ -330,7 +330,7 @@ fn architectural_page_can_be_matched_at_100_percent() {
     h.get_by_label("Printer paper and scaling may differ. Check driver settings.");
     let settings = h.state().print_draft.settings(1, &[]).unwrap();
     assert_eq!(settings.paper, (1728.0, 2592.0));
-    assert_eq!(settings.layout, pdfcraft_engine::print::Layout::Size(pdfcraft_engine::print::SizeMode::Actual));
+    assert_eq!(settings.layout, cleonpdf_engine::print::Layout::Size(cleonpdf_engine::print::SizeMode::Actual));
 }
 
 #[test]
@@ -339,7 +339,7 @@ fn custom_page_cannot_silently_match_a_standard_paper() {
     assert!(h.state_mut().execute("print.dialog"));
     h.run_steps(3);
     // The 300 x 400 pt fixture is not a standard sheet.
-    assert!(pdfcraft_engine::print::matching_paper((300.0, 400.0)).is_none());
+    assert!(cleonpdf_engine::print::matching_paper((300.0, 400.0)).is_none());
     let before = h.state().print_draft.clone();
     assert!(h.get_by_label("Match page at 100%").accesskit_node().is_disabled());
     h.get_by_label("Match page at 100%").click();
@@ -352,7 +352,7 @@ fn custom_page_cannot_silently_match_a_standard_paper() {
 /// says (some print both sides with it Off), so the dialog says where to change it.
 #[test]
 fn a_printer_without_two_sided_printing_points_to_its_properties() {
-    use pdfcraft_engine::print::spool::Printer;
+    use cleonpdf_engine::print::spool::Printer;
     let mut h = harness();
     h.state_mut().printer_source = Some(std::sync::Arc::new(|| {
         vec![

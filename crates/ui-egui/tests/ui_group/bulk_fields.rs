@@ -1,8 +1,8 @@
 //! Shared properties and multi-selection through the real Prepare-a-form shell.
 
+use cleonpdf_engine::{Edit, FieldFont, FieldProps, FieldValue, NewField, Session, field_flags};
+use cleonpdf_ui_egui::{CleonPdfApp, Dialog, bulk_fields::Tab};
 use egui_kittest::{Harness, kittest::Queryable};
-use pdfcraft_engine::{Edit, FieldFont, FieldProps, FieldValue, NewField, Session, field_flags};
-use pdfcraft_ui_egui::{Dialog, PdfCraftApp, bulk_fields::Tab};
 
 fn fixture() -> Vec<u8> {
     let mut s = Session::new();
@@ -43,9 +43,9 @@ fn fixture() -> Vec<u8> {
     s.save_bytes(id).unwrap().as_ref().clone()
 }
 
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, CleonPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_step_dt(1.0 / 60.0).build_eframe(|_| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         // Saves stamp /ModDate from the clock; pinned, two saves compare equal across a second.
         app.session = std::mem::take(&mut app.session).with_clock(|| 1_700_000_000);
@@ -58,16 +58,16 @@ fn harness() -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn doc<'a>(h: &'a Harness<'static, PdfCraftApp>) -> &'a pdfcraft_engine::Document {
+fn doc<'a>(h: &'a Harness<'static, CleonPdfApp>) -> &'a cleonpdf_engine::Document {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap()
 }
 
-fn bytes(h: &Harness<'static, PdfCraftApp>) -> Vec<u8> {
+fn bytes(h: &Harness<'static, CleonPdfApp>) -> Vec<u8> {
     h.state().session.save_bytes(h.state().views[0].id).unwrap().as_ref().clone()
 }
 
-fn select(h: &mut Harness<'static, PdfCraftApp>, names: &[&str]) {
+fn select(h: &mut Harness<'static, CleonPdfApp>, names: &[&str]) {
     let p = &mut h.state_mut().views[0].prepare;
     p.selected = names.first().map(|n| (n.to_string(), 0));
     p.also = names.iter().skip(1).map(|n| (n.to_string(), 0)).collect();
@@ -349,7 +349,7 @@ fn shared_properties_preserve_unchecked_changes_made_after_the_dialog_opened() {
     h.state_mut().apply_edit(Edit::SetFieldProps {
         name: "beta".into(),
         props: Box::new(FieldProps {
-            appearance: Some(pdfcraft_engine::FieldLookPatch { fill: Some(Some([0.3, 0.7, 0.1])), ..Default::default() }),
+            appearance: Some(cleonpdf_engine::FieldLookPatch { fill: Some(Some([0.3, 0.7, 0.1])), ..Default::default() }),
             ..Default::default()
         }),
     });

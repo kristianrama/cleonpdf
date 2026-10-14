@@ -3,10 +3,10 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
+use cleonpdf_cos::ObjRef;
+use cleonpdf_engine::a11y::{TagInfo, TagPlacement, TagProperty};
+use cleonpdf_engine::{DocId, Edit};
 use egui::Ui;
-use pdfcraft_cos::ObjRef;
-use pdfcraft_engine::a11y::{TagInfo, TagPlacement, TagProperty};
-use pdfcraft_engine::{DocId, Edit};
 
 use crate::{icons, theme::Tokens, widgets};
 
@@ -65,7 +65,7 @@ impl Draft {
 
 impl State {
     /// The document's tags, walked again only after an edit.
-    pub(crate) fn tags(&mut self, doc: &pdfcraft_engine::Document) -> Arc<Vec<TagInfo>> {
+    pub(crate) fn tags(&mut self, doc: &cleonpdf_engine::Document) -> Arc<Vec<TagInfo>> {
         let generation = doc.edit_generation();
         if let Some((id, g, tags)) = &self.cache
             && *id == doc.id

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pdfcraft_cos::{Document, SaveOptions, write_full, write_incremental};
+use cleonpdf_cos::{Document, SaveOptions, write_full, write_incremental};
 
 use super::*;
 
@@ -40,7 +40,7 @@ fn reopen(doc: &Document) -> Document {
 
 /// The decoded content streams of a page, in order.
 fn streams(doc: &Document, page: usize) -> Vec<String> {
-    let p = &pdfcraft_model::pages(doc)[page];
+    let p = &cleonpdf_model::pages(doc)[page];
     let c = p.dict.get(b"Contents").cloned();
     let list = match c.map(|c| doc.resolve(&c)).as_deref() {
         Some(Object::Array(a)) => a.clone(),
@@ -77,7 +77,7 @@ fn header_and_footer_are_drawn_in_display_space_and_wrap_the_original_content() 
     let s0 = streams(&doc, 0);
     // q-wrapper, original, Q-wrapper, header/footer.
     assert_eq!(s0.len(), 4, "{s0:?}");
-    assert_eq!((s0[0].as_str(), s0[2].as_str()), ("q %PdfCraft\n", "Q %PdfCraft\n"));
+    assert_eq!((s0[0].as_str(), s0[2].as_str()), ("q %CleonPDF\n", "Q %CleonPDF\n"));
     let mark = &s0[3];
     assert!(mark.contains("/PCMark /HeaderFooter") && mark.contains("(Page 1 of 3) Tj") && mark.contains("(Confidential \\(draft\\)) Tj"), "{mark}");
     assert!(mark.contains("1 0 0 1 0 0 cm"), "upright page: identity");
@@ -86,11 +86,11 @@ fn header_and_footer_are_drawn_in_display_space_and_wrap_the_original_content() 
     assert!(s1.last().unwrap().contains("0 1 -1 0 600 0 cm") && s1.last().unwrap().contains("(Page 2 of 3)"), "{s1:?}");
     // A page without content gets just the mark; its inherited resources are copied, not changed.
     assert_eq!(streams(&doc, 2).len(), 1);
-    let p2 = &pdfcraft_model::pages(&doc)[2];
+    let p2 = &cleonpdf_model::pages(&doc)[2];
     let res = doc.resolve(p2.dict.get(b"Resources").unwrap());
     let fonts = doc.resolve(res.as_dict().unwrap().get(b"Font").unwrap());
     assert!(fonts.as_dict().unwrap().contains(b"PCHelv") && fonts.as_dict().unwrap().contains(b"F1"));
-    let shared = doc.get(pdfcraft_cos::ObjRef::new(6, 0));
+    let shared = doc.get(cleonpdf_cos::ObjRef::new(6, 0));
     let shared_fonts = doc.resolve(shared.as_dict().unwrap().get(b"Font").unwrap());
     assert!(!shared_fonts.as_dict().unwrap().contains(b"PCHelv"), "the shared dictionary is untouched");
     assert_eq!(marks_present(&doc), [MarkKind::HeaderFooter]);
@@ -185,7 +185,7 @@ fn invalid_requests_change_nothing() {
 
 #[test]
 fn flattening_draws_appearances_into_the_page_and_removes_the_comments() {
-    use pdfcraft_annot::{Meta, NewAnnotation, NoteIcon, Shape, Style, add_annotation, add_reply};
+    use cleonpdf_annot::{Meta, NewAnnotation, NoteIcon, Shape, Style, add_annotation, add_reply};
     let mut doc = fixture();
     let meta = Meta { date: None, id: "x".into() };
     let add = |doc: &mut Document, shape: Shape| {
@@ -199,7 +199,7 @@ fn flattening_draws_appearances_into_the_page_and_removes_the_comments() {
     let n = flatten(&mut doc, &[0], true, false).unwrap();
     assert_eq!(n, 2, "the rectangle and the note icon are drawn; the reply has nothing to draw");
     let doc = reopen(&doc);
-    let p = &pdfcraft_model::pages(&doc)[0];
+    let p = &cleonpdf_model::pages(&doc)[0];
     assert!(!p.dict.contains(b"Annots"), "comments, pop-up and reply are gone");
     let s = streams(&doc, 0);
     assert_eq!(s.len(), before.len() + 3, "wrapped original + flattened content: {s:?}");
@@ -234,7 +234,7 @@ fn flattening_keeps_a_cloudy_square_it_cannot_draw() {
         let before = streams(&doc, 0);
         assert_eq!(flatten(&mut doc, &[0], true, false).unwrap(), drawn);
         let doc = reopen(&doc);
-        let p = &pdfcraft_model::pages(&doc)[0];
+        let p = &cleonpdf_model::pages(&doc)[0];
         assert_eq!(p.dict.contains(b"Annots"), left);
         if drawn == 0 {
             assert_eq!(streams(&doc, 0), before, "nothing was drawn in place of the comment");
@@ -260,7 +260,7 @@ fn flattening_keeps_a_note_whose_appearance_is_missing() {
     ]);
     assert_eq!(flatten(&mut doc, &[0], true, false).unwrap(), 1, "the note icon is drawn");
     let doc = reopen(&doc);
-    let p = &pdfcraft_model::pages(&doc)[0];
+    let p = &cleonpdf_model::pages(&doc)[0];
     assert!(!p.dict.contains(b"Annots"), "the note is gone once its icon is baked in");
     let flat = streams(&doc, 0).pop().unwrap();
     assert!(flat.contains("q 1 0 0 1 10 10 cm /PCFl0 Do Q"), "{flat}");
@@ -290,13 +290,13 @@ fn flattening_fields_drops_the_ones_on_no_page() {
     let root = doc.root().unwrap();
     let af = doc.resolve(doc.get(root).as_dict().unwrap().get(b"AcroForm").unwrap());
     let fields = doc.resolve(af.as_dict().unwrap().get(b"Fields").unwrap());
-    let left: Vec<pdfcraft_cos::ObjRef> = fields.as_array().unwrap().iter().filter_map(|f| f.as_ref()).collect();
-    assert_eq!(left, [pdfcraft_cos::ObjRef::new(7, 0)], "only the hidden field on the page stays");
+    let left: Vec<cleonpdf_cos::ObjRef> = fields.as_array().unwrap().iter().filter_map(|f| f.as_ref()).collect();
+    assert_eq!(left, [cleonpdf_cos::ObjRef::new(7, 0)], "only the hidden field on the page stays");
 }
 
 /// Flattening never makes a `?` permanent: it refuses, changing nothing, a text box without an
 /// appearance whose text Helvetica can't draw (another program's), and a comment or form field
-/// whose appearance PdfCraft drew with `?` (marked `PCUndrawn`). A comment another program drew
+/// whose appearance CleonPDF drew with `?` (marked `PCUndrawn`). A comment another program drew
 /// with a font that has those characters (an appearance, no mark) flattens as before.
 #[test]
 fn flattening_refuses_what_would_bake_in_question_marks() {
@@ -314,7 +314,7 @@ fn flattening_refuses_what_would_bake_in_question_marks() {
         let err = flatten(&mut doc, &[0], comments, fields).unwrap_err().to_string();
         assert!(err.contains(what) && err.contains("page 1") && err.contains("\"欢\" (U+6B22)") && err.contains("nothing was flattened"), "{err}");
         assert_eq!(write_incremental(&doc, &SaveOptions::default()).unwrap(), before, "a refused flatten changes nothing");
-        assert!(pdfcraft_model::pages(&doc)[0].dict.contains(b"Annots"), "the annotation is still there");
+        assert!(cleonpdf_model::pages(&doc)[0].dict.contains(b"Annots"), "the annotation is still there");
     };
     refused(
         "<< /Type /Annot /Subtype /FreeText /Rect [10 10 150 40] /DA (0 g /Helv 12 Tf) /Contents <FEFF6B228FCE> /F 4 >>",
@@ -352,7 +352,7 @@ fn flattening_refuses_what_would_bake_in_question_marks() {
 #[test]
 fn added_items_follow_the_page_user_unit() {
     let mut doc = fixture();
-    let page = pdfcraft_model::pages(&doc)[2].obj;
+    let page = cleonpdf_model::pages(&doc)[2].obj;
     doc.update_dict(page, |d| d.set(b"UserUnit".to_vec(), Object::Int(2))).unwrap();
     let text = AddedText { rect: [72.0, 600.0, 300.0, 700.0], text: "Scaled".into(), size: 14.0, ..AddedText::default() };
     add_content(&mut doc, 2, &Content::Text(text.clone())).unwrap();
@@ -396,12 +396,12 @@ fn added_text_params() -> Dict {
     let mut params = Dict::new();
     params.set(b"Rect".to_vec(), Object::Array([10, 20, 110, 40].into_iter().map(Object::Int).collect()));
     params.set(b"Kind".to_vec(), Object::name("Text"));
-    params.set(b"Text".to_vec(), Object::String(pdfcraft_cos::PdfString::text("Added text")));
+    params.set(b"Text".to_vec(), Object::String(cleonpdf_cos::PdfString::text("Added text")));
     params.set(b"Size".to_vec(), Object::Int(12));
     params
 }
 
-fn added_image_params(image: pdfcraft_cos::ObjRef) -> Dict {
+fn added_image_params(image: cleonpdf_cos::ObjRef) -> Dict {
     let mut params = Dict::new();
     params.set(b"Rect".to_vec(), Object::Array([10, 20, 110, 70].into_iter().map(Object::Int).collect()));
     params.set(b"Kind".to_vec(), Object::name("Image"));
@@ -410,7 +410,7 @@ fn added_image_params(image: pdfcraft_cos::ObjRef) -> Dict {
 }
 
 fn set_page_contents(doc: &mut Document, contents: Object, user_unit: Option<Object>) {
-    let page = pdfcraft_model::pages(doc)[0].obj;
+    let page = cleonpdf_model::pages(doc)[0].obj;
     doc.update_dict(page, |dict| {
         dict.set(b"Contents".to_vec(), contents);
         if let Some(user_unit) = user_unit {
@@ -501,7 +501,7 @@ fn combined_marker_scan_matches_the_independent_scans() {
     let mut malformed = fixture();
     let indirect_mark = malformed.add(Object::Dict(tagged_dictionary("HeaderFooter", None)));
     let missing_added = tagged_stream(&mut malformed, "Added", None);
-    let invalid_added = tagged_stream(&mut malformed, "Added", Some(Object::String(pdfcraft_cos::PdfString::text("bad params"))));
+    let invalid_added = tagged_stream(&mut malformed, "Added", Some(Object::String(cleonpdf_cos::PdfString::text("bad params"))));
     let unknown = tagged_stream(&mut malformed, "FutureKind", None);
     let direct_watermark = Object::Dict(tagged_dictionary("Watermark", None));
     let direct_added = Object::Dict(tagged_dictionary("Added", Some(Object::Dict(added_text_params()))));
@@ -600,7 +600,7 @@ fn added_arabic_text_is_shaped_in_display_order_and_stays_searchable() {
     let mut doc = fixture();
     let text =
         AddedText { rect: [72.0, 600.0, 400.0, 700.0], text: "مرحبا World".into(), size: 14.0, align: Align::Right, ..AddedText::default() };
-    if pdfcraft_fonts::document_arabic_font().is_none() {
+    if cleonpdf_fonts::document_arabic_font().is_none() {
         eprintln!("skipping the Arabic drawing checks: built without a craft-fonts Arab face (set CRAFT_FONTS_DIR)");
         let err = add_content(&mut doc, 0, &Content::Text(text)).unwrap_err();
         assert!(matches!(&err, EditError::Invalid(m) if m.contains("CRAFT_FONTS_DIR")), "{err:?}");
@@ -626,7 +626,7 @@ fn added_arabic_text_is_shaped_in_display_order_and_stays_searchable() {
     let arabic_x = x_before(item, item[arabic_at..].find(" Tj").unwrap() + arabic_at);
     assert!(latin_x < arabic_x, "{item}");
     // The Arabic glyphs come from Type 3 fonts whose ToUnicode maps give back each letter.
-    let p = &pdfcraft_model::pages(&doc)[0];
+    let p = &cleonpdf_model::pages(&doc)[0];
     let res = doc.resolve(p.dict.get(b"Resources").unwrap());
     let fonts = doc.resolve(res.as_dict().unwrap().get(b"Font").unwrap()).as_dict().unwrap().clone();
     let arabic: Vec<_> = fonts.iter().filter(|(k, _)| k.starts_with(b"PCAr")).map(|(_, v)| doc.resolve(v).as_dict().unwrap().clone()).collect();
@@ -643,7 +643,7 @@ fn added_arabic_text_is_shaped_in_display_order_and_stays_searchable() {
 
 /// The `PCAr` font names in page `page`'s resources.
 fn arabic_font_names(doc: &Document, page: usize) -> Vec<String> {
-    let p = &pdfcraft_model::pages(doc)[page];
+    let p = &cleonpdf_model::pages(doc)[page];
     let Some(res) = p.dict.get(b"Resources").map(|r| doc.resolve(r)) else { return vec![] };
     let Some(fonts) = res.as_dict().and_then(|r| r.get(b"Font")).map(|f| doc.resolve(f)) else { return vec![] };
     fonts.as_dict().unwrap().iter().map(|(k, _)| String::from_utf8_lossy(k).into_owned()).filter(|k| k.starts_with("PCAr")).collect()
@@ -653,7 +653,7 @@ fn arabic_font_names(doc: &Document, page: usize) -> Vec<String> {
 fn arabic_items_keep_their_own_fonts_through_saves_updates_and_deletes() {
     let mut doc = fixture();
     let text = AddedText { rect: [72.0, 600.0, 400.0, 700.0], text: "مرحبا".into(), size: 14.0, ..AddedText::default() };
-    if pdfcraft_fonts::document_arabic_font().is_none() {
+    if cleonpdf_fonts::document_arabic_font().is_none() {
         // An item that already holds Arabic (stored by an older version, drawn as "?") can still
         // be moved and retyped without the face.
         add_content(&mut doc, 0, &Content::Text(AddedText { text: "x".into(), ..text.clone() })).unwrap();
@@ -669,13 +669,13 @@ fn arabic_items_keep_their_own_fonts_through_saves_updates_and_deletes() {
     }
     let mut res = Dict::new();
     res.set(b"Font".to_vec(), Object::Dict(taken));
-    let page = pdfcraft_model::pages(&doc)[0].obj;
+    let page = cleonpdf_model::pages(&doc)[0].obj;
     doc.update_dict(page, |d| d.set(b"Resources".to_vec(), Object::Dict(res))).unwrap();
     add_content(&mut doc, 0, &Content::Text(text.clone())).unwrap();
     add_content(&mut doc, 0, &Content::Text(AddedText { text: "شكرا".into(), rect: [72.0, 500.0, 400.0, 520.0], ..text.clone() })).unwrap();
     let names = arabic_font_names(&doc, 0);
     assert_eq!(names.len(), 1_999 + 2, "nothing replaced");
-    let p = &pdfcraft_model::pages(&doc)[0];
+    let p = &cleonpdf_model::pages(&doc)[0];
     let fonts = doc.resolve(p.dict.get(b"Resources").unwrap()).as_dict().unwrap().get(b"Font").cloned().unwrap();
     let fonts = doc.resolve(&fonts).as_dict().unwrap().clone();
     assert_eq!(fonts.iter().filter(|(_, v)| v.as_name() == Some(&b"Taken"[..])).count(), 1_999);
@@ -706,7 +706,7 @@ fn odd_arabic_text_never_panics() {
     let long = "بسم الله ".repeat(2_000);
     for s in ["\u{202E}ب\u{064B}\u{064B} (]", "\u{064B}", "ا\u{200F}\u{2067}b\u{2069}", "ا\n\nب\tc", "ﷺ ١٢٣ 456", long.as_str()] {
         let r = add_content(&mut doc, 0, &Content::Text(AddedText { rect: [0.0, 800.0, 300.0, 780.0], text: s.into(), ..AddedText::default() }));
-        assert_eq!(r.is_ok(), pdfcraft_fonts::document_arabic_font().is_some(), "{:?}: {r:?}", s.chars().take(12).collect::<String>());
+        assert_eq!(r.is_ok(), cleonpdf_fonts::document_arabic_font().is_some(), "{:?}: {r:?}", s.chars().take(12).collect::<String>());
     }
     // U+2029 and U+0085 (paragraph and line separators) have no WinAnsi code, so the standard font
     // would draw them as `?`: refused, by name, rather than written (#125). Laying it out still
@@ -717,11 +717,11 @@ fn odd_arabic_text_never_panics() {
         &Content::Text(AddedText { rect: [0.0, 800.0, 300.0, 780.0], text: "ا\u{2029}ب\rc\u{85}د\n".into(), ..AddedText::default() }),
     );
     assert!(r.is_err(), "{r:?}");
-    if pdfcraft_fonts::document_arabic_font().is_some() {
+    if cleonpdf_fonts::document_arabic_font().is_some() {
         assert!(matches!(&r, Err(EditError::Invalid(m)) if m.contains("U+2029") || m.contains("U+0085")), "{r:?}");
     }
     // A character the face lacks is an error that names it, not a box or a crash.
-    if pdfcraft_fonts::document_arabic_font().is_some() && !pdfcraft_fonts::arabic_has('\u{FDFD}') {
+    if cleonpdf_fonts::document_arabic_font().is_some() && !cleonpdf_fonts::arabic_has('\u{FDFD}') {
         let r = add_content(
             &mut doc,
             0,
@@ -785,7 +785,7 @@ fn descriptor_text_page() -> Document {
 
 /// The Japanese fallback face comes from craft-fonts, an optional build input.
 fn without_craft_fonts(test: &str) -> bool {
-    if pdfcraft_fonts::document_japanese_font().is_some() {
+    if cleonpdf_fonts::document_japanese_font().is_some() {
         return false;
     }
     eprintln!("skipping {test}: built without craft-fonts (set CRAFT_FONTS_DIR to run it)");
@@ -810,15 +810,15 @@ fn japanese_line_uses_unicode_type3_fallback() {
 
 fn styled_text_page(base: &str) -> Document {
     let mut doc = text_page("BT /F1 12 Tf 72 700 Td (Original) Tj ET");
-    let r = pdfcraft_cos::ObjRef::new(5, 0);
+    let r = cleonpdf_cos::ObjRef::new(5, 0);
     let mut font = doc.get(r).as_dict().unwrap().clone();
-    font.set(b"BaseFont".to_vec(), pdfcraft_cos::Object::name(base));
-    doc.set(r, pdfcraft_cos::Object::Dict(font));
+    font.set(b"BaseFont".to_vec(), cleonpdf_cos::Object::name(base));
+    doc.set(r, cleonpdf_cos::Object::Dict(font));
     doc
 }
 
 fn fallback_paths(doc: &Document) -> Vec<Vec<u8>> {
-    let p = pdfcraft_model::pages(doc).swap_remove(0);
+    let p = cleonpdf_model::pages(doc).swap_remove(0);
     let res = doc.resolve(p.dict.get(b"Resources").unwrap());
     let fonts = doc.resolve(res.as_dict().unwrap().get(b"Font").unwrap());
     let font = doc.resolve(fonts.as_dict().unwrap().get(b"PCJp").unwrap());
@@ -828,7 +828,7 @@ fn fallback_paths(doc: &Document) -> Vec<Vec<u8>> {
         .unwrap()
         .iter()
         .map(|(_, object)| match &*doc.resolve(object) {
-            pdfcraft_cos::Object::Stream(s) => s.decoded().unwrap(),
+            cleonpdf_cos::Object::Stream(s) => s.decoded().unwrap(),
             other => panic!("expected a glyph stream, got {other:?}"),
         })
         .collect()
@@ -847,7 +847,7 @@ fn japanese_line_fallback_uses_real_source_family_and_weight() {
     text::replace_line(&mut bold, 0, 0, replacement).unwrap();
     text::replace_line(&mut serif, 0, 0, replacement).unwrap();
     assert_ne!(fallback_paths(&sans), fallback_paths(&serif), "sans source must not use Mincho outlines");
-    if pdfcraft_fonts::CRAFT_FONTS.iter().any(|f| f.family == "BIZ UDPGothic" && f.style == "Bold") {
+    if cleonpdf_fonts::CRAFT_FONTS.iter().any(|f| f.family == "BIZ UDPGothic" && f.style == "Bold") {
         assert_ne!(fallback_paths(&sans), fallback_paths(&bold), "bold must change the actual glyph paths");
     }
     for doc in [&sans, &bold, &serif] {
@@ -882,7 +882,7 @@ fn japanese_paragraph_fallback_honors_requested_family_and_weight() {
     )
     .unwrap();
     assert_ne!(fallback_paths(&regular), fallback_paths(&serif), "requested serif must change actual outlines");
-    if pdfcraft_fonts::CRAFT_FONTS.iter().any(|f| f.family == "BIZ UDPGothic" && f.style == "Bold") {
+    if cleonpdf_fonts::CRAFT_FONTS.iter().any(|f| f.family == "BIZ UDPGothic" && f.style == "Bold") {
         assert_ne!(fallback_paths(&regular), fallback_paths(&bold), "requested bold must change actual outlines");
         let mut source_bold = styled_text_page("Helvetica-Bold");
         text::replace_block(&mut source_bold, 0, 0, replacement).unwrap();
@@ -899,7 +899,7 @@ fn japanese_fallback_reports_the_face_after_save_and_reopen() {
         return;
     }
     // F2 is (a subset of) Arial: a regular sans face, so the fallback is the regular Gothic.
-    let face = pdfcraft_fonts::document_japanese_font_for_style(false, false).unwrap();
+    let face = cleonpdf_fonts::document_japanese_font_for_style(false, false).unwrap();
     let expected = format!("{}-{}", face.family, face.style).replace(' ', "");
     for paragraph in [false, true] {
         let mut doc = text_page("BT /F2 12 Tf 72 700 Td (ab) Tj ET");
@@ -924,8 +924,8 @@ fn cyrillic_in_a_serif_line_falls_back_to_a_face_that_has_it() {
         return;
     }
     let replacement = "Привет, world";
-    let has_all = |f: &pdfcraft_fonts::CraftFont| replacement.chars().all(|ch| pdfcraft_fonts::japanese_glyph_from(f, ch).is_ok());
-    if !pdfcraft_fonts::CRAFT_FONTS.iter().any(|f| f.covers("Jpan") && has_all(f)) {
+    let has_all = |f: &cleonpdf_fonts::CraftFont| replacement.chars().all(|ch| cleonpdf_fonts::japanese_glyph_from(f, ch).is_ok());
+    if !cleonpdf_fonts::CRAFT_FONTS.iter().any(|f| f.covers("Jpan") && has_all(f)) {
         eprintln!("skipping: no Japanese fallback face has Cyrillic");
         return;
     }
@@ -956,17 +956,17 @@ fn japanese_paragraph_uses_unicode_type3_fallback() {
 /// whichever face an edit picks has them all. Without craft-fonts there are no faces, every character
 /// passes, and the text is still long.
 fn covered_japanese_chars(n: usize) -> String {
-    let faces = pdfcraft_fonts::document_japanese_fonts_for_style(false, false);
+    let faces = cleonpdf_fonts::document_japanese_fonts_for_style(false, false);
     (0x4E00..0xA000)
         .filter_map(char::from_u32)
-        .filter(|ch| faces.iter().all(|face| pdfcraft_fonts::japanese_glyph_from(face, *ch).is_ok()))
+        .filter(|ch| faces.iter().all(|face| cleonpdf_fonts::japanese_glyph_from(face, *ch).is_ok()))
         .take(n)
         .collect()
 }
 
 /// The page's Type 3 fallback fonts (`PCJp`, `PCJp1`, ...) by resource name.
 fn fallback_fonts(doc: &Document) -> Vec<(Vec<u8>, Dict)> {
-    let p = pdfcraft_model::pages(doc).swap_remove(0);
+    let p = cleonpdf_model::pages(doc).swap_remove(0);
     let res = doc.resolve(p.dict.get(b"Resources").unwrap());
     let fonts = doc.resolve(res.as_dict().unwrap().get(b"Font").unwrap());
     fonts
@@ -1016,10 +1016,10 @@ fn japanese_replacement_missing_a_glyph_after_240_changes_nothing() {
         return;
     }
     // The first CJK character that no face draws: the 242nd unique character, in a second font.
-    let faces = pdfcraft_fonts::document_japanese_fonts_for_style(false, false);
+    let faces = cleonpdf_fonts::document_japanese_fonts_for_style(false, false);
     let missing = (0x4E00u32..0x9FFF)
         .filter_map(char::from_u32)
-        .find(|ch| faces.iter().all(|face| pdfcraft_fonts::japanese_glyph_from(face, *ch).is_err()))
+        .find(|ch| faces.iter().all(|face| cleonpdf_fonts::japanese_glyph_from(face, *ch).is_err()))
         .expect("some CJK character is outside every face");
     let replacement = format!("{}{missing}", covered_japanese_chars(241));
     let mut doc = text_page("BT /F2 12 Tf 72 700 Td (ab) Tj ET");
@@ -1184,7 +1184,7 @@ fn cyrillic_replacement_in_a_serif_line_uses_a_face_with_the_letters() {
 
 /// The `/Widths` of the page's Type 3 fallback font, for its Cyrillic letters.
 fn fallback_widths(doc: &Document) -> Vec<f64> {
-    let p = pdfcraft_model::pages(doc).swap_remove(0);
+    let p = cleonpdf_model::pages(doc).swap_remove(0);
     let res = doc.resolve(p.dict.get(b"Resources").unwrap());
     let fonts = doc.resolve(res.as_dict().unwrap().get(b"Font").unwrap());
     let font = doc.resolve(fonts.as_dict().unwrap().get(b"PCJp").unwrap());
@@ -1222,7 +1222,7 @@ fn japanese_edit_without_craft_fonts_is_a_clear_error() {
     let before = page_content_bytes(&doc, 0);
     let line = text::replace_line(&mut doc, 0, 0, "日本語の文字");
     let block = text::replace_block(&mut doc, 0, 0, "日本語の文字");
-    if pdfcraft_fonts::document_japanese_font().is_some() {
+    if cleonpdf_fonts::document_japanese_font().is_some() {
         eprintln!("built with craft-fonts: the Japanese edits succeed (checked by the tests above)");
         assert!(line.is_ok() && block.is_ok());
         return;
@@ -1399,7 +1399,7 @@ fn assert_split_tokens_kept(doc: &Document, new_text: &str) {
     let joined = streams(doc, 0).join("\n");
     assert!(joined.contains(new_text) && !joined.contains("Target"), "{joined}");
     assert!(joined.contains("[(After) -20 (wards)]"), "the text after the line is gone: {joined}");
-    for op in pdfcraft_content::parse(joined.as_bytes()).ops {
+    for op in cleonpdf_content::parse(joined.as_bytes()).ops {
         let want = match op.op.as_slice() {
             b"BDC" => 2,
             b"TJ" => 1,
@@ -1426,9 +1426,9 @@ fn editing_text_keeps_the_tokens_a_stream_shares_with_its_neighbours() {
 }
 
 /// The operators of the page's pieces joined back into one stream, each checked for operands.
-fn joined_ops(doc: &Document) -> (String, Vec<pdfcraft_content::Op>) {
+fn joined_ops(doc: &Document) -> (String, Vec<cleonpdf_content::Op>) {
     let joined = streams(doc, 0).join("\n");
-    let ops = pdfcraft_content::parse(joined.as_bytes());
+    let ops = cleonpdf_content::parse(joined.as_bytes());
     assert_eq!(ops.skipped, 0, "stray tokens: {joined}");
     (joined, ops.ops)
 }
@@ -1512,7 +1512,7 @@ fn paragraphs_are_found_and_rewrapped() {
     assert_eq!(blocks[0].lines, [0, 1, 2]);
     let width = blocks[0].rect[2] - blocks[0].rect[0];
     let next = blocks[1].rect;
-    let long = "PdfCraft rewraps a paragraph to its own width when its text changes, keeping the font, size, colour and line spacing.";
+    let long = "CleonPDF rewraps a paragraph to its own width when its text changes, keeping the font, size, colour and line spacing.";
     assert_eq!(text::replace_block(&mut doc, 0, 0, long).unwrap().substituted, None);
     let doc = reopen(&doc);
     let lines = text::text_lines(&doc, 0).unwrap();
@@ -1539,14 +1539,14 @@ fn paragraphs_are_found_and_rewrapped() {
 }
 
 fn page_content_bytes(doc: &Document, page: usize) -> Vec<u8> {
-    let p = pdfcraft_model::pages(doc).swap_remove(page);
+    let p = cleonpdf_model::pages(doc).swap_remove(page);
     let c = p.dict.get(b"Contents").unwrap();
     match &*doc.resolve(c) {
-        pdfcraft_cos::Object::Stream(s) => s.decoded().unwrap(),
-        pdfcraft_cos::Object::Array(a) => a
+        cleonpdf_cos::Object::Stream(s) => s.decoded().unwrap(),
+        cleonpdf_cos::Object::Array(a) => a
             .iter()
             .flat_map(|x| match &*doc.resolve(x) {
-                pdfcraft_cos::Object::Stream(s) => s.decoded().unwrap(),
+                cleonpdf_cos::Object::Stream(s) => s.decoded().unwrap(),
                 _ => Vec::new(),
             })
             .collect(),
@@ -1585,10 +1585,10 @@ fn image_page_with(content: &str) -> Document {
 
 /// The box of the first `re` on the page in user space, after the `cm`s before it.
 fn first_rect_in_user_space(doc: &Document) -> [f64; 4] {
-    let mut ctm = pdfcraft_content::Matrix::IDENTITY;
-    for op in pdfcraft_content::parse(&page_content_bytes(doc, 0)).ops {
+    let mut ctm = cleonpdf_content::Matrix::IDENTITY;
+    for op in cleonpdf_content::parse(&page_content_bytes(doc, 0)).ops {
         if op.is("cm") {
-            ctm = pdfcraft_content::Matrix(op.nums::<6>().unwrap()).then(&ctm);
+            ctm = cleonpdf_content::Matrix(op.nums::<6>().unwrap()).then(&ctm);
         } else if op.is("re") {
             let [x, y, w, h] = op.nums::<4>().unwrap();
             return ctm.bbox([x, y, x + w, y + h]);
@@ -1652,16 +1652,16 @@ fn page_images_move_turn_replace_and_delete() {
     // The text after it is untouched.
     assert_eq!(text::text_lines(&doc, 0).unwrap()[0].text, "Caption");
     // Replace with another image object, in the same place.
-    let mut d = pdfcraft_cos::Dict::new();
+    let mut d = cleonpdf_cos::Dict::new();
     for (k, v) in [
-        (&b"Type"[..], pdfcraft_cos::Object::name("XObject")),
-        (b"Subtype", pdfcraft_cos::Object::name("Image")),
-        (b"Width", pdfcraft_cos::Object::Int(1)),
-        (b"Height", pdfcraft_cos::Object::Int(1)),
+        (&b"Type"[..], cleonpdf_cos::Object::name("XObject")),
+        (b"Subtype", cleonpdf_cos::Object::name("Image")),
+        (b"Width", cleonpdf_cos::Object::Int(1)),
+        (b"Height", cleonpdf_cos::Object::Int(1)),
     ] {
         d.set(k.to_vec(), v);
     }
-    let other = doc.add(pdfcraft_cos::Object::Stream(pdfcraft_cos::Stream::from_raw(d, vec![0])));
+    let other = doc.add(cleonpdf_cos::Object::Stream(cleonpdf_cos::Stream::from_raw(d, vec![0])));
     images::change_image(&mut doc, 0, 0, &images::ImageChange::Replace(other)).unwrap();
     let imgs = images::page_images(&doc, 0).unwrap();
     assert_eq!((imgs[0].object, imgs[0].width), (Some(other), 1));
@@ -1680,14 +1680,14 @@ fn form_artwork_edits_only_the_selected_placement() {
     form.set(b"BBox".to_vec(), Object::Array([10, 20, 110, 70].map(Object::Int).to_vec()));
     form.set(b"Matrix".to_vec(), Object::Array([2, 0, 0, 3, -20, -60].map(Object::Int).to_vec()));
     let artwork = doc.add(Object::Stream(Stream::flate(form, b"1 0 0 rg 10 20 100 50 re f")));
-    doc.update_dict(pdfcraft_cos::ObjRef::new(6, 0), |d| {
+    doc.update_dict(cleonpdf_cos::ObjRef::new(6, 0), |d| {
         let mut xo = Dict::new();
         xo.set(b"Figure".to_vec(), Object::Ref(artwork));
         d.set(b"XObject".to_vec(), Object::Dict(xo));
     })
     .unwrap();
     let content = b"q 1 0 0 1 40 80 cm /Figure Do Q q 1 0 0 1 300 400 cm /Figure Do Q BT /F1 9 Tf (Caption) Tj ET";
-    doc.set(pdfcraft_cos::ObjRef::new(7, 0), Object::Stream(Stream::flate(Dict::new(), content)));
+    doc.set(cleonpdf_cos::ObjRef::new(7, 0), Object::Stream(Stream::flate(Dict::new(), content)));
     let mut doc = reopen(&doc);
     let original = doc.get(artwork);
     let imgs = images::page_images(&doc, 0).unwrap();
@@ -1763,13 +1763,13 @@ fn a_new_paragraph_colour_does_not_spill_into_the_text_after_it() {
     text::rewrite_block(&mut doc, 0, 0, None, &style).unwrap();
     let doc = reopen(&doc);
     // The fill colour in force where the second paragraph is shown (q/Q nest it).
-    let ops = pdfcraft_content::parse(&page_content_bytes(&doc, 0)).ops;
+    let ops = cleonpdf_content::parse(&page_content_bytes(&doc, 0)).ops;
     let (mut fill, mut stack) = (String::from("0 g"), Vec::new());
     for op in &ops {
         match op.op.as_slice() {
             b"q" => stack.push(fill.clone()),
             b"Q" => fill = stack.pop().unwrap_or_default(),
-            b"g" | b"rg" | b"k" => fill = String::from_utf8_lossy(&pdfcraft_content::serialize_ops(std::slice::from_ref(op))).trim().to_string(),
+            b"g" | b"rg" | b"k" => fill = String::from_utf8_lossy(&cleonpdf_content::serialize_ops(std::slice::from_ref(op))).trim().to_string(),
             b"Tj" if op.operands.first().and_then(|o| o.as_string()).is_some_and(|s| s.to_text() == "Second paragraph") => break,
             _ => {}
         }
@@ -1806,7 +1806,7 @@ fn recolouring_a_paragraph_in_a_shared_text_object_keeps_order_and_nesting() {
     let doc = reopen(&doc);
     let texts: Vec<String> = text::text_blocks(&doc, 0).unwrap().into_iter().map(|b| b.text).collect();
     assert_eq!(texts, ["First paragraph", "Second paragraph", "Third paragraph"]);
-    let ops = pdfcraft_content::parse(&page_content_bytes(&doc, 0)).ops;
+    let ops = cleonpdf_content::parse(&page_content_bytes(&doc, 0)).ops;
     let (mut in_text, mut depth, mut red) = (false, 0usize, Vec::new());
     for op in &ops {
         match op.op.as_slice() {
@@ -2130,7 +2130,7 @@ fn hebrew_letters_the_page_font_lacks_use_the_hebrew_face() {
     // ע and ה aren't in the page's font.
     let typed = "שלום עולם, עמוד 12 (PDF)";
     let line = text::replace_line(&mut doc, 0, 0, typed);
-    if pdfcraft_fonts::document_hebrew_font(false).is_none() {
+    if cleonpdf_fonts::document_hebrew_font(false).is_none() {
         let Err(EditError::Invalid(msg)) = line else { panic!("expected a clear error, got {line:?}") };
         assert!(msg.contains("Hebrew fallback font") && msg.contains("CRAFT_FONTS_DIR"), "{msg}");
         assert_eq!(page_content_bytes(&doc, 0), before);
@@ -2143,7 +2143,7 @@ fn hebrew_letters_the_page_font_lacks_use_the_hebrew_face() {
     let reopened = reopen(&doc);
     assert_eq!(text::text_lines(&reopened, 0).unwrap()[0].text, typed);
     // Every glyph has an outline, so nothing is drawn as a box.
-    let p = pdfcraft_model::pages(&reopened).swap_remove(0);
+    let p = cleonpdf_model::pages(&reopened).swap_remove(0);
     let res = reopened.resolve(p.dict.get(b"Resources").unwrap());
     let fonts = reopened.resolve(res.as_dict().unwrap().get(b"Font").unwrap());
     let font = reopened.resolve(fonts.as_dict().unwrap().get(b"PCHe").unwrap());
@@ -2151,7 +2151,7 @@ fn hebrew_letters_the_page_font_lacks_use_the_hebrew_face() {
     let procs = procs.as_dict().unwrap();
     assert_eq!(procs.iter().count(), typed.chars().collect::<std::collections::HashSet<_>>().len());
     for (_, glyph) in procs.iter() {
-        let pdfcraft_cos::Object::Stream(s) = &*reopened.resolve(glyph) else { panic!("glyph stream") };
+        let cleonpdf_cos::Object::Stream(s) = &*reopened.resolve(glyph) else { panic!("glyph stream") };
         let path = String::from_utf8(s.decoded().unwrap()).unwrap();
         assert!(path.starts_with(|c: char| c.is_ascii_digit()) && path.contains(" d1"), "{path}");
     }
@@ -2204,7 +2204,7 @@ fn page_text_the_standard_fonts_cant_draw_is_refused() {
     // U+061C is in the Arabic block but is a direction mark that's dropped, not shaped: it never
     // makes text drawable, nor (with the face) undrawable.
     assert!(add_content(&mut doc, 0, &Content::Text(arabic("\u{061C}中"))).is_err());
-    if pdfcraft_fonts::arabic_has('م') {
+    if cleonpdf_fonts::arabic_has('م') {
         add_content(&mut doc, 0, &Content::Text(arabic("مرحبا Hello"))).unwrap();
         add_content(&mut doc, 0, &Content::Text(arabic("\u{061C}Hello"))).unwrap();
         for text in ["مرحبا 中", "\u{061C}中"] {
@@ -2226,22 +2226,22 @@ fn page_text_the_standard_fonts_cant_draw_is_refused() {
     }
 }
 
-fn xobject(doc: &Document, page: usize, name: &[u8]) -> Option<pdfcraft_cos::ObjRef> {
-    let p = &pdfcraft_model::pages(doc)[page];
+fn xobject(doc: &Document, page: usize, name: &[u8]) -> Option<cleonpdf_cos::ObjRef> {
+    let p = &cleonpdf_model::pages(doc)[page];
     let res = doc.resolve(p.dict.get(b"Resources")?);
     let xo = doc.resolve(res.as_dict()?.get(b"XObject")?);
     xo.as_dict()?.get(name).and_then(Object::as_ref)
 }
 
-fn annot_at(doc: &Document, page: usize, index: usize) -> pdfcraft_cos::ObjRef {
-    let p = &pdfcraft_model::pages(doc)[page];
+fn annot_at(doc: &Document, page: usize, index: usize) -> cleonpdf_cos::ObjRef {
+    let p = &cleonpdf_model::pages(doc)[page];
     let list = doc.resolve(p.dict.get(b"Annots").unwrap());
     list.as_array().unwrap()[index].as_ref().unwrap()
 }
 
 #[test]
 fn fill_sign_flatten_bakes_marks_keeps_other_comments_and_does_not_reuse_pcfl0() {
-    use pdfcraft_annot::{FillMark, Markup, Meta, NewAnnotation, Shape, Style, add_annotation, summaries};
+    use cleonpdf_annot::{FillMark, Markup, Meta, NewAnnotation, Shape, Style, add_annotation, summaries};
     let mut doc = fixture();
     assert_eq!(flatten_fill_sign(&mut doc, &[0]).unwrap(), 0);
     assert!(!doc.is_modified(), "nothing to flatten leaves the file alone");
@@ -2262,7 +2262,7 @@ fn fill_sign_flatten_bakes_marks_keeps_other_comments_and_does_not_reuse_pcfl0()
     .unwrap();
     add(&mut doc, Shape::Mark { rect: [100.0, 100.0, 120.0, 120.0], mark: FillMark::Check }, "");
     add(&mut doc, Shape::Signature { strokes: vec![vec![[10.0, 50.0], [40.0, 80.0], [70.0, 50.0]]] }, "");
-    doc.update_dict(annot_at(&doc, 0, 2), |d| d.set(b"Subj".to_vec(), pdfcraft_cos::PdfString::text("Pencil"))).unwrap();
+    doc.update_dict(annot_at(&doc, 0, 2), |d| d.set(b"Subj".to_vec(), cleonpdf_cos::PdfString::text("Pencil"))).unwrap();
     add(&mut doc, Shape::TypedSignature { rect: [20.0, 40.0, 90.0, 70.0], contours: vec![vec![[0.1, 0.2], [0.5, 0.9], [0.9, 0.2]]] }, "");
     add(&mut doc, Shape::TextMarkup { kind: Markup::Highlight, quads: vec![[20.0, 400.0, 80.0, 400.0, 20.0, 390.0, 80.0, 390.0]] }, "keep");
     add(&mut doc, Shape::TextBox { rect: [20.0, 300.0, 140.0, 340.0], font_size: 12.0 }, "Note");
@@ -2364,7 +2364,7 @@ fn reading_follows_form_xobjects() {
     // a page image.
     let own = images::page_images(&doc, 0).unwrap();
     assert_eq!(own.len(), 1, "{own:?}");
-    assert!(own[0].is_form && own[0].object == Some(pdfcraft_cos::ObjRef::new(6, 0)), "{own:?}");
+    assert!(own[0].is_form && own[0].object == Some(cleonpdf_cos::ObjRef::new(6, 0)), "{own:?}");
 }
 
 /// A chain of forms, each drawing the next twenty times, twelve deep: within the depth cap but
@@ -2440,7 +2440,7 @@ fn added_thai_text_wraps_clusters_and_survives_reopen() {
     let t = AddedText {
         rect: [20.0, 100.0, 250.0, 300.0], text: "สวัสดี น้ำ ผู้ใช้ ปู่ ๑๒๓ Hello 123".into(), size: 16.0, ..AddedText::default()
     };
-    if pdfcraft_fonts::document_thai_font().is_none() {
+    if cleonpdf_fonts::document_thai_font().is_none() {
         assert_eq!(first_undrawable(&t), Some('ส'));
         let before = list_added(&doc);
         let err = add_content(&mut doc, 0, &Content::Text(t)).unwrap_err().to_string();
@@ -2480,7 +2480,7 @@ fn group_moves_preserve_glyph_bytes_and_unselected_text_state() {
         let index = blocks.iter().position(|b| b.text.contains("Quoted")).unwrap_or(0);
         let selected: Vec<_> = blocks[index].lines.iter().map(|i| before[*i].text.clone()).collect();
         let glyph_bytes = |doc: &Document| {
-            pdfcraft_content::parse(&page_content_bytes(doc, 0))
+            cleonpdf_content::parse(&page_content_bytes(doc, 0))
                 .ops
                 .iter()
                 .flat_map(|op| {
@@ -2521,7 +2521,7 @@ fn group_moves_preserve_glyph_bytes_and_unselected_text_state() {
 #[test]
 fn group_moves_preserve_small_offsets_under_large_transforms() {
     let mut doc = image_page();
-    let page = pdfcraft_model::pages(&doc)[0].obj;
+    let page = cleonpdf_model::pages(&doc)[0].obj;
     let content = doc.add(Object::Stream(Stream::flate(
         Dict::new(),
         b"q 100000 0 0 100000 100 100 cm /Im0 Do Q q 10000 0 0 10000 0 0 cm BT /F1 0.00123456789 Tf 0.02 0.06 Td (Small) Tj 1 0 0 rg (Neighbour) Tj ET Q",
@@ -2578,7 +2578,7 @@ fn mixed_object_inventory_does_not_select_added_content_twice() {
 fn group_move_refusals_leave_the_object_graph_untouched() {
     let mut doc = image_page();
     let target = editable_objects(&doc, 0).unwrap()[0].target;
-    let original = pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap();
+    let original = cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap();
     for (targets, offset) in [
         (vec![], [1.0, 2.0]),
         (vec![target, target], [1.0, 2.0]),
@@ -2590,20 +2590,20 @@ fn group_move_refusals_leave_the_object_graph_untouched() {
         (vec![target; MAX_MOVE_OBJECTS + 1], [1.0, 2.0]),
     ] {
         assert!(move_objects(&mut doc, 0, &targets, offset).is_err());
-        assert_eq!(pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap(), original);
+        assert_eq!(cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap(), original);
     }
     let mut clipped = text_page("BT /F1 12 Tf 50 600 Td (Ordinary) Tj ET BT /F1 12 Tf 4 Tr 50 400 Td (Clipping) Tj ET");
     let targets = editable_objects(&clipped, 0).unwrap().iter().map(|o| o.target).collect::<Vec<_>>();
-    let original = pdfcraft_cos::write_full(&clipped, &SaveOptions::default()).unwrap();
+    let original = cleonpdf_cos::write_full(&clipped, &SaveOptions::default()).unwrap();
     assert!(move_objects(&mut clipped, 0, &targets, [10.0, 5.0]).unwrap_err().to_string().contains("clipping"));
-    assert_eq!(pdfcraft_cos::write_full(&clipped, &SaveOptions::default()).unwrap(), original);
+    assert_eq!(cleonpdf_cos::write_full(&clipped, &SaveOptions::default()).unwrap(), original);
 }
 
 #[test]
 fn added_and_native_objects_move_together_on_cropped_rotated_user_unit_pages() {
     for rotation in [0, 90, 180, 270] {
         let mut doc = image_page();
-        let page = pdfcraft_model::pages(&doc)[0].obj;
+        let page = cleonpdf_model::pages(&doc)[0].obj;
         doc.update_dict(page, |d| {
             d.set(b"CropBox".to_vec(), Object::Array([10, 20, 500, 750].map(Object::Int).to_vec()));
             d.set(b"Rotate".to_vec(), Object::Int(rotation));
@@ -2640,7 +2640,7 @@ fn group_moves_keep_split_stream_tokens_and_shared_form_resources() {
         assert!(close(b.rect, [a.rect[0] + 30.0, a.rect[1] - 20.0, a.rect[2] + 30.0, a.rect[3] - 20.0]));
     }
     let joined = page_content_bytes(&doc, 0);
-    let ops = pdfcraft_content::parse(&joined).ops;
+    let ops = cleonpdf_content::parse(&joined).ops;
     assert_eq!(ops.iter().find(|o| o.is("BDC")).unwrap().operands.len(), 2);
     assert!(ops.iter().any(|o| o.is("EMC")));
     // Two pages share a content stream and a Form; only one placement on one page moves.
@@ -2648,16 +2648,16 @@ fn group_moves_keep_split_stream_tokens_and_shared_form_resources() {
     let mut form = Dict::new();
     form.set(b"Subtype".to_vec(), Object::name("Form"));
     form.set(b"BBox".to_vec(), Object::Array([0, 0, 60, 30].map(Object::Int).to_vec()));
-    form.set(b"PrivateData".to_vec(), Object::String(pdfcraft_cos::PdfString::literal(b"retain this".to_vec())));
+    form.set(b"PrivateData".to_vec(), Object::String(cleonpdf_cos::PdfString::literal(b"retain this".to_vec())));
     let artwork = doc.add(Object::Stream(Stream::flate(form, b"1 0 0 rg 0 0 60 30 re f")));
-    doc.update_dict(pdfcraft_cos::ObjRef::new(6, 0), |d| {
+    doc.update_dict(cleonpdf_cos::ObjRef::new(6, 0), |d| {
         let mut xo = Dict::new();
         xo.set(b"Figure".to_vec(), Object::Ref(artwork));
         d.set(b"XObject".to_vec(), Object::Dict(xo));
     })
     .unwrap();
     doc.set(
-        pdfcraft_cos::ObjRef::new(7, 0),
+        cleonpdf_cos::ObjRef::new(7, 0),
         Object::Stream(Stream::flate(
             Dict::new(),
             b"q 1 0 0 1 40 80 cm /Figure Do Q q 1 0 0 1 300 400 cm /Figure Do Q BT /F1 9 Tf 40 160 Td (Caption) Tj ET",
@@ -2699,7 +2699,7 @@ fn group_moves_preserve_encoded_glyphs_and_refuse_vertical_cmaps() {
         Object::Array(vec![Object::Dict(Dict::from_iter([(b"Subtype".to_vec(), Object::name("CIDFontType2")), (b"DW".to_vec(), Object::Int(600))]))]),
     );
     // No external font asset: this synthetic font is enough to exercise raw CID bytes.
-    let p = pdfcraft_model::pages(&doc)[0].obj;
+    let p = cleonpdf_model::pages(&doc)[0].obj;
     let mut resources = Dict::new();
     let mut fonts = Dict::new();
     fonts.set(b"F1".to_vec(), Object::Dict(font.clone()));
@@ -2709,7 +2709,7 @@ fn group_moves_preserve_encoded_glyphs_and_refuse_vertical_cmaps() {
     assert!(!original.is_empty());
     move_objects(&mut doc, 0, &[ObjectTarget { kind: ObjectKind::Text, index: 0 }], [25.0, 15.0]).unwrap();
     let encoded =
-        |doc: &Document| pdfcraft_content::parse(&page_content_bytes(doc, 0)).ops.into_iter().find(|o| o.is("Tj")).unwrap().operands[0].clone();
+        |doc: &Document| cleonpdf_content::parse(&page_content_bytes(doc, 0)).ops.into_iter().find(|o| o.is("Tj")).unwrap().operands[0].clone();
     assert_eq!(encoded(&doc).as_string().unwrap().bytes, [0, 65, 0, 66, 0, 67]);
     let after = text::text_lines(&doc, 0).unwrap();
     assert_eq!(original[0].text, after[0].text);
@@ -2724,9 +2724,9 @@ fn group_moves_preserve_encoded_glyphs_and_refuse_vertical_cmaps() {
         fonts.set(b"F1".to_vec(), Object::Dict(f));
         resources.set(b"Font".to_vec(), Object::Dict(fonts));
         doc.update_dict(p, |d| d.set(b"Resources".to_vec(), Object::Dict(resources.clone()))).unwrap();
-        let before = pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap();
+        let before = cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap();
         assert!(move_objects(&mut doc, 0, &[ObjectTarget { kind: ObjectKind::Text, index: 0 }], [5.0, 5.0]).is_err());
-        assert_eq!(pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap(), before);
+        assert_eq!(cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap(), before);
     }
 }
 
@@ -2739,12 +2739,12 @@ fn moving_added_content_after_page_rotation_preserves_streams_and_resources() {
         &Content::Text(added::AddedText { text: "Added label".into(), rect: [50.0, 300.0, 200.0, 330.0], ..Default::default() }),
     )
     .unwrap();
-    let p = pdfcraft_model::pages(&doc)[0].obj;
-    let resources = pdfcraft_model::pages(&doc)[0].dict.get(b"Resources").cloned();
+    let p = cleonpdf_model::pages(&doc)[0].obj;
+    let resources = cleonpdf_model::pages(&doc)[0].dict.get(b"Resources").cloned();
     let item = added::list_added(&doc)[0].clone();
     let source = stream_bytes(&doc, &Object::Ref(item.obj)).unwrap();
     let content_after_cm = |bytes: &[u8]| {
-        let ops = pdfcraft_content::parse(bytes).ops;
+        let ops = cleonpdf_content::parse(bytes).ops;
         bytes[ops[1].span.end..].to_vec()
     };
     for rotation in [90, 180, 270, 0] {
@@ -2770,7 +2770,7 @@ fn moving_added_content_after_page_rotation_preserves_streams_and_resources() {
         let current = added::list_added(&doc)[0].clone();
         let bytes = stream_bytes(&doc, &Object::Ref(current.obj)).unwrap();
         assert_eq!(content_after_cm(&bytes), content_after_cm(&source), "all drawing bytes after the placement, including glyphs, remain identical");
-        assert_eq!(pdfcraft_model::pages(&doc)[0].dict.get(b"Resources").cloned(), resources);
+        assert_eq!(cleonpdf_model::pages(&doc)[0].dict.get(b"Resources").cloned(), resources);
         doc = reopen(&doc);
     }
 }
@@ -2784,7 +2784,7 @@ fn group_moves_of_shared_added_streams_change_only_the_selected_page() {
         &Content::Text(added::AddedText { text: "Shared added label".into(), rect: [40.0, 400.0, 240.0, 420.0], ..Default::default() }),
     )
     .unwrap();
-    let pages = pdfcraft_model::pages(&doc);
+    let pages = cleonpdf_model::pages(&doc);
     let contents = pages[0].dict.get(b"Contents").cloned().unwrap();
     doc.update_dict(pages[1].obj, |d| d.set(b"Contents".to_vec(), contents)).unwrap();
     let doc = reopen(&doc);
@@ -2823,14 +2823,14 @@ fn group_selection_refuses_incomplete_content_and_resource_budget_overruns() {
         format!("{} BT /F1 12 Tf 40 400 Td (Target) Tj ET", "n ".repeat(100001)),
     ] {
         let mut doc = text_page(&data);
-        let before = pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap();
+        let before = cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap();
         assert!(editable_objects(&doc, 0).is_err());
         assert!(move_objects(&mut doc, 0, &[ObjectTarget { kind: ObjectKind::Text, index: 0 }], [10.0, 10.0]).is_err());
-        assert_eq!(pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap(), before);
+        assert_eq!(cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap(), before);
     }
     let mut doc = text_page("BT /F1 12 Tf 40 400 Td (Target) Tj ET");
-    let page = pdfcraft_model::pages(&doc)[0].obj;
-    doc.update_dict(page, |d| d.set(b"Contents".to_vec(), Object::Ref(pdfcraft_cos::ObjRef::new(999999, 0)))).unwrap();
+    let page = cleonpdf_model::pages(&doc)[0].obj;
+    doc.update_dict(page, |d| d.set(b"Contents".to_vec(), Object::Ref(cleonpdf_cos::ObjRef::new(999999, 0)))).unwrap();
     assert!(editable_objects(&doc, 0).is_err(), "a missing stream cannot produce a partial inventory");
     let mut filter = Dict::new();
     filter.set(b"Filter".to_vec(), Object::name("NotAFilter"));
@@ -2842,19 +2842,19 @@ fn group_selection_refuses_incomplete_content_and_resource_budget_overruns() {
 #[test]
 fn group_move_budget_refusals_keep_the_original_page_selectable() {
     let text = text_page(&format!("{} BT /F1 12 Tf 40 400 Td (Target) Tj ET", "n ".repeat(99_995)));
-    assert_eq!(pdfcraft_content::parse(&page_content_bytes(&text, 0)).ops.len(), 100_000);
+    assert_eq!(cleonpdf_content::parse(&page_content_bytes(&text, 0)).ops.len(), 100_000);
     let mut image = image_page();
-    let page = pdfcraft_model::pages(&image)[0].obj;
+    let page = cleonpdf_model::pages(&image)[0].obj;
     let bytes = format!("{} /Im0 Do {}", "q ".repeat(1024), "Q ".repeat(1024));
     let content = image.add(Object::Stream(Stream::flate(Dict::new(), bytes.as_bytes())));
     image.update_dict(page, |d| d.set(b"Contents".to_vec(), Object::Ref(content))).unwrap();
     for mut doc in [text, image] {
         let objects = editable_objects(&doc, 0).unwrap();
         assert_eq!(objects.len(), 1);
-        let before = pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap();
+        let before = cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap();
         let error = move_objects(&mut doc, 0, &[objects[0].target], [10.0, 5.0]).unwrap_err();
         assert!(error.to_string().contains("too many content operations") || error.to_string().contains("nested too deeply"), "{error}");
-        assert_eq!(pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap(), before);
+        assert_eq!(cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap(), before);
         assert_eq!(editable_objects(&doc, 0).unwrap(), objects, "refusal retains a usable inventory");
     }
 }
@@ -3004,7 +3004,7 @@ fn mixed_region_page() -> Document {
         f.set(b"Subtype".to_vec(), Object::name("Type1"));
         f.set(b"BaseFont".to_vec(), Object::name(base));
         f.set(b"Encoding".to_vec(), Object::name("WinAnsiEncoding"));
-        doc.set(pdfcraft_cos::ObjRef::new(obj, 0), Object::Dict(f));
+        doc.set(cleonpdf_cos::ObjRef::new(obj, 0), Object::Dict(f));
     }
     let mut f = Dict::new();
     f.set(b"Type".to_vec(), Object::name("Font"));
@@ -3012,7 +3012,7 @@ fn mixed_region_page() -> Document {
     f.set(b"BaseFont".to_vec(), Object::name("Courier-Oblique"));
     f.set(b"Encoding".to_vec(), Object::name("WinAnsiEncoding"));
     let font = doc.add(Object::Dict(f));
-    let page = pdfcraft_model::pages(&doc)[0].clone();
+    let page = cleonpdf_model::pages(&doc)[0].clone();
     let mut resources = doc.resolve(page.dict.get(b"Resources").unwrap()).as_dict().unwrap().clone();
     let mut fonts = doc.resolve(resources.get(b"Font").unwrap()).as_dict().unwrap().clone();
     fonts.set(b"F3".to_vec(), Object::Ref(font));
@@ -3128,7 +3128,7 @@ fn disjoint_style_ranges_preserve_unselected_runs_and_validate_utf8_atomically()
         let after = lines.iter().find(|l| l.text == word).unwrap();
         assert_eq!((after.size, after.color, &after.font, after.baseline()), (prior.size, prior.color, &prior.font, prior.baseline()));
     }
-    let before = pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap();
+    let before = cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap();
     let invalid = BlockStyle {
         ranges: vec![RangeStyle {
             range: 1..2,
@@ -3143,7 +3143,7 @@ fn disjoint_style_ranges_preserve_unselected_runs_and_validate_utf8_atomically()
         ..Default::default()
     };
     assert!(text::rewrite_block(&mut doc, 0, 1, Some("é bad"), &invalid).is_err());
-    assert_eq!(pdfcraft_cos::write_full(&doc, &SaveOptions::default()).unwrap(), before);
+    assert_eq!(cleonpdf_cos::write_full(&doc, &SaveOptions::default()).unwrap(), before);
 }
 
 #[test]
@@ -3165,7 +3165,7 @@ fn centered_mixed_size_title_keeps_three_rows_when_changed() {
 #[test]
 fn image_selection_bounds_respect_clips_and_restore_graphics_state() {
     let mut doc = image_page();
-    let page = pdfcraft_model::pages(&doc)[0].clone();
+    let page = cleonpdf_model::pages(&doc)[0].clone();
     let content = b"q 1 0 0 1 10 20 cm 20 30 100 80 re W* n q 1200 0 0 1400 -500 -600 cm /Im0 Do Q Q q 200 0 0 100 100 100 cm /Im0 Do Q q 0 0 10 10 re W n 100 0 0 100 200 200 cm /Im0 Do Q";
     let stream = doc.add(Object::Stream(Stream::flate(Dict::new(), content)));
     doc.update_dict(page.obj, |d| d.set(b"Contents".to_vec(), Object::Ref(stream))).unwrap();
@@ -3178,7 +3178,7 @@ fn image_selection_bounds_respect_clips_and_restore_graphics_state() {
     assert_eq!(objects.len(), 2, "hidden images cannot intercept selection");
     assert_eq!(objects[0].rect, before[0].visible_rect.unwrap());
     let offset = [12.0, 14.0];
-    images::change_image(&mut doc, 0, 0, &images::ImageChange::Transform(pdfcraft_content::Matrix::translate(offset[0], offset[1]).0)).unwrap();
+    images::change_image(&mut doc, 0, 0, &images::ImageChange::Transform(cleonpdf_content::Matrix::translate(offset[0], offset[1]).0)).unwrap();
     let reopened = reopen(&doc);
     let after = images::page_images(&reopened, 0).unwrap();
     assert_eq!(after[0].visible_rect, Some([42.0, 64.0, 142.0, 144.0]), "an exclusive crop moves with the image even across nested graphics states");
@@ -3194,7 +3194,7 @@ fn image_selection_bounds_respect_clips_and_restore_graphics_state() {
 #[test]
 fn image_clip_path_and_graphics_state_continue_across_content_streams() {
     let mut doc = image_page();
-    let page = pdfcraft_model::pages(&doc)[0].clone();
+    let page = cleonpdf_model::pages(&doc)[0].clone();
     let pieces: [&[u8]; 3] = [b"q 20 30 40 50 re W", b"n 1000 0 0 1000 -300 -400 cm /Im0 Do", b"Q q 50 0 0 50 100 200 cm /Im0 Do Q"];
     let refs: Vec<_> = pieces.into_iter().map(|b| Object::Ref(doc.add(Object::Stream(Stream::flate(Dict::new(), b))))).collect();
     doc.update_dict(page.obj, |d| d.set(b"Contents".to_vec(), Object::Array(refs))).unwrap();
@@ -3216,7 +3216,7 @@ fn image_clip_path_and_graphics_state_continue_across_content_streams() {
 #[test]
 fn cropped_image_resizing_moves_private_clips_and_keeps_shared_ones() {
     let mut doc = image_page();
-    let page = pdfcraft_model::pages(&doc)[0].clone();
+    let page = cleonpdf_model::pages(&doc)[0].clone();
     let stream = doc.add(Object::Stream(Stream::flate(
         Dict::new(),
         b"q 30 170 130 80 re W* n 800 0 0 900 -300 -400 cm /Im0 Do Q BT /F1 12 Tf 30 130 Td (Caption) Tj ET",
@@ -3231,11 +3231,11 @@ fn cropped_image_resizing_moves_private_clips_and_keeps_shared_ones() {
         // The moved clip's `cm` is written with the content stream's number precision.
         let near = |a: [f64; 4], b: [f64; 4]| a.iter().zip(b).all(|(x, y)| (x - y).abs() < 0.05);
         assert!(near(after.visible_rect.unwrap(), target), "{:?} vs {target:?}", after.visible_rect);
-        assert!(near(after.rect, pdfcraft_content::Matrix(transform).bbox(before.rect)), "full pixels use the same crop transform");
+        assert!(near(after.rect, cleonpdf_content::Matrix(transform).bbox(before.rect)), "full pixels use the same crop transform");
         assert_eq!(after.object, before.object, "pixels are never resampled or replaced");
         assert_eq!(text::text_lines(&doc, 0).unwrap()[0].baseline(), [30.0, 130.0]);
     }
-    let page = pdfcraft_model::pages(&doc)[0].clone();
+    let page = cleonpdf_model::pages(&doc)[0].clone();
     let stream = doc.add(Object::Stream(Stream::flate(
         Dict::new(),
         b"q 30 170 130 80 re W n q 800 0 0 900 -300 -400 cm /Im0 Do Q BT /F1 12 Tf 40 200 Td (Shared caption) Tj ET Q",
@@ -3265,7 +3265,7 @@ fn private_image_crop_with_intervening_state_resizes_across_streams() {
     ];
     for pieces in variants {
         let mut doc = image_page();
-        let page = pdfcraft_model::pages(&doc)[0].obj;
+        let page = cleonpdf_model::pages(&doc)[0].obj;
         let refs = pieces.iter().map(|b| Object::Ref(doc.add(Object::Stream(Stream::flate(Dict::new(), b))))).collect();
         doc.update_dict(page, |d| d.set(b"Contents".to_vec(), Object::Array(refs))).unwrap();
         let caption = text::text_lines(&doc, 0).unwrap();
@@ -3276,7 +3276,7 @@ fn private_image_crop_with_intervening_state_resizes_across_streams() {
             doc = reopen(&doc);
             let after = images::page_images(&doc, 0).unwrap()[0].clone();
             assert!(close(after.visible_rect.unwrap(), target), "the private crop follows the image without a literal operator pattern");
-            assert!(close(after.rect, pdfcraft_content::Matrix(transform).bbox(before.rect)));
+            assert!(close(after.rect, cleonpdf_content::Matrix(transform).bbox(before.rect)));
             assert_eq!(after.object, before.object);
             assert_eq!(
                 text::text_lines(&doc, 0).unwrap().iter().map(|l| (&l.text, l.rect, l.baseline())).collect::<Vec<_>>(),
@@ -3289,7 +3289,7 @@ fn private_image_crop_with_intervening_state_resizes_across_streams() {
 #[test]
 fn curved_image_clips_have_analytic_bounds_and_holes_do_not_capture_points() {
     let mut doc = image_page();
-    let page = pdfcraft_model::pages(&doc)[0].obj;
+    let page = cleonpdf_model::pages(&doc)[0].obj;
     let bytes =
         b"q 0 0 m 0 200 100 200 100 0 c h W n 300 0 0 300 0 0 cm /Im0 Do Q q 100 100 100 100 re 125 125 50 50 re W* n 400 0 0 400 0 0 cm /Im0 Do Q";
     let content = doc.add(Object::Stream(Stream::flate(Dict::new(), bytes)));
@@ -3312,7 +3312,7 @@ fn marked_paragraph_boundaries_and_cross_stream_transforms_survive_rewrite() {
     let mut doc =
         text_page("/P << /MCID 0 >> BDC BT /F1 12 Tf 40 500 Td (One) Tj ET EMC /P << /MCID 1 >> BDC BT /F1 12 Tf 40 482 Td (Two) Tj ET EMC");
     assert_eq!(text::text_blocks(&doc, 0).unwrap().len(), 2, "distinct explicit paragraphs win over nearby geometry");
-    let page = pdfcraft_model::pages(&doc)[0].obj;
+    let page = cleonpdf_model::pages(&doc)[0].obj;
     let parts: [&[u8]; 2] =
         [b"/P << /MCID 2 >> BDC BT /F1 12 Tf 40 500 Td (First row) Tj ET", b"q 1 0 0 1 10 12 cm BT /F1 12 Tf 30 470 Td (Second row) Tj ET Q EMC"];
     let refs = parts.iter().map(|p| Object::Ref(doc.add(Object::Stream(Stream::flate(Dict::new(), p))))).collect();

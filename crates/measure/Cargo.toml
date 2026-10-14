@@ -1,5 +1,5 @@
 [package]
-name = "pdfcraft-measure"
+name = "cleonpdf-measure"
 description = "Calibrated 2D PDF measurements, viewports and snapping"
 version.workspace = true
 edition.workspace = true
@@ -9,9 +9,9 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-pdfcraft-cos = { workspace = true }
-pdfcraft-model = { workspace = true }
-pdfcraft-content = { workspace = true }
-pdfcraft-annot = { workspace = true }
+cleonpdf-cos = { workspace = true }
+cleonpdf-model = { workspace = true }
+cleonpdf-content = { workspace = true }
+cleonpdf-annot = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }

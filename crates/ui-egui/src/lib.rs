@@ -1,9 +1,9 @@
-//! pdfcraft-ui-egui — the first PdfCraft shell (L7).
+//! cleonpdf-ui-egui — the first CleonPDF shell (L7).
 //!
 //! Layout grammar follows plan/acrobat/02-ui-ux.md §1: tab strip, mode bar, left tool panel,
 //! floating quick-action bar, document area, right panel + right rail with page navigation.
 //! Everything here is presentation: documents, rendering and the tool catalogue live in
-//! `pdfcraft-engine`.
+//! `cleonpdf-engine`.
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
@@ -101,14 +101,14 @@ mod redact_ui;
 pub use redact_ui::{HiddenDraft, PagesDraft as RedactPagesDraft, RedactPrefs, SearchDraft as RedactSearchDraft, SearchMode as RedactSearchMode};
 pub mod i18n;
 
-/// [`PdfCraftApp::date_text`] for callers that already borrow other parts of the app.
+/// [`CleonPdfApp::date_text`] for callers that already borrow other parts of the app.
 pub(crate) fn date_text(session: &Session, fmt: Option<&str>) -> Result<String, String> {
     let lang = session.date_language().unwrap_or(i18n::current().code());
     session.today_text(fmt, Some(lang))
 }
 
 /// Today in Preferences ▸ Date format for stamping into a PDF; refused when it has characters
-/// Fill & Sign can't write yet (see [`pdfcraft_engine::dates::unwritable`]).
+/// Fill & Sign can't write yet (see [`cleonpdf_engine::dates::unwritable`]).
 pub(crate) fn date_text_for_pdf(session: &Session) -> Result<String, String> {
     let lang = session.date_language().unwrap_or(i18n::current().code());
     session.today_text_for_pdf(None, Some(lang))
@@ -136,7 +136,7 @@ pub mod window_controls;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod open_worker_tests;
 
-use pdfcraft_engine::{DocId, Session};
+use cleonpdf_engine::{DocId, Session};
 
 pub use canvas::{DocView, RasterMemory};
 pub use editing::{CloseRequest, SaveTarget};
@@ -219,7 +219,7 @@ pub enum QuickTool {
     /// Edit a PDF ▸ Edit text: click a line of existing text to edit it.
     EditText,
     /// Add a stamp: click to place this stamp.
-    Stamp(pdfcraft_engine::StampKind),
+    Stamp(cleonpdf_engine::StampKind),
     /// A custom stamp from the library (its index).
     CustomStamp(usize),
     /// Edit a PDF ▸ Link: draw link areas, select and edit links.
@@ -252,7 +252,7 @@ fn read_grid_file((name, source): GridFile) -> Result<(String, Vec<u8>), (String
 
 /// Files dropped on a document's page grid.
 struct GridDrop {
-    doc: pdfcraft_engine::DocId,
+    doc: cleonpdf_engine::DocId,
     files: Vec<GridFile>,
     /// When to stop waiting for the pointer (egui time, seconds).
     deadline: f64,
@@ -272,7 +272,7 @@ pub enum Dialog {
     /// Set Page Boxes (crop, trim, bleed, art, media).
     PageBoxes,
     /// Add / Update Header and Footer, Watermark, Background.
-    Marks(pdfcraft_engine::MarkKind),
+    Marks(cleonpdf_engine::MarkKind),
     /// Export a PDF ▸ Image / Text.
     Export(export_ui::ExportKind),
     /// Fill & Sign ▸ Create signature (the drawing pad).
@@ -386,7 +386,7 @@ pub enum OsEvent {
 /// Returns the [`OsEvent`]s that arrived since it was last called (set by the desktop app).
 pub type OsEventsFn = Box<dyn FnMut() -> Vec<OsEvent>>;
 
-/// Hands a saved PDF to the page embedding PdfCraft (web): `(name, bytes, save_as)`. `save_as`
+/// Hands a saved PDF to the page embedding CleonPDF (web): `(name, bytes, save_as)`. `save_as`
 /// is `true` for Save As. Set by the web app when a host page (such as a Nextcloud app) asked
 /// for saves; without it the browser downloads the file.
 pub type HostSaveFn = Box<dyn Fn(&str, &[u8], bool) -> Result<(), String>>;
@@ -411,7 +411,7 @@ pub struct PasswordPrompt {
     /// the document is unlocked.
     then: Option<&'static str>,
     /// A link destination to apply after the linked PDF is unlocked.
-    after_open: Option<pdfcraft_render::RemoteDestination>,
+    after_open: Option<cleonpdf_render::RemoteDestination>,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -422,7 +422,7 @@ struct PendingOpen {
     path: Option<String>,
     stamp: Option<file_watch::Stamp>,
     activate: bool,
-    after_open: Option<pdfcraft_render::RemoteDestination>,
+    after_open: Option<cleonpdf_render::RemoteDestination>,
     recovered: Option<RecoveryMeta>,
     then: Option<&'static str>,
 }
@@ -435,7 +435,7 @@ struct OpenRequest {
     input: open_worker::Input,
     password: Option<String>,
     activate: bool,
-    after_open: Option<pdfcraft_render::RemoteDestination>,
+    after_open: Option<cleonpdf_render::RemoteDestination>,
     recovered: Option<RecoveryMeta>,
     then: Option<&'static str>,
 }
@@ -452,7 +452,7 @@ pub struct UnlockPrompt {
 }
 
 impl UnlockPrompt {
-    pub(crate) fn new(doc: &pdfcraft_engine::Document, then: Option<&'static str>) -> Self {
+    pub(crate) fn new(doc: &cleonpdf_engine::Document, then: Option<&'static str>) -> Self {
         Self { doc: doc.id, name: doc.name.clone(), input: String::new(), error: None, then }
     }
 }
@@ -465,7 +465,7 @@ pub struct RecentFile {
     pub size: usize,
 }
 
-pub struct PdfCraftApp {
+pub struct CleonPdfApp {
     pub docking: docking::Workspace,
     pub(crate) pending_panel_reveals: Vec<docking::Panel>,
     pub session: Session,
@@ -510,10 +510,10 @@ pub struct PdfCraftApp {
     pub theme_preference: ThemePreference,
     /// The reading-colours preference (Preferences ▸ Reading colours): applied to every open
     /// document, and documents open with it (Acrobat's Replace Document Colors).
-    pub reading_colors: pdfcraft_render::ReadingColors,
+    pub reading_colors: cleonpdf_render::ReadingColors,
     /// The Linux portal is enabled only by the native host, and starts on the first System choice.
     #[cfg(target_os = "linux")]
-    desktop_theme: Option<pdfcraft_platform::desktop_theme::DesktopTheme>,
+    desktop_theme: Option<cleonpdf_platform::desktop_theme::DesktopTheme>,
     #[cfg(target_os = "linux")]
     desktop_theme_enabled: bool,
     /// How far a mouse-wheel notch scrolls.
@@ -549,10 +549,10 @@ pub struct PdfCraftApp {
     pub palette_query: String,
     pub all_tools_expanded: bool,
     pub recent: Vec<RecentFile>,
-    /// Preferences: reopen the files that were open when PdfCraft last closed (#442).
+    /// Preferences: reopen the files that were open when CleonPDF last closed (#442).
     pub reopen_last_session: bool,
-    /// The files open when PdfCraft last closed, read from the settings for
-    /// [`PdfCraftApp::reopen_last_files`].
+    /// The files open when CleonPDF last closed, read from the settings for
+    /// [`CleonPdfApp::reopen_last_files`].
     pub last_session: last_session::LastSession,
     /// Quitting closes unsaved tabs one by one: what was open when the quit began.
     quit_session: Option<last_session::LastSession>,
@@ -609,7 +609,7 @@ pub struct PdfCraftApp {
     /// Document Properties ▸ Description fields being edited: (document, Title/Author/Subject/Keywords).
     pub props_draft: Option<(DocId, [String; 4])>,
     /// Document Properties ▸ Initial View (and reading options) being edited.
-    pub view_draft: Option<(DocId, pdfcraft_engine::InitialView)>,
+    pub view_draft: Option<(DocId, cleonpdf_engine::InitialView)>,
     /// Files picked asynchronously for combine / insert (web).
     pub requests: files::Requests,
     /// Native file pickers in flight (they never block the frame; see `pickers`).
@@ -625,7 +625,7 @@ pub struct PdfCraftApp {
     pub extract_draft: ExtractDraft,
     pub rotate_draft: RotateDraft,
     /// Summarize Comments: sort order.
-    pub summary_sort: pdfcraft_engine::SummarySort,
+    pub summary_sort: cleonpdf_engine::SummarySort,
     /// The signing dialogs' state.
     pub sign_draft: Option<SignDraft>,
     /// Digital ID files the user has created or added.
@@ -642,7 +642,7 @@ pub struct PdfCraftApp {
     pub run_inline: bool,
     /// Action Wizard: the user's actions, the dialog state, the running action and (tests) the
     /// files to use instead of a picker.
-    pub custom_actions: Vec<pdfcraft_engine::actions::Action>,
+    pub custom_actions: Vec<cleonpdf_engine::actions::Action>,
     pub wizard: actions_ui::Wizard,
     pub action_run: Option<std::sync::Arc<std::sync::Mutex<actions_ui::RunProgress>>>,
     pub action_files_override: Option<Vec<String>>,
@@ -657,13 +657,13 @@ pub struct PdfCraftApp {
     pub a11y: a11y_ui::A11yState,
     pub(crate) tags_state: tags_ui::State,
     /// Rules skipped by hand, for the document they were skipped in.
-    pub a11y_skipped: std::collections::HashSet<(DocId, pdfcraft_engine::a11y::Rule)>,
+    pub a11y_skipped: std::collections::HashSet<(DocId, cleonpdf_engine::a11y::Rule)>,
     pub alt_draft: a11y_ui::AltDraft,
     /// List the OS key store's signing identities among the digital IDs (the desktop app).
     pub os_key_store_ids: bool,
     pub cert_viewer: Option<sign_ui::CertViewer>,
     /// The last space audit.
-    pub space_audit: Vec<pdfcraft_engine::optimize::SpaceUse>,
+    pub space_audit: Vec<cleonpdf_engine::optimize::SpaceUse>,
     /// Combine files: the files staged so far.
     pub combine_draft: Vec<combine_ui::CombineFile>,
     /// The combine list's field-name conflict preview (computed once per list, never saved).
@@ -675,7 +675,7 @@ pub struct PdfCraftApp {
     /// Combine files as thumbnails or as the table (kept in the settings).
     pub combine_view: combine_ui::CombineView,
     /// How large the Combine grid draws its cards (1.0 = the usual; kept in the settings). Set
-    /// with [`PdfCraftApp::set_combine_zoom`].
+    /// with [`CleonPdfApp::set_combine_zoom`].
     pub combine_zoom: f32,
     /// The Combine grid's thumbnails: rendered off the UI thread, a few at a time.
     pub(crate) combine_thumbs: combine_grid::Thumbs,
@@ -696,7 +696,7 @@ pub struct PdfCraftApp {
     grid_drop: Option<GridDrop>,
     /// The last snapshot (width, height, RGBA); `system_clipboard` also puts it on the
     /// system clipboard (tests turn that off).
-    pub last_snapshot: Option<(u32, u32, pdfcraft_render::Pixels)>,
+    pub last_snapshot: Option<(u32, u32, cleonpdf_render::Pixels)>,
     /// The last image copied with Copy Image (width, height, straight RGBA), also put on the
     /// system clipboard when `system_clipboard` is on.
     pub last_copied_image: Option<(u32, u32, Vec<u8>)>,
@@ -773,7 +773,7 @@ pub struct PdfCraftApp {
     pub print_draft: PrintDraft,
     pub link_draft: Option<LinkDraft>,
     /// The style new text gets (Edit a PDF ▸ Format text).
-    pub text_style: pdfcraft_engine::AddedText,
+    pub text_style: cleonpdf_engine::AddedText,
     /// The Replace Pages dialog's state.
     pub replace_draft: Option<files::ReplaceDraft>,
     /// The last web link the app asked the system to open (tests and automation).
@@ -817,7 +817,7 @@ pub struct PendingLink {
 pub struct PendingRemoteLink {
     pub source: DocId,
     pub path: std::path::PathBuf,
-    pub destination: pdfcraft_render::RemoteDestination,
+    pub destination: cleonpdf_render::RemoteDestination,
 }
 
 /// Settings for the Number pages dialog.
@@ -825,12 +825,12 @@ pub struct PendingRemoteLink {
 pub struct NumberDraft {
     pub from: usize,
     pub to: usize,
-    pub style: pdfcraft_engine::LabelStyle,
+    pub style: cleonpdf_engine::LabelStyle,
     pub prefix: String,
     pub start: u32,
 }
 
-impl Default for PdfCraftApp {
+impl Default for CleonPdfApp {
     fn default() -> Self {
         Self::new()
     }
@@ -855,7 +855,7 @@ fn rgb_triple(v: &serde_json::Value) -> Option<[f64; 3]> {
     Some(out)
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     pub fn new() -> Self {
         Self {
             session: Session::new(),
@@ -1039,7 +1039,7 @@ impl PdfCraftApp {
             link_draft: None,
             text_style: content_ui::default_style(),
             replace_draft: None,
-            number_draft: NumberDraft { from: 1, to: 1, style: pdfcraft_engine::LabelStyle::Decimal, prefix: String::new(), start: 1 },
+            number_draft: NumberDraft { from: 1, to: 1, style: cleonpdf_engine::LabelStyle::Decimal, prefix: String::new(), start: 1 },
         }
     }
 
@@ -1051,8 +1051,8 @@ impl PdfCraftApp {
 
     /// Open a document the way it asks to be opened: navigation panel, layout, magnification,
     /// page (Document Properties ▸ Initial View).
-    fn apply_initial_view(&mut self, index: usize, v: &pdfcraft_engine::InitialView) {
-        use pdfcraft_engine::{InitialLayout as L, Magnification as M, Navigation as N};
+    fn apply_initial_view(&mut self, index: usize, v: &cleonpdf_engine::InitialView) {
+        use cleonpdf_engine::{InitialLayout as L, Magnification as M, Navigation as N};
         let pages = self.session.get(self.views[index].id).map_or(0, |d| d.info.pages.len());
         if self.active == Some(index) {
             match v.navigation {
@@ -1206,9 +1206,9 @@ impl PdfCraftApp {
                     }
                     Err(error) => self.notify_fmt("Couldn't open {name}: {e}", &[("name", &pending.name), ("e", &error)]),
                 },
-                Err(error @ (pdfcraft_render::OpenError::NeedsPassword | pdfcraft_render::OpenError::WrongPassword)) => {
+                Err(error @ (cleonpdf_render::OpenError::NeedsPassword | cleonpdf_render::OpenError::WrongPassword)) => {
                     let password_error =
-                        matches!(error, pdfcraft_render::OpenError::WrongPassword).then(|| "Incorrect password. Try again.".to_string());
+                        matches!(error, cleonpdf_render::OpenError::WrongPassword).then(|| "Incorrect password. Try again.".to_string());
                     self.password_prompt = Some(PasswordPrompt {
                         name: pending.name,
                         path: pending.path,
@@ -1235,7 +1235,7 @@ impl PdfCraftApp {
         password: Option<&str>,
         activate: bool,
     ) -> Result<(), String> {
-        use pdfcraft_render::OpenError;
+        use cleonpdf_render::OpenError;
         let prepared = match self.session.prepare_open(name, path.clone(), bytes.clone(), password) {
             Ok(prepared) => prepared,
             Err(e @ (OpenError::NeedsPassword | OpenError::WrongPassword)) => {
@@ -1267,7 +1267,7 @@ impl PdfCraftApp {
         name: &str,
         path: Option<String>,
         size: usize,
-        prepared: pdfcraft_engine::PreparedDocument,
+        prepared: cleonpdf_engine::PreparedDocument,
         activate: bool,
     ) -> Result<DocId, String> {
         let id = self.session.commit_open(prepared);
@@ -1363,7 +1363,7 @@ impl PdfCraftApp {
     }
 
     /// The document whose page grid is showing and may take pages, if any.
-    fn grid_target(&self) -> Option<pdfcraft_engine::DocId> {
+    fn grid_target(&self) -> Option<cleonpdf_engine::DocId> {
         let view = self.active.and_then(|i| self.views.get(i)).filter(|v| v.organize)?;
         (self.dialog.is_none() && self.session.get(view.id)?.allows_assembly()).then_some(view.id)
     }
@@ -1447,7 +1447,7 @@ impl PdfCraftApp {
     pub fn attachment_action(&mut self, doc: DocId, index: usize, open: bool) {
         let Some(d) = self.session.get(doc) else { return };
         let Some(att) = d.info.attachments.get(index).cloned() else { return };
-        let data = pdfcraft_render::attachment_data(&d.bytes, d.password.as_deref(), &att);
+        let data = cleonpdf_render::attachment_data(&d.bytes, d.password.as_deref(), &att);
         match (data, open) {
             (Err(e), _) => self.notify_fmt("Couldn't read {name}: {e}", &[("name", &att.name), ("e", &e.to_string())]),
             (Ok(bytes), true) => {
@@ -1587,7 +1587,7 @@ impl PdfCraftApp {
                 }
                 _ => self.notify_tr("Restrictions lifted"),
             },
-            Err(pdfcraft_engine::EditError::WrongPassword) => {
+            Err(cleonpdf_engine::EditError::WrongPassword) => {
                 p.input.clear();
                 p.error = Some("Incorrect password. Try again.".to_string());
                 self.unlock_prompt = Some(p);
@@ -1608,20 +1608,20 @@ impl PdfCraftApp {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    pub(crate) fn open_remote_link(&mut self, source: DocId, file: String, destination: pdfcraft_render::RemoteDestination) {
+    pub(crate) fn open_remote_link(&mut self, source: DocId, file: String, destination: cleonpdf_render::RemoteDestination) {
         if self.pending_remote_link.is_some() || self.pending_link.is_some() {
             return;
         }
         let Some(source_doc) = self.session.get(source) else { return };
         let source_path = source_doc.path.clone();
-        let path = match pdfcraft_engine::resolve_remote_document_path(source_path.as_deref().map(std::path::Path::new), &file) {
+        let path = match cleonpdf_engine::resolve_remote_document_path(source_path.as_deref().map(std::path::Path::new), &file) {
             Ok(path) => path,
             Err(e) => {
                 self.notify_fmt("Couldn't follow linked PDF: {reason}", &[("reason", &e.to_string())]);
                 return;
             }
         };
-        if pdfcraft_engine::remote_document_path_is_absolute(&file) {
+        if cleonpdf_engine::remote_document_path_is_absolute(&file) {
             self.pending_remote_link = Some(PendingRemoteLink { source, path, destination });
             return;
         }
@@ -1640,7 +1640,7 @@ impl PdfCraftApp {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn open_resolved_remote_link(&mut self, path: std::path::PathBuf, destination: pdfcraft_render::RemoteDestination) {
+    fn open_resolved_remote_link(&mut self, path: std::path::PathBuf, destination: cleonpdf_render::RemoteDestination) {
         let path = path.to_string_lossy().into_owned();
         let name = std::path::Path::new(&path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| path.clone());
         let stamp = file_watch::Stamp::at(&path);
@@ -1662,7 +1662,7 @@ impl PdfCraftApp {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub(crate) fn open_remote_link(&mut self, _source: DocId, _file: String, _destination: pdfcraft_render::RemoteDestination) {
+    pub(crate) fn open_remote_link(&mut self, _source: DocId, _file: String, _destination: cleonpdf_render::RemoteDestination) {
         self.notify_tr("Local cross-PDF links require the desktop app");
     }
 
@@ -1671,17 +1671,17 @@ impl PdfCraftApp {
         self.pending_remote_link = None;
     }
 
-    fn apply_remote_destination(&mut self, destination: pdfcraft_render::RemoteDestination) {
+    fn apply_remote_destination(&mut self, destination: cleonpdf_render::RemoteDestination) {
         let Some(index) = self.views.len().checked_sub(1) else { return };
         let Some(doc) = self.session.get(self.views[index].id) else { return };
         let warning = match destination {
-            pdfcraft_render::RemoteDestination::Default => None,
-            pdfcraft_render::RemoteDestination::Named(_) => Some("The linked PDF opened, but its named destination was not applied."),
-            pdfcraft_render::RemoteDestination::Page { page, view } if page < doc.info.pages.len() => {
+            cleonpdf_render::RemoteDestination::Default => None,
+            cleonpdf_render::RemoteDestination::Named(_) => Some("The linked PDF opened, but its named destination was not applied."),
+            cleonpdf_render::RemoteDestination::Page { page, view } if page < doc.info.pages.len() => {
                 self.views[index].go_to_dest(page, view, &doc.info);
                 None
             }
-            pdfcraft_render::RemoteDestination::Page { .. } => Some("The linked PDF opened, but its page destination was out of range."),
+            cleonpdf_render::RemoteDestination::Page { .. } => Some("The linked PDF opened, but its page destination was out of range."),
         };
         if let Some(warning) = warning {
             self.notify_tr(warning);
@@ -1838,7 +1838,7 @@ impl PdfCraftApp {
         client
     }
 
-    /// Open a web link in the system browser (a new tab on the web). Only for PdfCraft's own
+    /// Open a web link in the system browser (a new tab on the web). Only for CleonPDF's own
     /// links; an address that came from a document goes through [`Self::request_document_url`].
     pub fn open_url(&mut self, url: &str) {
         if let Some(ctx) = &self.ctx {
@@ -1852,18 +1852,18 @@ impl PdfCraftApp {
     /// (#90, #91). While one request is waiting, further ones are dropped, so a script can't
     /// queue up a stream of dialogs.
     pub fn request_document_url(&mut self, url: &str, origin: LinkOrigin) {
-        match pdfcraft_engine::links::document_url(url) {
+        match cleonpdf_engine::links::document_url(url) {
             Ok(url) => {
                 if self.pending_link.is_none() && self.pending_remote_link.is_none() {
                     self.pending_link = Some(PendingLink { url, origin });
                 }
             }
             Err(e) => {
-                use pdfcraft_engine::links::BlockedLink;
+                use cleonpdf_engine::links::BlockedLink;
                 let template = if matches!(e, BlockedLink::MailFile | BlockedLink::MailEncodedWord) {
-                    "{who} in this document tried to open an address PdfCraft won't open: {e}."
+                    "{who} in this document tried to open an address CleonPDF won't open: {e}."
                 } else {
-                    "{who} in this document tried to open an address PdfCraft won't open: {e}. Only web (http, https) and email (mailto) links open from documents."
+                    "{who} in this document tried to open an address CleonPDF won't open: {e}. Only web (http, https) and email (mailto) links open from documents."
                 };
                 self.notify_fmt(template, &[("who", tl!(origin.noun())), ("e", &e.to_string())]);
             }
@@ -1912,7 +1912,7 @@ impl PdfCraftApp {
     /// The app-wide reading-colours preference: sets it and applies it to every open document,
     /// not just the active one (Preferences ▸ Reading colours, Acrobat's Replace Document
     /// Colors). A document the change actually touches re-renders.
-    pub fn set_reading_colors(&mut self, colors: pdfcraft_render::ReadingColors) {
+    pub fn set_reading_colors(&mut self, colors: cleonpdf_render::ReadingColors) {
         self.reading_colors = colors;
         for i in 0..self.views.len() {
             // Idempotent per document: the engine says whether anything changed.
@@ -1944,13 +1944,13 @@ impl PdfCraftApp {
             let active = self.theme_preference == ThemePreference::System;
             if self.desktop_theme_enabled && active && self.desktop_theme.is_none() {
                 let ctx = ctx.clone();
-                self.desktop_theme = Some(pdfcraft_platform::desktop_theme::DesktopTheme::start(move || ctx.request_repaint()));
+                self.desktop_theme = Some(cleonpdf_platform::desktop_theme::DesktopTheme::start(move || ctx.request_repaint()));
             }
             if let Some(desktop) = &self.desktop_theme {
                 desktop.set_active(active);
                 // The standard portal supplies Linux desktop appearance. No preference
                 // must clear an earlier answer rather than retaining stale dark chrome.
-                system = desktop.get().map(|appearance| appearance == pdfcraft_platform::desktop_theme::DesktopAppearance::Dark);
+                system = desktop.get().map(|appearance| appearance == cleonpdf_platform::desktop_theme::DesktopAppearance::Dark);
             }
         }
         let kind = self.theme_preference.resolve(system, ThemeKind::Light);
@@ -1962,12 +1962,12 @@ impl PdfCraftApp {
 
     /// Run a catalogue command. Commands that aren't implemented yet say which milestone ships them.
     pub fn run_command(&mut self, command: &str) {
-        if let Some(spec) = pdfcraft_engine::commands::command(command) {
-            use pdfcraft_engine::commands::Needs;
+        if let Some(spec) = cleonpdf_engine::commands::command(command) {
+            use cleonpdf_engine::commands::Needs;
             // A tool that needs a document, chosen with none open, asks for the file and then
             // runs on it, instead of only saying to open one first.
             let needs_document = !matches!(spec.needs, Needs::Nothing | Needs::Undo | Needs::Redo);
-            let is_tool = pdfcraft_engine::catalog::TOOL_GROUPS
+            let is_tool = cleonpdf_engine::catalog::TOOL_GROUPS
                 .iter()
                 .flat_map(|g| g.sections.iter().flat_map(|s| s.items.iter()))
                 .any(|i| i.command == spec.id);
@@ -1979,14 +1979,14 @@ impl PdfCraftApp {
             return;
         }
         // Not implemented yet: say which milestone ships it.
-        let when = pdfcraft_engine::catalog::TOOL_GROUPS
+        let when = cleonpdf_engine::catalog::TOOL_GROUPS
             .iter()
             .flat_map(|g| g.sections.iter().flat_map(|s| s.items.iter()))
             .find(|i| i.command == command)
             .map(|i| match i.availability {
-                pdfcraft_engine::catalog::Availability::Planned(m) => crate::i18n::fmt(tl!("ships in milestone {m}"), &[("m", m)]),
-                pdfcraft_engine::catalog::Availability::Provider => tl!("needs an AI provider (off by default)").to_string(),
-                pdfcraft_engine::catalog::Availability::Ready => tl!("is available").to_string(),
+                cleonpdf_engine::catalog::Availability::Planned(m) => crate::i18n::fmt(tl!("ships in milestone {m}"), &[("m", m)]),
+                cleonpdf_engine::catalog::Availability::Provider => tl!("needs an AI provider (off by default)").to_string(),
+                cleonpdf_engine::catalog::Availability::Ready => tl!("is available").to_string(),
             })
             .unwrap_or_else(|| tl!("is not available yet").to_string());
         self.notify_fmt("`{command}` {when}", &[("command", command), ("when", &when)]);
@@ -1995,7 +1995,7 @@ impl PdfCraftApp {
     /// Ask for a file to open, then run `spec` on it once it is open (or unlocked). Nothing runs
     /// when the picker is cancelled or the file doesn't open.
     #[cfg(not(target_arch = "wasm32"))]
-    fn open_then_run(&mut self, spec: &'static pdfcraft_engine::commands::CommandSpec) {
+    fn open_then_run(&mut self, spec: &'static cleonpdf_engine::commands::CommandSpec) {
         self.startup_superseded = true;
         let dialog = Self::open_picker().set_title(tl!(spec.label).trim_end_matches('…'));
         let command = spec.id;
@@ -2007,7 +2007,7 @@ impl PdfCraftApp {
 
     /// Browsers read the picked file asynchronously; it opens, and the tool can be chosen again.
     #[cfg(target_arch = "wasm32")]
-    fn open_then_run(&mut self, _spec: &'static pdfcraft_engine::commands::CommandSpec) {
+    fn open_then_run(&mut self, _spec: &'static cleonpdf_engine::commands::CommandSpec) {
         self.open_dialog();
     }
 
@@ -2095,7 +2095,7 @@ impl PdfCraftApp {
 
     /// Serialize the user's persistent state (recent files, theme). Local only.
     pub fn persist(&self) -> String {
-        let trusted: Vec<String> = self.session.trusted_certificates().iter().map(pdfcraft_engine::sign::x509::to_pem).collect();
+        let trusted: Vec<String> = self.session.trusted_certificates().iter().map(cleonpdf_engine::sign::x509::to_pem).collect();
         serde_json::json!({
             "docking": self.docking,
             "docking_left_open": self.left_open,
@@ -2236,7 +2236,7 @@ impl PdfCraftApp {
         }
         // Settings are untrusted: an unreadable value (a colour that isn't three bytes, say)
         // fails to deserialize and keeps Off.
-        if let Ok(colors) = serde_json::from_value::<pdfcraft_render::ReadingColors>(v["reading_colors"].clone()) {
+        if let Ok(colors) = serde_json::from_value::<cleonpdf_render::ReadingColors>(v["reading_colors"].clone()) {
             self.reading_colors = colors;
         }
         // Settings are untrusted: a size out of range follows the system instead.
@@ -2306,7 +2306,7 @@ impl PdfCraftApp {
             self.session.set_javascript(on);
         }
         if let Ok(pems) = serde_json::from_value::<Vec<String>>(v["trusted"].clone()) {
-            let certs = pems.iter().filter_map(|p| pdfcraft_engine::sign::x509::load_certificates(p.as_bytes()).ok()).flatten().collect();
+            let certs = pems.iter().filter_map(|p| cleonpdf_engine::sign::x509::load_certificates(p.as_bytes()).ok()).flatten().collect();
             self.session.set_trusted_certificates(certs);
         }
     }
@@ -2372,7 +2372,7 @@ impl PdfCraftApp {
             ("date-format", _) => self.session.set_date_format(value)?,
             ("date-language", _) => self.session.set_date_language(Some(value).filter(|v| *v != "auto"))?,
             ("tool", _) => {
-                let g = pdfcraft_engine::catalog::group(value).ok_or_else(|| format!("unknown tool {value}"))?;
+                let g = cleonpdf_engine::catalog::group(value).ok_or_else(|| format!("unknown tool {value}"))?;
                 self.select_tool(g.id);
             }
             ("left", _) => self.left_open = value != "closed",
@@ -2387,9 +2387,9 @@ impl PdfCraftApp {
                     "split" => Some(Dialog::Split),
                     "protect" => Some(Dialog::Protect),
                     "page-boxes" => Some(Dialog::PageBoxes),
-                    "header-footer" => Some(Dialog::Marks(pdfcraft_engine::MarkKind::HeaderFooter)),
-                    "watermark" => Some(Dialog::Marks(pdfcraft_engine::MarkKind::Watermark)),
-                    "background" => Some(Dialog::Marks(pdfcraft_engine::MarkKind::Background)),
+                    "header-footer" => Some(Dialog::Marks(cleonpdf_engine::MarkKind::HeaderFooter)),
+                    "watermark" => Some(Dialog::Marks(cleonpdf_engine::MarkKind::Watermark)),
+                    "background" => Some(Dialog::Marks(cleonpdf_engine::MarkKind::Background)),
                     "export-image" => Some(Dialog::Export(export_ui::ExportKind::Image)),
                     "export-text" => Some(Dialog::Export(export_ui::ExportKind::Text)),
                     "export-all-images" => Some(Dialog::Export(export_ui::ExportKind::AllImages)),
@@ -2536,7 +2536,7 @@ impl PdfCraftApp {
                         QuickTool::CustomStamp(i)
                     }
                     stamp if stamp.starts_with("stamp-") => QuickTool::Stamp(
-                        pdfcraft_engine::StampKind::ALL
+                        cleonpdf_engine::StampKind::ALL
                             .into_iter()
                             .find(|k| k.name().trim_start_matches("PC").eq_ignore_ascii_case(&stamp[6..]))
                             .ok_or_else(|| format!("unknown stamp {stamp}"))?,
@@ -2682,12 +2682,12 @@ pub(crate) fn copy_refused() -> &'static str {
     tl!("The document's security settings don't allow copying text and images")
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     /// Whether text and images may be copied out of document `id`; says why not when they may
     /// not. Reading aloud and accessibility tools don't ask (assistive technology may read
     /// anything, §7.6.4.2).
     pub(crate) fn may_copy(&mut self, id: DocId) -> bool {
-        if self.session.get(id).is_none_or(pdfcraft_engine::Document::allows_copying) {
+        if self.session.get(id).is_none_or(cleonpdf_engine::Document::allows_copying) {
             return true;
         }
         self.notify(copy_refused().to_string());
@@ -2740,7 +2740,7 @@ impl PdfCraftApp {
     }
 }
 
-impl eframe::App for PdfCraftApp {
+impl eframe::App for CleonPdfApp {
     /// While files are dragged over the window the system sends no pointer moves, so egui
     /// would keep the place the pointer entered at: tell it where the pointer really is, so the
     /// page grid can show (and use) the gap under it.
@@ -2757,7 +2757,7 @@ impl eframe::App for PdfCraftApp {
     }
 
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        storage.set_string("pdfcraft", self.persist());
+        storage.set_string("cleonpdf", self.persist());
     }
 
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -2933,7 +2933,7 @@ impl eframe::App for PdfCraftApp {
             .and_then(|i| self.session.get(self.views[i].id))
             .map(|d| d.display_name())
             .or_else(|| self.combine_showing().then(|| tl!("Combine files").to_owned()))
-            .map_or_else(|| "PdfCraft".to_owned(), |name| format!("{name} — PdfCraft"));
+            .map_or_else(|| "CleonPDF".to_owned(), |name| format!("{name} — CleonPDF"));
         if title != self.window_title {
             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
             self.window_title = title;
@@ -2997,7 +2997,7 @@ impl eframe::App for PdfCraftApp {
     }
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     fn finish_render_frame(&mut self, ctx: &egui::Context) {
         // The Combine grid's thumbnails, whichever tab shows (renders under way still finish).
         self.combine_thumbs_frame(ctx);

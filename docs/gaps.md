@@ -1,4 +1,4 @@
-# Where PdfCraft falls short of Acrobat Pro
+# Where CleonPDF falls short of Acrobat Pro
 
 > **Last reviewed:** 2026-10-12 · **Last updated:** 2026-10-12 · **Change:** minor (gap 6: #1398 stamps read upright on rotated pages; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-12 · **Last updated:** 2026-10-12 · **Change:** minor (gap 6: #1317, #1327, #1302, #1315 and #1340; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
@@ -94,7 +94,7 @@ update the numbers.
   removes a distinct neighbour whose glyph box overlaps (#1316); a second drawing on the same
   baseline is still replaced. Estimates are unchanged.
 
-- **Missing:** robust in-place editing of text PdfCraft didn't write: subset fonts without the
+- **Missing:** robust in-place editing of text CleonPDF didn't write: subset fonts without the
   needed glyphs, CJK and right-to-left text, rotated text, lists, superscript/subscript, keeping
   structure tags, find and replace in edit mode; vector and object editing; arrange and align.
 - **Evidence:** `edit.text-edit` is partial (font reused or Helvetica substituted);
@@ -197,12 +197,12 @@ update the numbers.
 
 - **Missing:** auto-tag mixed text, images, tables, lists, links and fields; connect preview heading
   proposals to Apply; visual Order and Content panels, Reading Order tool, table editor, Make Accessible action,
-  Read Out Loud; full keyboard operation of PdfCraft itself and a screen-reader audit.
+  Read Out Loud; full keyboard operation of CleonPDF itself and a screen-reader audit.
 - **Evidence:** all 32 checker rules, figure alt text, tag property and sibling order edits, and
   a bounded auto-tag preview exist. Apply writes valid structure and parent-tree links for
   text-only files; it refuses mixed content and existing tags;
   `a11y.keyboard-only` (P0) planned, `a11y.app-screen-reader` partial.
-- **Impact:** most untagged files still need another editor to build their structure; PdfCraft itself is
+- **Impact:** most untagged files still need another editor to build their structure; CleonPDF itself is
   not yet usable without a mouse.
 - **Estimate:** 40–70 h. **Doc:** [target-app-parity.md](target-app-parity.md).
 
@@ -328,7 +328,7 @@ update the numbers.
 | 2026-10-12 | minor | #1316: replacing a line or paragraph keeps a neighbouring line whose glyph box overlaps. Gap 3 remains. Estimates unchanged. |
 | 2026-10-12 | minor | Exclusive image crops resize with their pixels across nested states, intervening operators and content streams; shared clips remain fixed. Synthetic engine/tool regressions and private image save/reopen checks; estimates unchanged. |
 | 2026-10-12 | minor | Gap 13: measured large-file memory; edits no longer keep the previous working file while writing the next (peak 3 → 2 copies); file-backed input recorded as blocked on gap 2 |
-| 2026-10-11 | minor | Closed gap 4: the web build prints through the browser's print dialog (sheets drawn by PdfCraft at 150–300 dpi, one per printed page); number kept |
+| 2026-10-11 | minor | Closed gap 4: the web build prints through the browser's print dialog (sheets drawn by CleonPDF at 150–300 dpi, one per printed page); number kept |
 | 2026-10-11 | minor | Word invoice failure #773 has synthetic regression coverage; broader Office conversion remains gap 8. |
 | 2026-10-11 | minor | Contributor fork: mixed-style visual regions, source-font space reuse and a read-only textless background. Embedded sfnt source faces and Mac subset Unicode mappings keep edit baselines stable; live frames follow Apply/Save geometry as text grows or shrinks. Engine/tool/UI regressions and private all-page checks cover the changes; full matching font import, CFF, range styles, shaping and private Chinese typing checks added; legacy programs and general fidelity remain open; estimates unchanged |
 | 2026-10-11 | patch | Gap 2: 23 hayro-interpret and 10 hayro patches after axial and radial shadings became native gradients (backport of hayro 0.8) |

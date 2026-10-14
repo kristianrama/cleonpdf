@@ -189,7 +189,7 @@ fn custom_pages_per_sheet_never_overfill_the_grid() {
     assert!(matches!(layout(&sizes, &settings(vec![0], grid(0))), Err(PrintError::Invalid(_))));
     // The imposed PDF has one page per sheet.
     let out = impose(&fixture(7), &settings((0..7).collect(), Layout::multiple(3))).unwrap();
-    assert_eq!(pdfcraft_model::pages(&Document::open(Arc::new(out)).unwrap()).len(), 3);
+    assert_eq!(cleonpdf_model::pages(&Document::open(Arc::new(out)).unwrap()).len(), 3);
 }
 
 #[test]
@@ -232,7 +232,7 @@ fn imposed_pdf_has_the_sheets_and_honours_comments_and_forms() {
     let doc = fixture(3);
     let out = impose(&doc, &settings(vec![0, 1, 2], Layout::multiple(2))).unwrap();
     let printed = Document::open(Arc::new(out.clone())).unwrap();
-    let pages = pdfcraft_model::pages(&printed);
+    let pages = cleonpdf_model::pages(&printed);
     assert_eq!(pages.len(), 2);
     assert_eq!(pages[0].crop(&printed), [0.0, 0.0, 792.0, 612.0]);
     // The source pages are form XObjects holding their content.
@@ -497,8 +497,8 @@ fn printer_option_defaults_and_job_arguments() {
 mod cups_options {
     use crate::spool;
 
-    const RECORD: &str = "PDFCRAFT_LPOPTIONS_TEST_RECORD";
-    const ANSWER: &str = "PDFCRAFT_LPOPTIONS_TEST_ANSWER";
+    const RECORD: &str = "CLEONPDF_LPOPTIONS_TEST_RECORD";
+    const ANSWER: &str = "CLEONPDF_LPOPTIONS_TEST_ANSWER";
 
     /// The child process stands in for lpoptions, recording its real arguments.
     #[test]
@@ -522,7 +522,7 @@ mod cups_options {
         for _ in 0..32 {
             let mut nonce = [0; 16];
             random.read_exact(&mut nonce).unwrap();
-            let path = std::env::temp_dir().join(format!("pdfcraft-cups-options-{:032x}", u128::from_be_bytes(nonce)));
+            let path = std::env::temp_dir().join(format!("cleonpdf-cups-options-{:032x}", u128::from_be_bytes(nonce)));
             // Atomic creation, private permissions from the outset; never reuse an existing
             // path (including a symlink) in the shared temporary directory.
             match std::fs::DirBuilder::new().mode(0o700).create(&path) {

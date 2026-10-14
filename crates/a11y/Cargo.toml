@@ -1,5 +1,5 @@
 [package]
-name = "pdfcraft-a11y"
+name = "cleonpdf-a11y"
 description = "Accessibility: the Accessibility Checker (32 rules), its report and fixes"
 version.workspace = true
 edition.workspace = true
@@ -11,9 +11,9 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-pdfcraft-cos = { workspace = true }
-pdfcraft-model = { workspace = true }
-pdfcraft-content = { workspace = true }
-pdfcraft-filters = { workspace = true }
-pdfcraft-fonts = { workspace = true }
+cleonpdf-cos = { workspace = true }
+cleonpdf-model = { workspace = true }
+cleonpdf-content = { workspace = true }
+cleonpdf-filters = { workspace = true }
+cleonpdf-fonts = { workspace = true }
 thiserror.workspace = true

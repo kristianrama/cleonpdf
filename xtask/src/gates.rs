@@ -18,9 +18,9 @@ pub fn target_dir() -> PathBuf {
     std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root().join("target"), |d| root().join(d))
 }
 
-/// The release `pdfcraft-cli` that `cargo build --release -p pdfcraft-cli` produced.
+/// The release `cleonpdf-cli` that `cargo build --release -p cleonpdf-cli` produced.
 pub fn release_cli() -> PathBuf {
-    target_dir().join("release").join(format!("pdfcraft-cli{}", std::env::consts::EXE_SUFFIX))
+    target_dir().join("release").join(format!("cleonpdf-cli{}", std::env::consts::EXE_SUFFIX))
 }
 
 fn cargo() -> Command {
@@ -153,11 +153,11 @@ pub fn check(args: &[String]) -> anyhow::Result<()> {
         }
         crate::corpus::State::Verified { files } => println!("corpus verified: {files} files at {}", crate::corpus::PDFJS_COMMIT),
     }
-    run_args(&["build", "--release", "-p", "pdfcraft-cli"])?;
+    run_args(&["build", "--release", "-p", "cleonpdf-cli"])?;
     let report = target_dir().join("check-pdfjs.json");
     let mut c = Command::new(release_cli());
     c.args(["check"]).arg(&corpus).args(["--timeout", "20", "--dpi", "36", "--json"]).arg(&report);
-    run(c, "pdfcraft-cli check corpus/pdfjs")?;
+    run(c, "cleonpdf-cli check corpus/pdfjs")?;
     let results: Vec<serde_json::Value> = serde_json::from_str(&std::fs::read_to_string(&report)?)?;
     let name =
         |v: &serde_json::Value| Path::new(v["file"].as_str().unwrap_or("")).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
@@ -195,7 +195,7 @@ pub fn check(args: &[String]) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `cargo xtask text-oracle [--limit N]`: compare `pdfcraft-cli text` with poppler's `pdftotext`
+/// `cargo xtask text-oracle [--limit N]`: compare `cleonpdf-cli text` with poppler's `pdftotext`
 /// (external oracle process, never linked) over the corpus. Reports word-level F1 per file and the
 /// median. Plan target (M2): median ≥ 0.97.
 pub fn text_oracle(args: &[String]) -> anyhow::Result<()> {
@@ -203,7 +203,7 @@ pub fn text_oracle(args: &[String]) -> anyhow::Result<()> {
     if Command::new("pdftotext").arg("-v").output().is_err() {
         bail!("pdftotext (poppler) not found; install it to run the text oracle (brew install poppler / apt install poppler-utils)");
     }
-    run_args(&["build", "--release", "-p", "pdfcraft-cli"])?;
+    run_args(&["build", "--release", "-p", "cleonpdf-cli"])?;
     let corpus = root().join("corpus/pdfjs/test/pdfs");
     let mut files: Vec<PathBuf> =
         std::fs::read_dir(&corpus)?.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e == "pdf")).collect();
@@ -301,9 +301,9 @@ mod tests {
     // The bundle id must match the app id the binary uses; renames change both (#174).
     #[test]
     fn macos_bundle_id_matches_app_id() {
-        assert!(read("packaging/macos/Info.plist.in").contains("<string>ai.storyteller.pdfcraft</string>"), "bundle id");
-        let main = read("apps/pdfcraft/src/main.rs");
-        assert!(main.contains(r#"const APP_ID: &str = "ai.storyteller.pdfcraft""#), "APP_ID drifted from the bundle id");
+        assert!(read("packaging/macos/Info.plist.in").contains("<string>io.github.kristianrama.cleonpdf</string>"), "bundle id");
+        let main = read("apps/cleonpdf/src/main.rs");
+        assert!(main.contains(r#"const APP_ID: &str = "io.github.kristianrama.cleonpdf""#), "APP_ID drifted from the bundle id");
     }
 
     // Committed file with `<!-- -->` comments stripped, so a commented-out claim cannot pass.

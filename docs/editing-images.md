@@ -8,7 +8,7 @@ together with its pixels, including nested graphics states, intervening state op
 and paths split across content streams. A clip shared with other content stays where it is.
 
 PDF figures are not always bitmap images. Imported diagrams often use a **Form XObject**,
-which packages text, vector paths, and nested images into one object. PdfCraft selects
+which packages text, vector paths, and nested images into one object. CleonPDF selects
 this object using its `BBox` and optional `Matrix` and edits it as a whole. Its original
 content, resources, clipping box, and transparency settings remain intact. Moving or
 deleting one use of a shared figure does not alter its other placements or pages.

@@ -2,19 +2,19 @@
 
 use std::sync::Arc;
 
+use cleonpdf_ui_egui::CleonPdfApp;
+use cleonpdf_ui_egui::updates::{Release, UpdateSource, is_newer};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::PdfCraftApp;
-use pdfcraft_ui_egui::updates::{Release, UpdateSource, is_newer};
 
 fn source(answer: Result<&str, &str>) -> UpdateSource {
     let answer = answer.map(str::to_string).map_err(str::to_string);
-    Arc::new(move || answer.clone().map(|v| Release { url: format!("https://github.com/storytold/pdfcraft/releases/tag/{v}"), version: v }))
+    Arc::new(move || answer.clone().map(|v| Release { url: format!("https://github.com/kristianrama/cleonpdf/releases/tag/{v}"), version: v }))
 }
 
-fn harness(answer: Result<&str, &str>) -> Harness<'static, PdfCraftApp> {
+fn harness(answer: Result<&str, &str>) -> Harness<'static, CleonPdfApp> {
     Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.update_source = Some(source(answer));
         app
@@ -22,7 +22,7 @@ fn harness(answer: Result<&str, &str>) -> Harness<'static, PdfCraftApp> {
 }
 
 /// Run frames until the background check has reported (or give up).
-fn settle(h: &mut Harness<'static, PdfCraftApp>) {
+fn settle(h: &mut Harness<'static, CleonPdfApp>) {
     for _ in 0..200 {
         h.run_steps(2);
         if h.query_by_label_contains("Checking for a newer version").is_none() {
@@ -51,7 +51,7 @@ fn a_newer_release_is_offered_for_download() {
     let mut h = harness(Ok("v99.0.0"));
     h.state_mut().execute("help.check_updates");
     settle(&mut h);
-    h.get_by_label_contains("PdfCraft 99.0.0 is available");
+    h.get_by_label_contains("CleonPDF 99.0.0 is available");
     h.get_by_label("Download");
     h.get_by_label("Later").click();
     h.run_steps(3);
@@ -78,14 +78,14 @@ fn nothing_is_asked_until_the_user_checks() {
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let counted = calls.clone();
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = CleonPdfApp::new();
         app.set_option("language", "en").unwrap();
         // Settings from a build that had the startup option are ignored.
         app.restore(r#"{"check_updates_at_start": true}"#);
         let counted = counted.clone();
         app.update_source = Some(Arc::new(move || {
             counted.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            Ok(Release { version: "v99.0.0".into(), url: "https://github.com/storytold/pdfcraft/releases/tag/v99.0.0".into() })
+            Ok(Release { version: "v99.0.0".into(), url: "https://github.com/kristianrama/cleonpdf/releases/tag/v99.0.0".into() })
         }));
         app
     });
@@ -95,5 +95,5 @@ fn nothing_is_asked_until_the_user_checks() {
     h.state_mut().execute("help.check_updates");
     settle(&mut h);
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
-    h.get_by_label_contains("PdfCraft 99.0.0 is available");
+    h.get_by_label_contains("CleonPDF 99.0.0 is available");
 }

@@ -8,7 +8,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object};
+use cleonpdf_cos::{Dict, Document, ObjRef, Object};
 
 use crate::OrganizeError;
 
@@ -185,7 +185,7 @@ impl Pruner<'_> {
             self.unsure.insert(key);
             return;
         }
-        for op in pdfcraft_content::parse(data).ops {
+        for op in cleonpdf_content::parse(data).ops {
             if op.op.as_slice() != b"Do" {
                 continue;
             }

@@ -1,7 +1,7 @@
 //! `cargo xtask assets`: enforce the asset policy (AGENTS.md §1).
 //!
 //! `ATTRIBUTION.toml` lists every asset: committed or vendored files (`[[asset]]`), files that
-//! Cargo dependencies compile into PdfCraft (`[[bundled]]`), and files xtask downloads at build
+//! Cargo dependencies compile into CleonPDF (`[[bundled]]`), and files xtask downloads at build
 //! time (`[[fetched]]`). This gate fails when:
 //! - an asset-like file in the repository has no entry, or its SHA-256 differs;
 //! - a licence is not on the allowlist, or a declared licence file is missing;
@@ -357,7 +357,7 @@ pub fn models(args: &[String]) -> Result<()> {
 
 /// The credits shipped beside the models (their licences require attribution).
 fn models_attribution(m: &Manifest) -> String {
-    let mut s = String::from("PdfCraft's text recognition (Scan & OCR) uses these models, unmodified.\n");
+    let mut s = String::from("CleonPDF's text recognition (Scan & OCR) uses these models, unmodified.\n");
     for f in m.fetched.iter().filter(|f| f.kind == "model") {
         let _ = write!(
             s,
@@ -373,7 +373,7 @@ pub fn render_markdown(m: &Manifest) -> String {
     let mut s = String::new();
     s.push_str("# Attribution\n\n");
     s.push_str("<!-- Generated from ATTRIBUTION.toml by `cargo xtask assets --write`. Do not edit by hand. -->\n\n");
-    s.push_str("Every asset PdfCraft includes, bundles or uses to build its published material, with its author, source and licence. ");
+    s.push_str("Every asset CleonPDF includes, bundles or uses to build its published material, with its author, source and licence. ");
     s.push_str(
         "The policy is in [AGENTS.md](AGENTS.md) §1. The machine-readable list, with SHA-256 hashes, is [ATTRIBUTION.toml](ATTRIBUTION.toml). ",
     );
@@ -580,7 +580,7 @@ mod tests {
     fn first_party_adobe_data_only_on_the_closed_list() {
         let l = lock(&[]);
         // The generated standard-14 table is on the list, as `kind = "data"`.
-        let mut ok = asset("crates/fonts/src/std14_metrics.rs", "Adobe (Core14 AFM metrics); tables by the PdfCraft contributors", "data", "MIT");
+        let mut ok = asset("crates/fonts/src/std14_metrics.rs", "Adobe (Core14 AFM metrics); tables by the CleonPDF contributors", "data", "MIT");
         ok.adobe_data = true;
         let m = Manifest { asset: vec![ok], ..Default::default() };
         assert!(check(&root(), &m, &[], &l).is_empty(), "{:?}", check(&root(), &m, &[], &l));

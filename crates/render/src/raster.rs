@@ -82,7 +82,7 @@ impl RenderConfig {
 /// A Japanese face from craft-fonts for a CID font of the Adobe-Japan1 collection that the PDF
 /// doesn't embed (`HeiseiMin-W3`, `KozGoPro-Medium`, …). hayro's own substitutes for fonts that
 /// aren't embedded are the Latin standard 14, so such text drew nothing. `None` for every other
-/// font, and when PdfCraft was built without craft-fonts. Only Japanese: the pinned craft-fonts
+/// font, and when CleonPDF was built without craft-fonts. Only Japanese: the pinned craft-fonts
 /// has no other CJK faces, and its later Chinese face is Noto CJK, which AGENTS.md §1.1 rules out.
 fn japanese_fallback(query: &FontQuery) -> Option<(FontData, u32)> {
     let FontQuery::Fallback(f) = query else { return None };
@@ -93,12 +93,12 @@ fn japanese_fallback(query: &FontQuery) -> Option<(FontData, u32)> {
         // BIZ UDMincho before the document face (Shippori Mincho): it covers half-width katakana
         // (U+FF61–U+FF9F), which Shippori Mincho lacks, and a character the substitute lacks is
         // drawn as .notdef.
-        JapaneseFace::Mincho => pdfcraft_fonts::ui_japanese_fonts()
+        JapaneseFace::Mincho => cleonpdf_fonts::ui_japanese_fonts()
             .into_iter()
             .find(|c| c.family == "BIZ UDMincho" && c.style == "Regular")
-            .or_else(pdfcraft_fonts::document_japanese_font),
+            .or_else(cleonpdf_fonts::document_japanese_font),
         JapaneseFace::Gothic { bold } => {
-            let faces = pdfcraft_fonts::ui_japanese_fonts();
+            let faces = cleonpdf_fonts::ui_japanese_fonts();
             let style = if bold { "Bold" } else { "Regular" };
             faces.iter().find(|c| c.family == "BIZ UDPGothic" && c.style == style).or(faces.first()).copied()
         }
@@ -766,7 +766,7 @@ impl RenderPool {
             };
             let (wtx, wrx) = sync_channel::<()>(1);
             let (shared, out, bytes, config) = (self.shared.clone(), self.results_tx.clone(), self.bytes.clone(), self.config.clone());
-            match std::thread::Builder::new().name(format!("pdfcraft-render-{id}")).spawn(move || worker(id, bytes, config, shared, wrx, out, stop)) {
+            match std::thread::Builder::new().name(format!("cleonpdf-render-{id}")).spawn(move || worker(id, bytes, config, shared, wrx, out, stop)) {
                 Ok(h) => {
                     lock(&self.wake).push(wtx);
                     lock(&self._workers).push(h);
@@ -2970,7 +2970,7 @@ trailer << /Root 1 0 R >>
 
     /// A Highlight annotation without an appearance stream (common in older and generated files)
     /// was not drawn at all. Vendored hayro-interpret patch: its /QuadPoints are filled with /C at
-    /// /CA, blended with Multiply, as PdfCraft draws its own highlights (pdfcraft-annot); MuPDF,
+    /// /CA, blended with Multiply, as CleonPDF draws its own highlights (cleonpdf-annot); MuPDF,
     /// Poppler and PDFium draw these fixtures the same way. An /AP still wins, malformed
     /// /QuadPoints or no /C draw nothing, and Hidden, NoView and "Hide all comments" still apply.
     #[test]
@@ -5609,7 +5609,7 @@ trailer << /Root 1 0 R >>
             let p = r.render(RenderRequest { page: 0, kind: RequestKind::Pixels, tile: None, scale: 1.0, tag: 0, ..Default::default() });
             assert!(p.error.is_none(), "{base_font}: {:?}", p.error);
             let inked = p.rgba.as_chunks::<4>().0.iter().filter(|c| c[0] < 128).count();
-            if pdfcraft_fonts::document_japanese_font().is_none() {
+            if cleonpdf_fonts::document_japanese_font().is_none() {
                 eprintln!("built without craft-fonts (CRAFT_FONTS_DIR unset): no Japanese face to check");
                 continue;
             }
@@ -5647,7 +5647,7 @@ trailer << /Root 1 0 R >>
     /// the substitutes have, still draws.
     #[test]
     fn cids_a_substitute_lacks_are_not_drawn_as_other_glyphs() {
-        if pdfcraft_fonts::document_japanese_font().is_none() {
+        if cleonpdf_fonts::document_japanese_font().is_none() {
             eprintln!("built without craft-fonts (CRAFT_FONTS_DIR unset): no Japanese face to check");
             return;
         }
@@ -5711,7 +5711,7 @@ trailer << /Root 1 0 R >>
     /// draws the substitute's glyph for that form now, and its 噂 for a form it doesn't have.
     #[test]
     fn variation_sequences_draw_their_kanji_in_a_substitute() {
-        if pdfcraft_fonts::document_japanese_font().is_none() {
+        if cleonpdf_fonts::document_japanese_font().is_none() {
             eprintln!("built without craft-fonts (CRAFT_FONTS_DIR unset): no Japanese face to check");
             return;
         }

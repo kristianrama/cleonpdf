@@ -1,5 +1,5 @@
 [package]
-name = "pdfcraft-cos"
+name = "cleonpdf-cos"
 description = "PDF object layer: lazy tolerant parsing, copy-on-write edits, incremental and full saving"
 version.workspace = true
 edition.workspace = true
@@ -9,8 +9,8 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-pdfcraft-crypt = { workspace = true }
-pdfcraft-filters = { workspace = true }
+cleonpdf-crypt = { workspace = true }
+cleonpdf-filters = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

@@ -1,4 +1,4 @@
-# pdfcraft-audit
+# cleonpdf-audit
 
 Layer L4 (may use `edit`): verification tooling, the faux-redaction audit.
 
@@ -28,4 +28,4 @@ Limits, by design and documented rather than hidden:
 It fails closed: an undecodable content stream, malformed `/Annots`, form XObjects nested deeper
 than 32 or in a cycle, or a walk past the operator bound is an error, never "no findings".
 
-Surfaces: the `redact_audit` automation tool and `pdfcraft-cli`.
+Surfaces: the `redact_audit` automation tool and `cleonpdf-cli`.

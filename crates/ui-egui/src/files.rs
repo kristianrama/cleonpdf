@@ -5,9 +5,9 @@
 
 use std::sync::Arc;
 
-use pdfcraft_engine::{DocId, Edit, SplitBy};
+use cleonpdf_engine::{DocId, Edit, SplitBy};
 
-use crate::PdfCraftApp;
+use crate::CleonPdfApp;
 
 /// Why files were picked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -30,9 +30,9 @@ pub enum FilePurpose {
 
 /// Discover installed document fonts off the GUI thread, only when the picker is opened.
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) fn installed_font_files(ctx: &egui::Context) -> Option<Vec<pdfcraft_engine::text_fonts::FontFile>> {
+pub(crate) fn installed_font_files(ctx: &egui::Context) -> Option<Vec<cleonpdf_engine::text_fonts::FontFile>> {
     use std::sync::{Mutex, OnceLock};
-    type Files = Arc<Mutex<Option<Vec<pdfcraft_engine::text_fonts::FontFile>>>>;
+    type Files = Arc<Mutex<Option<Vec<cleonpdf_engine::text_fonts::FontFile>>>>;
     static CACHE: OnceLock<Files> = OnceLock::new();
     let files = CACHE.get_or_init(|| {
         let files: Files = Arc::new(Mutex::new(None));
@@ -41,7 +41,7 @@ pub(crate) fn installed_font_files(ctx: &egui::Context) -> Option<Vec<pdfcraft_e
         if std::thread::Builder::new()
             .name("document-font-discovery".into())
             .spawn(move || {
-                let fonts = pdfcraft_engine::text_fonts::discover(&pdfcraft_engine::text_fonts::installed_directories());
+                let fonts = cleonpdf_engine::text_fonts::discover(&cleonpdf_engine::text_fonts::installed_directories());
                 if let Ok(mut result) = result.lock() {
                     *result = Some(fonts);
                 }
@@ -69,7 +69,7 @@ fn files_picker(purpose: FilePurpose) -> rfd::AsyncFileDialog {
     if !matches!(purpose, FilePurpose::CreateMultiple | FilePurpose::CreateMultipleSeparate | FilePurpose::InsertPages | FilePurpose::Combine) {
         return dialog.add_filter("PDF", &["pdf"]);
     }
-    let all: Vec<&str> = std::iter::once("pdf").chain(pdfcraft_engine::CONVERTIBLE).collect();
+    let all: Vec<&str> = std::iter::once("pdf").chain(cleonpdf_engine::CONVERTIBLE).collect();
     dialog.add_filter(tl!("PDF, images and text"), &all).add_filter("PDF", &["pdf"])
 }
 
@@ -97,7 +97,7 @@ impl FilePurpose {
 /// The document a pick edits, as it was when the picker opened. Page positions captured then
 /// are only valid while it is unchanged, and the pick acts on the active document; so a pick
 /// that arrives after the document was edited, or stopped being the active one, is refused
-/// (see [`PdfCraftApp::still_pick_target`]).
+/// (see [`CleonPdfApp::still_pick_target`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PickTarget {
     doc: DocId,
@@ -105,7 +105,7 @@ pub struct PickTarget {
 }
 
 /// Files picked asynchronously in a browser, waiting for the next frame (see
-/// [`PdfCraftApp::file_request`]).
+/// [`CleonPdfApp::file_request`]).
 #[derive(Debug)]
 pub struct FileRequest {
     purpose: FilePurpose,
@@ -132,7 +132,7 @@ impl Default for SplitDraft {
     }
 }
 
-/// Acrobat's Split by: number of pages, file size, top-level bookmarks (and PdfCraft's
+/// Acrobat's Split by: number of pages, file size, top-level bookmarks (and CleonPDF's
 /// before-selected-pages).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SplitMode {
@@ -221,8 +221,8 @@ pub struct RotateDraft {
     pub which: u8,
     pub from: usize,
     pub to: usize,
-    pub parity: pdfcraft_engine::PageParity,
-    pub orientation: pdfcraft_engine::PageOrientation,
+    pub parity: cleonpdf_engine::PageParity,
+    pub orientation: cleonpdf_engine::PageOrientation,
 }
 
 impl Default for RotateDraft {
@@ -241,7 +241,7 @@ fn read_named(path: &std::path::Path) -> Result<(String, Vec<u8>), (String, Stri
     }
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     /// Ask for files to add to the Combine files list (its Add files… button).
     pub fn combine_dialog(&mut self) {
         self.pick_files(FilePurpose::Combine, true);
@@ -452,7 +452,7 @@ impl PdfCraftApp {
                 continue;
             }
             // Last-resort guard (AGENTS.md §4), as for desktop picks and commands.
-            if let Err(m) = pdfcraft_engine::guard(|| self.use_files(purpose, files)) {
+            if let Err(m) = cleonpdf_engine::guard(|| self.use_files(purpose, files)) {
                 self.notify_fmt("That didn't work: an internal error stopped it ({m}).", &[("m", m.as_str())]);
             }
         }
@@ -491,7 +491,7 @@ impl PdfCraftApp {
                     self.notify_fmt("{name} is too large for a word list (at most 1 MB).", &[("name", &name)]);
                     return;
                 }
-                self.redact_search.words = pdfcraft_engine::redact_word_list(&pdfcraft_engine::decode_text(&bytes)).join("\n");
+                self.redact_search.words = cleonpdf_engine::redact_word_list(&cleonpdf_engine::decode_text(&bytes)).join("\n");
                 self.redact_search.mode = crate::redact_ui::SearchMode::Words;
             }
         }
@@ -563,7 +563,7 @@ impl PdfCraftApp {
                         bytes,
                         pages: None,
                         at,
-                        field_conflicts: pdfcraft_engine::FieldConflicts::Rename,
+                        field_conflicts: cleonpdf_engine::FieldConflicts::Rename,
                     }) {
                         at = at.saturating_add(pages);
                     }
@@ -624,7 +624,7 @@ impl PdfCraftApp {
                 }
                 let unchanged = app.session.get(id).map(|d| d.edit_generation()) == generation;
                 if unchanged && app.active_ids().map(|(_, active)| active) == Some(id) {
-                    app.apply_edit(pdfcraft_engine::Edit::DeletePages { pages });
+                    app.apply_edit(cleonpdf_engine::Edit::DeletePages { pages });
                 } else {
                     app.notify_tr("The pages were extracted but not deleted, because the document changed while you were choosing a folder.");
                 }
@@ -651,7 +651,7 @@ impl PdfCraftApp {
         if opts.delete {
             // Back on the original document.
             self.active = Some(i);
-            self.apply_edit(pdfcraft_engine::Edit::DeletePages { pages });
+            self.apply_edit(cleonpdf_engine::Edit::DeletePages { pages });
         }
     }
 
@@ -710,12 +710,12 @@ impl PdfCraftApp {
             2 => (d.from.max(1) - 1..d.to.min(n)).collect(),
             _ => (0..n).collect(),
         };
-        let pages = pdfcraft_engine::filter_pages(&doc.info, &base, d.parity, d.orientation);
+        let pages = cleonpdf_engine::filter_pages(&doc.info, &base, d.parity, d.orientation);
         if pages.is_empty() {
             self.notify_tr("No pages match those choices");
             return;
         }
-        self.apply_edit(pdfcraft_engine::Edit::RotatePages { pages, degrees: d.degrees });
+        self.apply_edit(cleonpdf_engine::Edit::RotatePages { pages, degrees: d.degrees });
     }
 
     /// Split the active document and write the parts: into a chosen folder (desktop, written on
@@ -798,7 +798,7 @@ pub(crate) fn strip_pdf(name: &str) -> &str {
     name.strip_suffix(".pdf").or_else(|| name.strip_suffix(".PDF")).unwrap_or(name)
 }
 
-impl PdfCraftApp {
+impl CleonPdfApp {
     /// Comments ▸ Import comments / Prepare a form ▸ Import data: XFDF, FDF, XML, CSV or text.
     pub fn import_data_dialog(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
@@ -806,7 +806,7 @@ impl PdfCraftApp {
             let import = |app: &mut Self, path: std::path::PathBuf| match std::fs::read(&path) {
                 Ok(bytes) => {
                     let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                    app.apply_edit(pdfcraft_engine::Edit::ImportData { name, bytes: std::sync::Arc::new(bytes) });
+                    app.apply_edit(cleonpdf_engine::Edit::ImportData { name, bytes: std::sync::Arc::new(bytes) });
                 }
                 Err(e) => app.notify_fmt("Couldn't read {name}: {e}", &[("name", &path.display().to_string()), ("e", &e.to_string())]),
             };
@@ -828,7 +828,7 @@ impl PdfCraftApp {
 
     /// Export all comments / form data: the format follows the file name's extension.
     /// Export a PDF ▸ Word, HTML or RTF: ask where (`save_override` in tests), then write.
-    pub fn export_office_dialog(&mut self, format: pdfcraft_engine::compare::OfficeFormat) {
+    pub fn export_office_dialog(&mut self, format: cleonpdf_engine::compare::OfficeFormat) {
         // What's typed in a form field is part of the document (#166).
         if !self.commit_form_typing() {
             return;
@@ -893,7 +893,7 @@ impl PdfCraftApp {
 
     /// Merge the given data files and save the spreadsheet (asks where; `save_override` in tests).
     pub fn merge_data_files(&mut self, files: Vec<(String, Vec<u8>)>) {
-        let csv = match pdfcraft_engine::merge_data_files(&files) {
+        let csv = match cleonpdf_engine::merge_data_files(&files) {
             Ok(c) => c,
             Err(e) => return self.notify_error(e),
         };
@@ -943,7 +943,7 @@ impl PdfCraftApp {
                     return;
                 }
                 let ext = path.extension().map(|e| e.to_string_lossy().into_owned()).unwrap_or_default();
-                let format = pdfcraft_engine::DataFormat::from_extension(&ext).unwrap_or(pdfcraft_engine::DataFormat::Xfdf);
+                let format = cleonpdf_engine::DataFormat::from_extension(&ext).unwrap_or(cleonpdf_engine::DataFormat::Xfdf);
                 match app.session.export_data(id, format, comments, fields) {
                     Ok(bytes) => match crate::editing::write_atomically(&path.to_string_lossy(), &bytes) {
                         Ok(()) => app.notify_fmt("Exported to {path}", &[("path", &path.display().to_string())]),
@@ -980,7 +980,7 @@ impl PdfCraftApp {
             }
         }
         #[cfg(target_arch = "wasm32")]
-        match self.session.export_data(id, pdfcraft_engine::DataFormat::Xfdf, comments, fields) {
+        match self.session.export_data(id, cleonpdf_engine::DataFormat::Xfdf, comments, fields) {
             Ok(bytes) => {
                 let _ = crate::editing::download(&format!("{stem}.xfdf"), &bytes);
             }

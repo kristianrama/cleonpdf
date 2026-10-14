@@ -1,5 +1,5 @@
 [package]
-name = "pdfcraft-preflight"
+name = "cleonpdf-preflight"
 description = "Standards: verify PDF/A (ISO 19005) conformance and convert documents to PDF/A-2b or 3b"
 version.workspace = true
 edition.workspace = true
@@ -11,5 +11,5 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-pdfcraft-cos = { workspace = true }
-pdfcraft-model = { workspace = true }
+cleonpdf-cos = { workspace = true }
+cleonpdf-model = { workspace = true }

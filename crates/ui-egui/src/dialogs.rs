@@ -3,19 +3,19 @@
 use egui::{Align, Layout};
 
 use crate::theme::{self, Tokens};
-use pdfcraft_engine::Edit;
+use cleonpdf_engine::Edit;
 
-use crate::{CloseRequest, Dialog, PdfCraftApp, PropsTab, panels::human_size, widgets};
+use crate::{CleonPdfApp, CloseRequest, Dialog, PropsTab, panels::human_size, widgets};
 
 const INFO_KEYS: [&str; 4] = ["Title", "Author", "Subject", "Keywords"];
 
-pub fn show(app: &mut PdfCraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut CleonPdfApp, ctx: &egui::Context) {
     dialogs(app, ctx);
     // Last, so it sits above Document Properties when Security's Unlock… asked for it.
     unlock(app, ctx);
 }
 
-fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
+fn dialogs(app: &mut CleonPdfApp, ctx: &egui::Context) {
     password(app, ctx);
     save_prompt(app, ctx);
     link_prompt(app, ctx);
@@ -139,7 +139,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
                             row(ui, "PDF producer", i.producer.clone().unwrap_or_default());
                         }
                         PropsTab::InitialView => {
-                            use pdfcraft_engine::{InitialLayout as L, Magnification as M, Navigation as N};
+                            use cleonpdf_engine::{InitialLayout as L, Magnification as M, Navigation as N};
                             let editable = doc.allows_modification();
                             let pages = i.pages.len();
                             let Some((_, v)) = app.view_draft.as_mut() else { return };
@@ -432,15 +432,15 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
                     widgets::radio_value(ui, &mut draft.mode, M::Selection, tl!("Before each selected page (select pages in Organize)"))
                 });
                 let plan = match draft.mode {
-                    M::Pages => crate::SplitPlan::By(pdfcraft_engine::SplitBy::PageCount(draft.every)),
-                    M::Selection => crate::SplitPlan::By(pdfcraft_engine::SplitBy::Before(selected)),
+                    M::Pages => crate::SplitPlan::By(cleonpdf_engine::SplitBy::PageCount(draft.every)),
+                    M::Selection => crate::SplitPlan::By(cleonpdf_engine::SplitBy::Before(selected)),
                     M::Size => crate::SplitPlan::Size((draft.size_mb * 1_048_576.0) as usize),
                     M::Bookmarks => crate::SplitPlan::Bookmarks,
                 };
                 let files = match &plan {
-                    crate::SplitPlan::By(by) => Some(pdfcraft_engine::split_ranges(n, by).len()),
+                    crate::SplitPlan::By(by) => Some(cleonpdf_engine::split_ranges(n, by).len()),
                     crate::SplitPlan::Bookmarks => {
-                        Some(pdfcraft_engine::split_ranges(n, &pdfcraft_engine::SplitBy::Before(marks.iter().map(|m| m.0).collect())).len())
+                        Some(cleonpdf_engine::split_ranges(n, &cleonpdf_engine::SplitBy::Before(marks.iter().map(|m| m.0).collect())).len())
                     }
                     crate::SplitPlan::Size(_) => None,
                 };
@@ -587,7 +587,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 return;
             }
             Dialog::RotatePages => {
-                use pdfcraft_engine::{PageOrientation as O, PageParity as P};
+                use cleonpdf_engine::{PageOrientation as O, PageParity as P};
                 let n = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(1, |d| d.info.pages.len());
                 let d = &mut app.rotate_draft;
                 ui.label(egui::RichText::new(tl!("Rotate Pages")).font(theme::semibold(18.0)));
@@ -741,7 +741,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 ui.horizontal(|ui| {
                     ui.label(tl!("Sort comments by:"));
                     egui::ComboBox::from_id_salt("summary-sort").selected_text(tl!(app.summary_sort.name())).show_ui(ui, |ui| {
-                        for s in pdfcraft_engine::SummarySort::ALL {
+                        for s in cleonpdf_engine::SummarySort::ALL {
                             ui.selectable_value(&mut app.summary_sort, s, tl!(s.name()));
                         }
                     });
@@ -947,7 +947,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 return;
             }
             Dialog::NumberPages => {
-                use pdfcraft_engine::LabelStyle as L;
+                use cleonpdf_engine::LabelStyle as L;
                 ui.label(egui::RichText::new(tl!("Number pages")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
                 let Some((_, id)) = app.active_ids() else { return };
@@ -1007,7 +1007,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
                     ui.label(egui::RichText::new(tl!("Recover unsaved documents?")).font(theme::semibold(18.0)));
                 });
                 ui.add_space(6.0);
-                ui.label(tl!("PdfCraft didn't shut down normally. These documents had changes that were autosaved:"));
+                ui.label(tl!("CleonPDF didn't shut down normally. These documents had changes that were autosaved:"));
                 ui.add_space(8.0);
                 let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
                 egui::Grid::new("recoverable").num_columns(2).spacing([18.0, 6.0]).show(ui, |ui| {
@@ -1034,13 +1034,13 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 };
                 // Registered commands first (always in sync with the real bindings), then the
                 // keys the document view handles itself.
-                let mut rows: Vec<(String, String)> = pdfcraft_engine::commands::COMMANDS
+                let mut rows: Vec<(String, String)> = cleonpdf_engine::commands::COMMANDS
                     .iter()
                     .filter_map(|c| {
                         c.shortcut.map(|k| (crate::commands::shortcut_label(ui.ctx(), k), tl!(c.label).trim_end_matches('…').to_string()))
                     })
                     .collect();
-                let key = |s: pdfcraft_engine::commands::Shortcut| crate::commands::shortcut_label(ui.ctx(), s);
+                let key = |s: cleonpdf_engine::commands::Shortcut| crate::commands::shortcut_label(ui.ctx(), s);
                 let pair = |a, b| format!("{} / {}", key(a), key(b));
                 // Key names, translated where a catalog has them (not scanned as UI literals).
                 let named = |k: &str| tl!(k).to_string();
@@ -1098,8 +1098,8 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
                         ui.horizontal(|ui| {
                             widgets::artcraft_mark(ui, 40.0);
                             ui.vertical(|ui| {
-                                ui.label(egui::RichText::new("PdfCraft").font(theme::semibold(20.0)));
-                                ui.label(crate::i18n::fmt(tl!("Version {v}"), &[("v", &pdfcraft_engine::build_info::version())]));
+                                ui.label(egui::RichText::new("CleonPDF").font(theme::semibold(20.0)));
+                                ui.label(crate::i18n::fmt(tl!("Version {v}"), &[("v", &cleonpdf_engine::build_info::version())]));
                             });
                         });
                         ui.add_space(6.0);
@@ -1223,7 +1223,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
             app.redact_search.found = Some(n);
         }
         Some(Dialog::RemoveHidden) => {
-            let which: Vec<pdfcraft_engine::Hidden> = app.hidden_draft.found.iter().filter(|f| f.2 && f.1 > 0).map(|f| f.0).collect();
+            let which: Vec<cleonpdf_engine::Hidden> = app.hidden_draft.found.iter().filter(|f| f.2 && f.1 > 0).map(|f| f.0).collect();
             let n: usize = app.hidden_draft.found.iter().filter(|f| f.2).map(|f| f.1).sum();
             if app.apply_edit(Edit::RemoveHidden { which }) {
                 if n == 1 {
@@ -1342,7 +1342,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
 }
 
 /// Info edits needed to make the document match the Description draft.
-fn draft_changes(app: &PdfCraftApp) -> Option<Vec<Edit>> {
+fn draft_changes(app: &CleonPdfApp) -> Option<Vec<Edit>> {
     let (id, draft) = app.props_draft.as_ref()?;
     let doc = app.session.get(*id)?;
     let mut edits: Vec<Edit> = INFO_KEYS
@@ -1379,7 +1379,7 @@ pub(crate) fn save_prompt_key(ctx: &egui::Context) -> Option<Option<bool>> {
 }
 
 /// "Save changes?" when closing a tab or quitting with unsaved edits.
-fn save_prompt(app: &mut PdfCraftApp, ctx: &egui::Context) {
+fn save_prompt(app: &mut CleonPdfApp, ctx: &egui::Context) {
     let Some(req) = app.close_request else { return };
     let index = match req {
         CloseRequest::Tab(id) => app.views.iter().position(|v| v.id == id),
@@ -1450,7 +1450,7 @@ fn shorten_middle(name: &str, max: usize) -> String {
 /// "Open this web page?" when a document's link, button or script asks to open an address
 /// (#90, #91). Shows where the address really goes and the whole address; Cancel is the default,
 /// and Escape or clicking outside cancels.
-fn link_prompt(app: &mut PdfCraftApp, ctx: &egui::Context) {
+fn link_prompt(app: &mut CleonPdfApp, ctx: &egui::Context) {
     let Some(pending) = app.pending_link.clone() else { return };
     let t = Tokens::get(ctx);
     let email = pending.url.get(..7).is_some_and(|s| s.eq_ignore_ascii_case("mailto:"));
@@ -1473,7 +1473,7 @@ fn link_prompt(app: &mut PdfCraftApp, ctx: &egui::Context) {
         // The host as the browser will connect to it, in punycode when it is international, so a
         // lookalike such as `pаypal.com` (Cyrillic `а`) reads as `xn--pypal-4ve.com`. Its Unicode
         // form isn't repeated here: a whole-script lookalike would read as the real site.
-        if let Some(host) = pdfcraft_engine::links::display_host(&pending.url) {
+        if let Some(host) = cleonpdf_engine::links::display_host(&pending.url) {
             ui.label(egui::RichText::new(&host.ascii).font(theme::semibold(14.0)));
             if host.mixed_scripts {
                 let warning = tl!("This web address mixes letters from different alphabets, a common way to imitate another site's name.");
@@ -1513,7 +1513,7 @@ fn link_prompt(app: &mut PdfCraftApp, ctx: &egui::Context) {
 }
 
 /// Absolute document-controlled local paths require consent before any filesystem access.
-fn remote_link_prompt(app: &mut PdfCraftApp, ctx: &egui::Context) {
+fn remote_link_prompt(app: &mut CleonPdfApp, ctx: &egui::Context) {
     let Some(pending) = app.pending_remote_link.clone() else { return };
     let mut choice = None;
     let modal = widgets::show_modal(ctx, "remote_link_prompt", |ui| {
@@ -1601,7 +1601,7 @@ fn password_modal(
 }
 
 /// Password prompt for encrypted documents (Acrobat: "Password" dialog on open).
-fn password(app: &mut PdfCraftApp, ctx: &egui::Context) {
+fn password(app: &mut CleonPdfApp, ctx: &egui::Context) {
     let Some(prompt) = app.password_prompt.as_mut() else { return };
     let message = crate::i18n::fmt(tl!("“{name}” is protected. Enter a password to open it."), &[("name", &prompt.name)]);
     match password_modal(ctx, "password", tl!("Password required"), message, &mut prompt.input, prompt.error.as_deref(), tl!("Open")) {
@@ -1615,7 +1615,7 @@ fn password(app: &mut PdfCraftApp, ctx: &egui::Context) {
 }
 
 /// Permissions password prompt: lifts the restrictions of an open document (#995).
-fn unlock(app: &mut PdfCraftApp, ctx: &egui::Context) {
+fn unlock(app: &mut CleonPdfApp, ctx: &egui::Context) {
     let Some(prompt) = app.unlock_prompt.as_mut() else { return };
     let message =
         crate::i18n::fmt(tl!("“{name}” has security restrictions. Enter its permissions password to lift them."), &[("name", &prompt.name)]);

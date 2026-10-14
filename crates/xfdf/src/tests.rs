@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use pdfcraft_annot::{Markup, Meta, NewAnnotation, Shape, Style, add_annotation, add_reply, summaries};
-use pdfcraft_cos::{SaveOptions, write_full, write_incremental};
-use pdfcraft_forms::{NewField, add_field, fields, set_value};
+use cleonpdf_annot::{Markup, Meta, NewAnnotation, Shape, Style, add_annotation, add_reply, summaries};
+use cleonpdf_cos::{SaveOptions, write_full, write_incremental};
+use cleonpdf_forms::{NewField, add_field, fields, set_value};
 
 use super::*;
 
@@ -86,7 +86,7 @@ fn self_closing_elements_do_not_accumulate_in_the_depth() {
 fn filled() -> Document {
     let mut doc = blank();
     let meta = |id: &str| Meta { date: Some("D:20261002120000Z".into()), id: id.into() };
-    let note = Shape::Note { at: [100.0, 500.0], icon: pdfcraft_annot::NoteIcon::Comment };
+    let note = Shape::Note { at: [100.0, 500.0], icon: cleonpdf_annot::NoteIcon::Comment };
     add_annotation(
         &mut doc,
         &NewAnnotation {
@@ -231,7 +231,7 @@ fn threads(doc: &Document) -> Vec<(Option<String>, Option<String>, Option<String
 fn fdf_keeps_replies_and_review_status_on_their_note() {
     let mut src = blank();
     let meta = |id: &str| Meta { date: Some("D:20261002120000Z".into()), id: id.into() };
-    let note = Shape::Note { at: [100.0, 100.0], icon: pdfcraft_annot::NoteIcon::Comment };
+    let note = Shape::Note { at: [100.0, 100.0], icon: cleonpdf_annot::NoteIcon::Comment };
     add_annotation(
         &mut src,
         &NewAnnotation { page: 1, style: Style::default_for(&note), shape: note, contents: "Literal Note".into(), author: "Alpha".into() },
@@ -241,7 +241,7 @@ fn fdf_keeps_replies_and_review_status_on_their_note() {
     let index = summaries(&src).iter().find(|s| s.subtype == "Text").map(|s| s.index).unwrap();
     add_reply(&mut src, 1, index, "Reply One", "Beta", &meta("one")).unwrap();
     add_reply(&mut src, 1, index, "Reply Two", "Gamma", &meta("two")).unwrap();
-    pdfcraft_annot::set_review_state(&mut src, 1, index, pdfcraft_annot::ReviewState::Accepted, "Review", &meta("status")).unwrap();
+    cleonpdf_annot::set_review_state(&mut src, 1, index, cleonpdf_annot::ReviewState::Accepted, "Review", &meta("status")).unwrap();
     let want = threads(&src);
     assert_eq!(want.iter().filter(|t| t.1.as_deref() == Some("note")).count(), 3, "{want:?}");
 
@@ -418,7 +418,7 @@ fn data_files_merge_into_a_spreadsheet() {
     let fdf = export_fdf(&src, false, true, "form.pdf");
     let mut other = blank();
     set_value(&mut other, "Name", &FieldValue::Text("Grace \"Amazing\" Hopper, RADM".into())).unwrap();
-    let pdf = pdfcraft_cos::write_full(&other, &Default::default()).unwrap();
+    let pdf = cleonpdf_cos::write_full(&other, &Default::default()).unwrap();
     let rows: Vec<_> = [xfdf.as_bytes(), &fdf[..], &pdf[..]].iter().map(|b| data_values(b).unwrap()).collect();
     assert_eq!(rows[0], rows[1], "XFDF and FDF carry the same values");
     let csv = merge_csv(&rows);
@@ -452,7 +452,7 @@ fn reimporting_a_note_replaces_its_popup() {
     for _ in 0..3 {
         import(&mut doc, xfdf.as_bytes()).unwrap();
     }
-    let page = pdfcraft_model::pages(&doc)[0].obj;
+    let page = cleonpdf_model::pages(&doc)[0].obj;
     let annots = doc.get(page).as_dict().and_then(|p| p.get(b"Annots").cloned()).and_then(|a| doc.resolve(&a).as_array().cloned()).unwrap();
     let refs: Vec<ObjRef> = annots.iter().filter_map(|a| a.as_ref()).collect();
     let is_popup = |r: &ObjRef| doc.get(*r).as_dict().and_then(|d| d.name(b"Subtype")) == Some(b"Popup".as_slice());
@@ -475,11 +475,11 @@ fn replacing_a_note_keeps_existing_replies_and_review_status() {
     import(&mut incoming, xfdf.as_bytes()).unwrap();
     let mut original = filled();
     let index = summaries(&original).iter().find(|s| s.name.as_deref() == Some("n1")).unwrap().index;
-    pdfcraft_annot::set_review_state(
+    cleonpdf_annot::set_review_state(
         &mut original,
         0,
         index,
-        pdfcraft_annot::ReviewState::Accepted,
+        cleonpdf_annot::ReviewState::Accepted,
         "Reviewer",
         &Meta { date: None, id: "status".into() },
     )
@@ -529,11 +529,11 @@ fn replacing_an_indirectly_named_note_preserves_its_identity_and_thread() {
     let update = br#"<xfdf><annots><text page="0" name="n1" rect="10,10,30,30"><contents>Updated</contents></text></annots></xfdf>"#;
     let mut original = blank();
     for name in ["Name", "Agree", "Pick"] {
-        pdfcraft_forms::delete_field(&mut original, name).unwrap();
+        cleonpdf_forms::delete_field(&mut original, name).unwrap();
     }
     import(&mut original, initial.as_bytes()).unwrap();
     let annotation_refs = |doc: &Document| {
-        let page = pdfcraft_model::pages(doc)[0].obj;
+        let page = cleonpdf_model::pages(doc)[0].obj;
         doc.get(page)
             .as_dict()
             .unwrap()
@@ -602,7 +602,7 @@ fn replacement_matches_named_comments_only_on_their_page() {
 #[test]
 fn the_last_same_named_record_controls_its_reply_parent() {
     let mut incoming = blank();
-    let page = pdfcraft_model::pages(&incoming)[0].obj;
+    let page = cleonpdf_model::pages(&incoming)[0].obj;
     let mut refs = Vec::new();
     for name in ["parent", "duplicate", "duplicate"] {
         let mut d = Dict::new();
@@ -630,7 +630,7 @@ fn indirectly_named_protected_comments_and_popups_are_not_replaced() {
     let xfdf = br#"<xfdf><annots><redact page="0" name="n1" rect="0,0,1,1" flags="invisible,hidden,noview,print"><contents>Updated</contents></redact></annots></xfdf>"#;
     let fdf = b"%FDF-1.2\n1 0 obj\n<< /FDF << /Annots [<< /Subtype /Redact /NM (n1) /Page 0 /Rect [0 0 1 1] /F 39 /Contents (Updated) >>] >> >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n";
     let annotation_refs = |doc: &Document| {
-        pdfcraft_model::pages(doc)[0]
+        cleonpdf_model::pages(doc)[0]
             .dict
             .get(b"Annots")
             .map(|a| doc.resolve(a))
@@ -643,7 +643,7 @@ fn indirectly_named_protected_comments_and_popups_are_not_replaced() {
     };
     for (subtype, flags) in [("Text", LOCKED), ("Redact", 0)] {
         let mut original = blank();
-        let page = pdfcraft_model::pages(&original)[0].obj;
+        let page = cleonpdf_model::pages(&original)[0].obj;
         let name = original.add(PdfString::text("n1"));
         let mut protected = Dict::new();
         protected.set(b"Type".to_vec(), Object::name("Annot"));
@@ -693,7 +693,7 @@ fn indirectly_named_protected_comments_and_popups_are_not_replaced() {
 #[test]
 fn imported_redact_marks_cannot_replace_a_locked_mark_or_hide_themselves() {
     let mut doc = blank();
-    let page = pdfcraft_model::pages(&doc)[0].obj;
+    let page = cleonpdf_model::pages(&doc)[0].obj;
     // A locked redaction mark the user placed, with a known /NM.
     let mut mark = Dict::new();
     mark.set(b"Type".to_vec(), Object::name("Annot"));
@@ -745,7 +745,7 @@ fn imported_redact_marks_cannot_replace_a_locked_mark_or_hide_themselves() {
 /// The `/Vertices` of every annotation on the document's pages, by subtype.
 fn vertices(doc: &Document) -> Vec<(String, Vec<f64>)> {
     let mut out = Vec::new();
-    for p in pdfcraft_model::pages(doc) {
+    for p in cleonpdf_model::pages(doc) {
         for a in p.dict.get(b"Annots").map(|a| doc.resolve(a)).and_then(|a| a.as_array().cloned()).unwrap_or_default() {
             let Some(d) = doc.resolve(&a).as_dict().cloned() else { continue };
             let sub = String::from_utf8_lossy(d.name(b"Subtype").unwrap_or_default()).into_owned();
@@ -767,8 +767,8 @@ fn xfdf_keeps_polygon_and_polyline_vertices() {
     let polygon = Shape::Polygon { vertices: vec![[100.0, 100.0], [200.0, 120.0], [150.0, 220.5]], cloud: false };
     let polyline = Shape::PolyLine {
         vertices: vec![[50.0, 300.0], [120.0, 380.0], [200.0, 310.0]],
-        start: pdfcraft_annot::LineEnding::None,
-        end: pdfcraft_annot::LineEnding::ClosedArrow,
+        start: cleonpdf_annot::LineEnding::None,
+        end: cleonpdf_annot::LineEnding::ClosedArrow,
     };
     for (page, shape, id) in [(0, polygon, "pg"), (1, polyline, "pl")] {
         let new = NewAnnotation { page, style: Style::default_for(&shape), shape, contents: id.into(), author: "Ada".into() };
@@ -782,7 +782,7 @@ fn xfdf_keeps_polygon_and_polyline_vertices() {
     assert_eq!(r.comments, 2, "{r:?}");
     assert_eq!(vertices(&dst), vertices(&src));
     // The imported shapes are drawn again.
-    for p in pdfcraft_model::pages(&dst) {
+    for p in cleonpdf_model::pages(&dst) {
         for a in p.dict.get(b"Annots").map(|a| dst.resolve(a)).and_then(|a| a.as_array().cloned()).unwrap_or_default() {
             let d = dst.resolve(&a).as_dict().cloned().unwrap();
             assert!(d.get(b"AP").is_some(), "{d:?}");
@@ -806,7 +806,7 @@ fn xfdf_keeps_callout_leader_inset_and_ending() {
         knee: [260.0, 330.0],
         point: [320.0, 200.0],
         font_size: 12.0,
-        ending: pdfcraft_annot::LineEnding::ClosedArrow,
+        ending: cleonpdf_annot::LineEnding::ClosedArrow,
     };
     let meta = Meta { date: Some("D:20261002120000Z".into()), id: "c1".into() };
     add_annotation(
@@ -819,7 +819,7 @@ fn xfdf_keeps_callout_leader_inset_and_ending() {
     let mut dst = blank();
     import(&mut dst, xfdf.as_bytes()).unwrap();
     let callout_keys = |doc: &Document| {
-        let page = pdfcraft_model::pages(doc).remove(0);
+        let page = cleonpdf_model::pages(doc).remove(0);
         let annots = page.dict.get(b"Annots").map(|a| doc.resolve(a)).and_then(|a| a.as_array().cloned()).unwrap_or_default();
         let d = annots.iter().filter_map(|a| doc.resolve(a).as_dict().cloned()).find(|d| d.name(b"Subtype") == Some(b"FreeText")).unwrap();
         (
@@ -881,7 +881,7 @@ fn duplicate_xfdf_annotation_flags_do_not_turn_on_unrelated_bits() {
         );
         let mut doc = blank();
         assert_eq!(import(&mut doc, xfdf.as_bytes()).unwrap().comments, 1);
-        let page = pdfcraft_model::pages(&doc)[0].obj;
+        let page = cleonpdf_model::pages(&doc)[0].obj;
         let annotations = doc.get(page).as_dict().and_then(|p| p.get(b"Annots")).map(|a| doc.resolve(a)).and_then(|a| a.as_array().cloned()).unwrap();
         let square = annotations.iter().filter_map(|a| doc.resolve(a).as_dict().cloned()).find(|d| d.name(b"Subtype") == Some(b"Square")).unwrap();
         assert_eq!(square.get(b"F").and_then(Object::as_int), Some(expected), "flags={flags}");

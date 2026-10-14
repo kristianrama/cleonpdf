@@ -1,6 +1,6 @@
-# PdfCraft — instructions for agents
+# CleonPDF — instructions for agents
 
-PdfCraft is a clean-room, open-source, Rust-native PDF application targeting Adobe Acrobat Pro parity. It runs natively on macOS, Windows, Linux and FreeBSD, and on the web via WASM. It is the sibling of `../photocraft` (a Photoshop-class editor) and follows the same conventions.
+CleonPDF is a clean-room, open-source, Rust-native PDF application targeting Adobe Acrobat Pro parity. It runs natively on macOS, Windows, Linux and FreeBSD, and on the web via WASM. It is the sibling of `../photocraft` (a Photoshop-class editor) and follows the same conventions.
 
 ## Start every session here
 1. Read `plan/STATUS.md`: the current milestone, the next unchecked task and any blockers. `ROADMAP.md` is the one-page summary (stage, numbers, progress log) and `docs/roadmap.md` the milestone table; at the end of every session update the milestone row and add a line to the ROADMAP.md progress log.
@@ -13,7 +13,7 @@ PdfCraft is a clean-room, open-source, Rust-native PDF application targeting Ado
 
 ## Non-negotiables
 - **Assets: read `AGENTS.md` §1 before adding or showing any icon, image, font or document.** No assets from Adobe products, ever. Only openly licensed or contributor-original assets are allowed, each with an entry in `ATTRIBUTION.toml`. `cargo xtask assets` enforces this. `AGENTS.md` overrides this file.
-- **Fonts live in [storytold/craft-fonts](https://github.com/storytold/craft-fonts).** Never commit font files here (`AGENTS.md` §1.4; team members: [craftrules `standards/fonts.md`](https://github.com/storytold/craftrules/blob/main/standards/fonts.md), internal). It is the optional build input `CRAFT_FONTS_DIR`: `git clone https://github.com/storytold/craft-fonts ../craft-fonts && CRAFT_FONTS_DIR=../craft-fonts cargo test --workspace` embeds the Japanese fonts (UI fallback, Japanese text in edited PDFs) and runs their tests, which otherwise skip. Code using `pdfcraft_fonts::CRAFT_FONTS` must work when it is empty.
+- **Fonts live in [storytold/craft-fonts](https://github.com/storytold/craft-fonts).** Never commit font files here (`AGENTS.md` §1.4; team members: [craftrules `standards/fonts.md`](https://github.com/storytold/craftrules/blob/main/standards/fonts.md), internal). It is the optional build input `CRAFT_FONTS_DIR`: `git clone https://github.com/storytold/craft-fonts ../craft-fonts && CRAFT_FONTS_DIR=../craft-fonts cargo test --workspace` embeds the Japanese fonts (UI fallback, Japanese text in edited PDFs) and runs their tests, which otherwise skip. Code using `cleonpdf_fonts::CRAFT_FONTS` must work when it is empty.
 - **Clean-room.**
   - Never read, disassemble or copy anything inside the Acrobat bundle (names and listings only). **Never open `Contents/Resources/JavaScripts/`.**
   - Behaviour comes from public docs, specs (ISO 32000-2, the Arlington model) and black-box observation (`plan/acrobat/`).
@@ -42,13 +42,13 @@ PdfCraft is a clean-room, open-source, Rust-native PDF application targeting Ado
   - **`main` moves fast enough that PRs rot.** It took 396 commits in the three days to 2026-10-12, and most open PRs are conflicting at any given time. Rebase your own branch the same day `main` moves under it, and ask the author to rebase theirs — never rewrite a contributor's branch. Conflict risk tracks how *contested* the files are, not how large the change is: tooling, tests and docs are nearly free, while `crates/fonts`, `ui-egui` and the i18n catalogues are where several people collide at once.
 
 ## Running and looking at the app
-- `cargo run -p pdfcraft -- <file.pdf>` opens the desktop app.
-- `cargo run -p pdfcraft-cli -- run --script steps.json --root DIR` drives the engine headlessly through the automation tools (`pdfcraft-cli tools` lists them). Use it, together with `page_render`, to check engine changes. `pdfcraft-cli mcp` is the opt-in MCP server (AGENTS.md §3).
+- `cargo run -p cleonpdf -- <file.pdf>` opens the desktop app.
+- `cargo run -p cleonpdf-cli -- run --script steps.json --root DIR` drives the engine headlessly through the automation tools (`cleonpdf-cli tools` lists them). Use it, together with `page_render`, to check engine changes. `cleonpdf-cli mcp` is the opt-in MCP server (AGENTS.md §3).
 - `cargo xtask fuzz --time 300` mutation-fuzzes open/render/edit/save in child processes. Findings land in `fuzz-out/findings/` (git-ignored; never commit corpus-derived files). Turn every real finding into a small synthetic regression test before fixing it.
 - `cargo xtask parity [--partial]` reports Acrobat-parity progress from `parity/acrobat-features.toml`. Update the entry when a feature ships.
-- `cargo xtask demo-pdf` builds `dist/demo/pdfcraft-showcase.pdf` (needs Chrome) for visual checks.
-- For UI work, **look at the result**. Either launch `pdfcraft --control FILE doc.pdf` and use `pdfcraft-cli ui --control FILE screenshot --out x.png` (plus `inspect`, `click`, `key`, `type`, `command`, `set`), or take a headless shot with `cargo run -p pdfcraft-ui-egui --example shot`. Compare against `plan/acrobat/02-ui-ux.md`. Control-channel tests use kittest (`crates/ui-egui/tests/control.rs`).
+- `cargo xtask demo-pdf` builds `dist/demo/cleonpdf-showcase.pdf` (needs Chrome) for visual checks.
+- For UI work, **look at the result**. Either launch `cleonpdf --control FILE doc.pdf` and use `cleonpdf-cli ui --control FILE screenshot --out x.png` (plus `inspect`, `click`, `key`, `type`, `command`, `set`), or take a headless shot with `cargo run -p cleonpdf-ui-egui --example shot`. Compare against `plan/acrobat/02-ui-ux.md`. Control-channel tests use kittest (`crates/ui-egui/tests/control.rs`).
 - Parallel agents: use a separate `CARGO_TARGET_DIR` per agent and separate git worktrees.
 
 ## Current bootstrap debt (tracked in STATUS.md)
-- `pdfcraft-render` renders through the `hayro` crate directly and inspects documents through `lopdf`. Both get replaced by `cos` / `model` / the DisplayList device (M1–M2, ADR-0004).
+- `cleonpdf-render` renders through the `hayro` crate directly and inspects documents through `lopdf`. Both get replaced by `cos` / `model` / the DisplayList device (M1–M2, ADR-0004).

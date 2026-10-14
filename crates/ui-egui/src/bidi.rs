@@ -562,7 +562,7 @@ mod tests {
     fn egui_draws_lines_in_reading_order() {
         // Only with an Arabic-script face (the craft-fonts build input, as in CI); without one
         // egui has no shaper run to check.
-        if pdfcraft_fonts::ui_arabic_fonts().is_empty() {
+        if cleonpdf_fonts::ui_arabic_fonts().is_empty() {
             return;
         }
         assert_eq!(on_screen("من به مدرسه می\u{200C}روم"), [rev("من به مدرسه میروم")]);

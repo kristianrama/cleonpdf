@@ -7,8 +7,8 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 
+use cleonpdf_cos::{Document, Object as CosObject};
 use lopdf::{Dictionary, Error, Object, ObjectId, Result};
-use pdfcraft_cos::{Document, Object as CosObject};
 
 pub(crate) trait Structure {
     fn trailer(&self) -> &Dictionary;
@@ -178,7 +178,7 @@ impl Structure for LazyStructure {
     }
 }
 
-fn convert_dict(dict: &pdfcraft_cos::Dict, depth: usize) -> Result<Dictionary> {
+fn convert_dict(dict: &cleonpdf_cos::Dict, depth: usize) -> Result<Dictionary> {
     if depth > 100 {
         return Err(Error::RecursionLimit);
     }
@@ -301,7 +301,7 @@ trailer
         let mut bytes = Vec::new();
         source.save_to(&mut bytes).unwrap();
         let cos = Document::open(Arc::new(bytes)).unwrap();
-        let compressed = pdfcraft_cos::write_full(&cos, &pdfcraft_cos::SaveOptions::default()).unwrap();
+        let compressed = cleonpdf_cos::write_full(&cos, &cleonpdf_cos::SaveOptions::default()).unwrap();
         let eager = lopdf::Document::load_mem(&compressed).unwrap();
         let expected = Structure::page_ids(&eager);
         let view = LazyStructure::new(Arc::new(compressed), None).unwrap();
