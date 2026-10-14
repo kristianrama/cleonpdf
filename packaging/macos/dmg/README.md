@@ -7,8 +7,8 @@ scripting on CI, nothing extra installed in the signing job).
 
 | File | What |
 |---|---|
-| `background.svg` | Source of the background: the app icon (`assets/app-icon/cleonpdf.svg`, linked, not copied) cropped as a cover on the CleonPDF navy (`#1d3461`), with Ink, Paper (`#f7f3ea`) and amber (`#f2a93b`) accents. Its text (Inter, JetBrains Mono) is outlined, so rendering it needs no fonts. No paper grain: noise doesn't compress, and this keeps `background.tiff` small. |
-| `background.tiff` | The background at 1x (660 × 400 px, 72 dpi) and 2x (1320 × 800 px, 144 dpi) in one HiDPI TIFF (16-colour palette, Deflate, sRGB). Goes to `.background/background.tiff`. |
+| `background.svg` | Source of the background: the app icon (`assets/app-icon/cleonpdf.png`, linked, not copied) cropped as a cover on navy (`#1a2c4f`), its wordmark faded out at the bottom, with Ink, Paper (`#f7f3ea`) and light-blue (`#8fb3e8`) accents. Its text (Inter, JetBrains Mono) is outlined, so rendering it needs no fonts. No paper grain: noise doesn't compress, and this keeps `background.tiff` small. |
+| `background.tiff` | The background at 1x (660 × 400 px, 72 dpi) and 2x (1320 × 800 px, 144 dpi) in one HiDPI TIFF (256-colour palette, Deflate, sRGB). Goes to `.background/background.tiff`. |
 | `dmg-layout.DS_Store` | Finder's view settings for the volume: window size, icon size 128, CleonPDF.app at (326, 205), `Applications` at (574, 205), and the background. Goes to `.DS_Store` in the image; named so it isn't mistaken for (or ignored like) a Finder-generated `.DS_Store`. |
 | `generate.py` | Writes `background.tiff` and `dmg-layout.DS_Store` from the SVG and the layout above. |
 

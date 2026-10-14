@@ -28,7 +28,7 @@ VOLUME = "CleonPDF"
 WIDTH, HEIGHT = 660, 400  # window content, pt; the background's 1x size
 TITLE_BAR = 32
 ICON_SIZE = 128
-PALETTE = 16  # colours in background.tiff
+PALETTE = 256  # colours in background.tiff: the app icon's glow needs them; 16 left bands
 ICONS = {"CleonPDF.app": (326, 205), "Applications": (574, 205)}
 # A fixed date for the alias and the colour profile. Finder never matches it against the image
 # (each build is a new volume): it finds the background by volume name and path.
@@ -47,7 +47,7 @@ def render(svg, width, out):
 
 
 def quantize(im):
-    # No dithering: dither noise compresses badly and the artwork has flat fills.
+    # No dithering: dither noise compresses badly. 256 colours keep the icon's gradients smooth.
     return im.quantize(PALETTE, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
 
 

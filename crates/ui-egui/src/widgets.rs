@@ -499,13 +499,42 @@ pub fn progress_notice(app: &CleonPdfApp, ctx: &egui::Context) -> bool {
     cancel
 }
 
-/// The CleonPDF app icon (assets/app-icon/cleonpdf.svg), `size` points square.
+/// The app icon at 128 px (assets/app-icon/README.md): enough for the About dialog at 2×.
+const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/io.github.kristianrama.cleonpdf.png");
+
+/// The bundled app icon's pixels: `([width, height], RGBA)`. `None` only if the PNG isn't 8-bit
+/// RGBA or doesn't decode, which `the_app_icon_decodes` rules out.
+fn app_icon_rgba() -> Option<([usize; 2], Vec<u8>)> {
+    let mut decoder = png::Decoder::new(std::io::Cursor::new(APP_ICON_PNG));
+    decoder.set_transformations(png::Transformations::normalize_to_color8());
+    let mut reader = decoder.read_info().ok()?;
+    if reader.output_color_type() != (png::ColorType::Rgba, png::BitDepth::Eight) {
+        return None;
+    }
+    let mut buf = vec![0; reader.output_buffer_size()?];
+    let info = reader.next_frame(&mut buf).ok()?;
+    buf.truncate(info.buffer_size());
+    Some(([info.width as usize, info.height as usize], buf))
+}
+
+/// The app icon as a texture, decoded once per context.
+fn app_icon_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
+    let id = egui::Id::new("cleonpdf-app-icon");
+    if let Some(texture) = ctx.data(|d| d.get_temp::<egui::TextureHandle>(id)) {
+        return Some(texture);
+    }
+    let (size, rgba) = app_icon_rgba()?;
+    let texture = ctx.load_texture("cleonpdf-app-icon", egui::ColorImage::from_rgba_unmultiplied(size, &rgba), egui::TextureOptions::LINEAR);
+    ctx.data_mut(|d| d.insert_temp(id, texture.clone()));
+    Some(texture)
+}
+
+/// The CleonPDF app icon, `size` points square.
 pub fn app_icon(ui: &mut egui::Ui, size: f32) -> Response {
-    ui.add(
-        egui::Image::from_bytes("bytes://cleonpdf-app-icon.svg", include_bytes!("../../../assets/app-icon/cleonpdf.svg"))
-            .fit_to_exact_size(vec2(size, size))
-            .alt_text("CleonPDF"),
-    )
+    match app_icon_texture(ui.ctx()) {
+        Some(texture) => ui.add(egui::Image::new((texture.id(), vec2(size, size))).alt_text("CleonPDF")),
+        None => ui.allocate_response(vec2(size, size), Sense::hover()),
+    }
 }
 
 /// Buttons for every link in `cleonpdf_engine::links`, the first one prominent. Returns the
@@ -581,6 +610,16 @@ pub fn icon_pill(ui: &mut egui::Ui, icon: &str, label: &str, primary: bool) -> R
 mod tests {
     use super::*;
     use egui::Pos2;
+
+    #[test]
+    fn the_app_icon_decodes() {
+        let (size, rgba) = app_icon_rgba().expect("the bundled app icon is 8-bit RGBA PNG");
+        assert_eq!(size, [128, 128]);
+        assert_eq!(rgba.len(), 128 * 128 * 4);
+        // Transparent outside the rounded tile, opaque in the middle.
+        assert_eq!(rgba[3], 0, "corner");
+        assert_eq!(rgba[(64 * 128 + 64) * 4 + 3], 255, "centre");
+    }
 
     #[test]
     fn search_placeholder_never_overlaps_the_shortcut() {
