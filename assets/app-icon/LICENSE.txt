@@ -1,8 +1,8 @@
-CleonPDF app icon (cleonpdf.svg, cleonpdf-small.svg and every file derived from them in this
+CleonPDF app icon (cleonpdf.png, cleonpdf-small.png and every file derived from them in this
 directory: cleonpdf-1024.png, cleonpdf.icns, cleonpdf.ico, hicolor/).
 
-Original artwork made for CleonPDF by Kristian Rama (no third-party material). Licensed like the
-rest of CleonPDF, under either of
+Artwork supplied for CleonPDF by its project owner, Kristian Rama, who licenses it like the rest of
+CleonPDF, under either of
 
   * Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
   * MIT license (https://opensource.org/licenses/MIT)

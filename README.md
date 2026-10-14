@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/app-icon/cleonpdf.svg" alt="CleonPDF app icon: a page with an amber folded corner and a bold C on a navy tile" width="112">
+  <img src="assets/app-icon/cleonpdf.png" alt="CleonPDF app icon: a glowing C around an open book marked PDF, on a dark blue tile" width="128">
 </p>
 
 <h1 align="center">CleonPDF</h1>
@@ -14,7 +14,7 @@
 <p align="center">
   <img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-1d3461">
   <img alt="Written in Rust" src="https://img.shields.io/badge/written%20in-Rust-1d3461">
-  <img alt="Status: alpha" src="https://img.shields.io/badge/status-alpha-f2a93b">
+  <img alt="Status: alpha" src="https://img.shields.io/badge/status-alpha-8fb3e8">
 </p>
 
 > [!NOTE]
