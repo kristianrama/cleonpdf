@@ -13,13 +13,13 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
       Name="CleonPDF"
-      Manufacturer="Learning Machines LLC"
+      Manufacturer="Kristian Rama"
       Version="$(var.Version)"
-      UpgradeCode="EA00C367-7270-4C50-9D8B-A7A5C88AD27F"
+      UpgradeCode="3FDEB3B3-AA22-4963-8885-4EAF36647B43"
       Scope="perMachine"
       Compressed="yes"
       Language="1033">
-    <SummaryInformation Description="CleonPDF PDF workbench" Manufacturer="Learning Machines LLC" />
+    <SummaryInformation Description="CleonPDF PDF workbench" Manufacturer="Kristian Rama" />
     <!-- HKLM registrations must never point into a per-user installation (#305). Allow removal
          of an existing installation even if an older MSI let it install per-user. -->
     <Launch Condition="ALLUSERS = 1 OR (Installed AND REMOVE = &quot;ALL&quot;)"
@@ -34,9 +34,9 @@
          Add/Remove Programs show a blank icon (#57). -->
     <Icon Id="CleonpdfIcon.ico" SourceFile="$(var.IconPath)" />
     <Property Id="ARPPRODUCTICON" Value="CleonpdfIcon.ico" />
-    <Property Id="ARPURLINFOABOUT" Value="https://getartcraft.com/apps/cleonpdf" />
-    <Property Id="ARPURLUPDATEINFO" Value="https://getartcraft.com/apps/cleonpdf" />
-    <Property Id="ARPHELPLINK" Value="https://discord.gg/artcraft" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/kristianrama/cleonpdf" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/kristianrama/cleonpdf/releases" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/kristianrama/cleonpdf/issues" />
     <!-- Desktop shortcut (#143): on by default for a first install, a checkbox in the full-UI
          welcome dialog, and INSTALLDESKTOPSHORTCUT=0 on the msiexec command line for unattended
          installs. Secure, so the choice made in the (unelevated) UI reaches the elevated install.
@@ -72,7 +72,7 @@
 
   <Fragment>
     <ComponentGroup Id="CleonpdfFiles" Directory="INSTALLFOLDER">
-      <Component Id="CleonpdfApp" Guid="E724C1C6-091F-4E21-A685-80D089FDBE21">
+      <Component Id="CleonpdfApp" Guid="F3E0A4B4-B7A7-425D-9EE5-C6B984DEFC63">
         <File Id="CleonpdfExe" Source="$(var.BinDir)\cleonpdf.exe" KeyPath="yes" />
 
         <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\cleonpdf.exe" Value="[#CleonpdfExe]" Type="string" />
@@ -137,13 +137,13 @@
            use as a file handler (#107), and 0.2.1's advertised one went missing from the Start menu
            (#143). Each has its own component with an HKLM key path, so Windows Installer removes it
            on uninstall; in this per-machine package both folders are the all-users ones. -->
-      <Component Id="CleonpdfStartMenuShortcut" Directory="ProgramMenuFolder" Guid="DC028192-C233-4F99-9A77-ED458C60DF26">
+      <Component Id="CleonpdfStartMenuShortcut" Directory="ProgramMenuFolder" Guid="A585C870-2EBF-40BD-9174-75FA502EC88C">
         <Shortcut Id="StartMenuShortcut" Name="CleonPDF" Description="CleonPDF PDF workbench"
             Target="[#CleonpdfExe]" WorkingDirectory="INSTALLFOLDER" Icon="CleonpdfIcon.ico" IconIndex="0" />
         <RegistryValue Root="HKLM" Key="Software\CleonPDF\Shortcuts" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
       </Component>
 
-      <Component Id="CleonpdfDesktopShortcut" Directory="DesktopFolder" Guid="F6948627-32AB-4D78-8865-0FDF417CE442"
+      <Component Id="CleonpdfDesktopShortcut" Directory="DesktopFolder" Guid="86C33804-15AD-4F28-AF43-8BB4276F39E4"
           Condition="INSTALLDESKTOPSHORTCUT = 1">
         <Shortcut Id="DesktopShortcut" Name="CleonPDF" Description="CleonPDF PDF workbench"
             Target="[#CleonpdfExe]" WorkingDirectory="INSTALLFOLDER" Icon="CleonpdfIcon.ico" IconIndex="0" />
@@ -157,7 +157,7 @@
            Windows 11 the entry is under "Show more options": the first-level menu only takes
            packaged apps' (IExplorerCommand) entries. Its own component with an HKLM key path, so
            INSTALLPDFCONTEXTMENU=0 leaves it out and uninstall removes it. -->
-      <Component Id="CleonpdfPdfContextMenu" Guid="439F084F-657D-4AC2-A4CC-F099C518D71F"
+      <Component Id="CleonpdfPdfContextMenu" Guid="3FE28A84-33AB-47B0-8658-55E736E492E1"
           Condition="INSTALLPDFCONTEXTMENU = 1">
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.pdf\shell\CleonPDF.Edit" Value="Edit with CleonPDF" Type="string" KeyPath="yes" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.pdf\shell\CleonPDF.Edit" Name="Icon" Value="&quot;[#CleonpdfExe]&quot;,0" Type="string" />

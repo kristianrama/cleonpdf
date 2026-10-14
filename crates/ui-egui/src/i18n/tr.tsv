@@ -59,7 +59,6 @@
 	Flatten Fill & Sign when saving	Kaydederken Doldur ve İmzala'yı düzleştir
 	Text, marks and signatures become part of the page. Other comments stay editable.	Metin, işaretler ve imzalar sayfanın bir parçası olur. Diğer yorumlar düzenlenebilir kalır.
 	OK	Tamam
-	Join our Discord	Discord'umuza katılın
 	Close	Kapat
 	Next / previous match	Sonraki / önceki eşleşme
 	Copy selected text	Seçilen metni kopyala
@@ -121,8 +120,6 @@
 	Current page — type a page number or label (such as iv) and press Enter	Geçerli sayfa — bir sayfa numarası veya etiketi (örneğin iv) yazıp Enter'a basın
 	Welcome to CleonPDF	CleonPDF'a Hoş Geldiniz
 	An open-source PDF workbench — local, private, and scriptable.	Açık kaynaklı bir PDF çalışma alanı — yerel, gizli ve komut dosyalarıyla yönetilebilir.
-	Join the ArtCraft community	ArtCraft topluluğuna katılın
-	Get help, share feedback and follow development on Discord.	Discord'da yardım alın, geri bildirim paylaşın ve geliştirmeyi takip edin.
 	Recommended tools	Önerilen araçlar
 	Use now	Şimdi kullan
 	Open file	Dosya aç
@@ -267,10 +264,7 @@
 	Split document…	Belgeyi böl…
 	Number pages…	Sayfaları numaralandır…
 	Keyboard shortcuts	Klavye kısayolları
-	Join the ArtCraft Discord	ArtCraft Discord'una katıl
-	CleonPDF web page	CleonPDF web sayfası
 	CleonPDF on GitHub	GitHub'da CleonPDF
-	ArtCraft website	ArtCraft web sitesi
 	Check for updates…	Güncellemeleri denetle…
 	About CleonPDF	CleonPDF hakkında
 	Export a PDF	PDF'i dışa aktar
@@ -1357,7 +1351,6 @@
 	Discard	Yoksay
 	Version {v}	Sürüm {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Rust ile yazılmış, temiz oda tekniğiyle geliştirilmiş açık kaynaklı bir PDF uygulaması. MIT VEYA Apache-2.0.
-	Part of	Şunun parçası:
 	Summarize Options	Özetleme Seçenekleri
 	Choose a layout:	Bir düzen seçin:
 	Comments only	Yalnızca yorumlar

@@ -80,7 +80,6 @@
 	Side panels	Πλευρικοί πίνακες
 	Enable Acrobat JavaScript	Ενεργοποίηση Acrobat JavaScript
 	OK	Εντάξει
-	Join our Discord	Ελάτε στο Discord μας
 	Close	Κλείσιμο
 	Next / previous match	Επόμενο / προηγούμενο αποτέλεσμα
 	Copy selected text	Αντιγραφή επιλεγμένου κειμένου
@@ -141,8 +140,6 @@
 	Previous page	Προηγούμενη σελίδα
 	Welcome to CleonPDF	Καλώς ορίσατε στο CleonPDF
 	An open-source PDF workbench — local, private, and scriptable.	Ένα εργαλείο PDF ανοιχτού κώδικα — τοπικό, ιδιωτικό και αυτοματοποιήσιμο.
-	Join the ArtCraft community	Γίνετε μέλος της κοινότητας ArtCraft
-	Get help, share feedback and follow development on Discord.	Βρείτε βοήθεια, μοιραστείτε σχόλια και παρακολουθήστε την ανάπτυξη στο Discord.
 	Recommended tools	Προτεινόμενα εργαλεία
 	Use now	Χρήση τώρα
 	Open file	Άνοιγμα αρχείου
@@ -936,7 +933,6 @@
 	Recover	Ανάκτηση
 	Version {v}	Έκδοση {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Μια εφαρμογή PDF ανοικτού κώδικα, αναπτυγμένη ανεξάρτητα σε Rust. Άδεια MIT ή Apache-2.0.
-	Part of	Μέρος του
 	Summarize Options	Επιλογές σύνοψης
 	Choose a layout:	Επιλέξτε διάταξη:
 	Comments only	Μόνο σχόλια
@@ -1664,10 +1660,7 @@
 	Extract pages…	Εξαγωγή σελίδων…
 	Split document…	Διαχωρισμός εγγράφου…
 	Number pages…	Αρίθμηση σελίδων…
-	Join the ArtCraft Discord	Συμμετοχή στο Discord του ArtCraft
-	CleonPDF web page	Ιστότοπος του CleonPDF
 	CleonPDF on GitHub	CleonPDF στο GitHub
-	ArtCraft website	Ιστότοπος ArtCraft
 	Check for updates…	Έλεγχος για ενημερώσεις…
 	Export a PDF	Εξαγωγή PDF
 	Export to	Εξαγωγή σε

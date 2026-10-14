@@ -7,8 +7,8 @@
   <project_license>MIT OR Apache-2.0</project_license>
   <name>CleonPDF</name>
   <summary>Read, organize, combine, split and secure PDFs</summary>
-  <developer id="ai.storyteller">
-    <name>Learning Machines LLC</name>
+  <developer id="io.github.kristianrama">
+    <name>Kristian Rama</name>
   </developer>
   <description>
     <p>
@@ -19,10 +19,10 @@
   <launchable type="desktop-id">io.github.kristianrama.cleonpdf.desktop</launchable>
   <icon type="stock">io.github.kristianrama.cleonpdf</icon>
   <!-- Only url types known to appstream 0.15 (Ubuntu 22.04, where CI validates): no vcs-browser. -->
-  <url type="homepage">https://getartcraft.com/apps/cleonpdf</url>
+  <url type="homepage">https://github.com/kristianrama/cleonpdf</url>
   <url type="bugtracker">https://github.com/kristianrama/cleonpdf/issues</url>
   <url type="help">https://github.com/kristianrama/cleonpdf</url>
-  <url type="contact">https://discord.gg/artcraft</url>
+  <url type="contact">https://github.com/kristianrama/cleonpdf/issues</url>
   <categories>
     <category>Office</category>
     <category>Viewer</category>

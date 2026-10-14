@@ -1295,7 +1295,6 @@
 	Select all pages (Organize)	Selecionar todas as páginas (Organizar)
 	Version {v}	Versão {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Um aplicativo PDF de código aberto e clean-room escrito em Rust. MIT OU Apache-2.0.
-	Part of	Parte de
 	Summarize Options	Opções de resumo
 	Choose a layout:	Escolha um layout:
 	Comments only	Somente comentários
@@ -1687,13 +1686,7 @@
 	Split document…	Dividir documento…
 	Number pages…	Numerar páginas…
 	Keyboard shortcuts	Atalhos de teclado
-	Join the ArtCraft Discord	Entrar no Discord do ArtCraft
-	Join the ArtCraft community	Entrar na comunidade ArtCraft
-	Get help, share feedback and follow development on Discord.	Obtenha ajuda, compartilhe comentários e acompanhe o desenvolvimento no Discord.
-	Join our Discord	Entrar em nosso Discord
-	CleonPDF web page	Página da Web do CleonPDF
 	CleonPDF on GitHub	CleonPDF no GitHub
-	ArtCraft website	Site do ArtCraft
 	Check for updates…	Verificar atualizações…
 	About CleonPDF	Sobre o CleonPDF
 	JavaScript console…	Console JavaScript…

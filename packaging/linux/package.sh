@@ -46,7 +46,7 @@ case "$ARCH" in
   aarch64 | arm64) ARCH=aarch64; DEB_ARCH=arm64 ;;
   *) echo "unsupported architecture $ARCH" >&2; exit 2 ;;
 esac
-export CLEONPDF_MAINTAINER="${CLEONPDF_MAINTAINER:-CleonPDF maintainers <cleonpdf@storyteller.ai>}"
+export CLEONPDF_MAINTAINER="${CLEONPDF_MAINTAINER:-Kristian Rama <krisrama98@gmail.com>}"
 LABEL_SUFFIX="${CLEONPDF_BUILD_LABEL:+-$CLEONPDF_BUILD_LABEL}"
 BASENAME="cleonpdf-$VERSION$LABEL_SUFFIX-linux-$ARCH"
 

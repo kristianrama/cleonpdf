@@ -69,7 +69,6 @@
 	Side panels	Бүйірлік панельдер
 	Enable Acrobat JavaScript	Acrobat JavaScript-ті қосу
 	OK	ОК
-	Join our Discord	Discord-қа қосылыңыз
 	Close	Жабу
 	Next / previous match	Келесі / алдыңғы сәйкестік
 	Copy selected text	Таңдалған мәтінді көшіру
@@ -124,8 +123,6 @@
 	Current page — type a page number or label (such as iv) and press Enter	Ағымдағы бет — бет нөмірін немесе белгісін (мысалы, iv) теріңіз де, Enter пернесін басыңыз
 	Welcome to CleonPDF	CleonPDF-ге қош келдіңіз
 	An open-source PDF workbench — local, private, and scriptable.	Ашық бастапқы кодты PDF жұмыс орны — жергілікті, жеке әрі скрипттерді қолдайтын.
-	Join the ArtCraft community	ArtCraft қауымдастығына қосылыңыз
-	Get help, share feedback and follow development on Discord.	Көмек алыңыз, пікір бөлісіңіз және Discord-тағы әзірлеуді қадағалаңыз.
 	Recommended tools	Ұсынылған құралдар
 	Use now	Дәл қазір пайдалану
 	Open file	Файлды ашу
@@ -269,10 +266,7 @@
 	Split document…	Құжатты бөлу…
 	Number pages…	Беттерді нөмірлеу…
 	Keyboard shortcuts	Пернетақта тіркесімдері
-	Join the ArtCraft Discord	ArtCraft Discord-ына қосылыңыз
-	CleonPDF web page	CleonPDF веб-сайты
 	CleonPDF on GitHub	GitHub-тағы CleonPDF
-	ArtCraft website	ArtCraft веб-сайты
 	Check for updates…	Жаңартуларды тексеру…
 	About CleonPDF	CleonPDF туралы
 	Export a PDF	PDF экспорттау
@@ -1341,7 +1335,6 @@
 	Discard	Елемеу
 	Version {v}	Нұсқа {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Rust тілінде жазылған, clean-room әдісімен әзірленген ашық бастапқы кодты PDF қосымшасы. MIT OR Apache-2.0.
-	Part of	Бөлігі
 	Summarize Options	Қорытындылау параметрлері
 	Choose a layout:	Макетті таңдаңыз:
 	Comments only	Тек түсініктемелер

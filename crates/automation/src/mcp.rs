@@ -131,7 +131,7 @@ impl McpServer {
                 Ok(json!({
                     "protocolVersion": version,
                     "capabilities": { "tools": { "listChanged": false }, "resources": { "listChanged": false, "subscribe": false } },
-                    "serverInfo": { "name": "cleonpdf", "title": "CleonPDF", "version": env!("CARGO_PKG_VERSION"), "websiteUrl": cleonpdf_engine::links::APP_PAGE },
+                    "serverInfo": { "name": "cleonpdf", "title": "CleonPDF", "version": env!("CARGO_PKG_VERSION"), "websiteUrl": cleonpdf_engine::links::GITHUB },
                     "instructions": if self.compact { format!("{INSTRUCTIONS}{COMPACT_INSTRUCTIONS}") } else { INSTRUCTIONS.to_string() },
                 }))
             }

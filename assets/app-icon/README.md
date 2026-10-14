@@ -1,39 +1,37 @@
 # CleonPDF app icon
 
-<img src="cleonpdf-small.svg" alt="CleonPDF app icon: an engraved lion's head on green" width="128">
+<img src="cleonpdf-small.svg" alt="CleonPDF app icon: a page with an amber folded corner and a bold C on a navy tile" width="128">
 
-**Creature:** a lion, in a frontal head-and-shoulders portrait, mane running off the bottom of the tile.
+**Motif:** a sheet of paper with its top-right corner folded down, and a bold C (for Cleon) open to the
+right. It is drawn from plain shapes, so it stays legible at 16 px.
 
-**Style:** an engraving (woodcut-weight line work) portrait in the Crafting Apps "owl template" framing:
-a full-bleed colour field, no frame or roundel, the animal looking at the viewer and filling the tile.
-
-**Palette:** exactly three colours.
+**Palette:**
 
 | Colour | Hex | Used for |
 |---|---|---|
-| Ink | `#0b0b0c` | line work and the figure's contour |
-| Paper | `#efe9dc` | the figure (the lion's silhouette) |
-| CleonPDF green (app colour) | `#12a58a` | the full-bleed field |
+| Navy (app colour) | `#24447f` → `#12244a` | the full-bleed field (a diagonal gradient) |
+| Paper | `#f7f3ea` | the page |
+| Amber | `#f2a93b` | the folded corner |
+| Ink navy | `#1d3461` | the C |
 
 **Tile:** `viewBox="0 0 512 512"`, a rounded square with `rx=112` that clips everything. Windows and Linux
 icons use the full-bleed tile. macOS icons put it on Apple's grid (an 824 px body centred on a transparent
 1024 px canvas).
 
-**Provenance:** the project owner's original drawing, made in ArtCraft (2880 px, keyed to the palette), then
-vectorised with craftrules `assets/logo-options/_tools/vectorize_tile.py` (potrace; no filtering or
-warping). The source drawing is kept in craftrules at `assets/app-icons/cleonpdf/source.png`, not here.
-Licence: [LICENSE.txt](LICENSE.txt) (`MIT OR Apache-2.0`, like the repo).
+**Provenance:** original artwork made for CleonPDF, written by hand as SVG (no fonts, images or third-party
+material). Licence: [LICENSE.txt](LICENSE.txt) (`MIT OR Apache-2.0`, like the repo). CleonPDF's icon
+replaces PdfCraft's; the two share only the tile geometry.
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `cleonpdf.svg` | the master vector (traced at 2048 px); every PNG, `.ico` and `.icns` is rendered from it |
-| `cleonpdf-small.svg` | a lighter vector (traced at 1024 px) for places where size matters, such as this README |
+| `cleonpdf.svg` | the master vector; every PNG, `.ico` and `.icns` is rendered from it |
+| `cleonpdf-small.svg` | a copy of the master, kept for places that link to it, such as this README |
 | `cleonpdf-1024.png` | 1024 px on Apple's grid; also the runtime Dock icon on macOS |
 | `cleonpdf.icns` | macOS icon (16–1024 px) |
 | `cleonpdf.ico` | Windows icon (16–256 px), embedded in `cleonpdf.exe` by `apps/cleonpdf/build.rs` |
-| `cleonpdf-document.svg` | Windows PDF file icon master: a Lucide document outline, green badge and outlined PDF lettering; no font dependency |
+| `cleonpdf-document.svg` | Windows PDF file icon master: a Lucide document outline, navy badge and outlined PDF lettering; no font dependency |
 | `cleonpdf-document.ico` | Windows PDF file icon (16–256 px), embedded as resource 2 in `cleonpdf.exe` |
 | `hicolor/<n>x<n>/apps/io.github.kristianrama.cleonpdf.png` | Linux hicolor theme, 16–512 px; the 256 px one is the runtime icon on Windows and Linux |
 | `hicolor/scalable/apps/io.github.kristianrama.cleonpdf.svg` | Linux scalable icon (copy of the master) |
@@ -51,6 +49,6 @@ sidecar. This provides a file type icon; first-page thumbnails still need a thum
 ## Regenerate
 
 ```sh
-packaging/icons.sh        # needs resvg and python3; iconutil (macOS) for the .icns
+packaging/icons.sh        # needs resvg and python3 (iconutil on macOS is used when present)
 cargo xtask assets        # then update the sha256 values in ATTRIBUTION.toml and run with --write
 ```

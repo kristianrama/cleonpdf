@@ -91,7 +91,6 @@
 	Side panels	Panele boczne
 	Enable Acrobat JavaScript	Włącz Acrobat JavaScript
 	OK	OK
-	Join our Discord	Dołącz do naszego Discorda
 	Close	Zamknij
 	Next / previous match	Następne / poprzednie dopasowanie
 	Copy selected text	Kopiuj zaznaczony tekst
@@ -159,8 +158,6 @@
 	Current page — type a page number or label (such as iv) and press Enter	Bieżąca strona — wpisz numer lub etykietę strony (np. iv) i naciśnij Enter
 	Welcome to CleonPDF	Witamy w CleonPDF
 	An open-source PDF workbench — local, private, and scriptable.	Otwarty zestaw narzędzi do PDF — lokalny, prywatny i obsługujący skrypty.
-	Join the ArtCraft community	Dołącz do społeczności ArtCraft
-	Get help, share feedback and follow development on Discord.	Uzyskaj pomoc, podziel się opinią i śledź rozwój na Discordzie.
 	Recommended tools	Polecane narzędzia
 	Use now	Użyj teraz
 	Open file	Otwórz plik
@@ -304,10 +301,7 @@
 	Split document…	Podziel dokument…
 	Number pages…	Ponumeruj strony…
 	Keyboard shortcuts	Skróty klawiaturowe
-	Join the ArtCraft Discord	Dołącz do Discorda ArtCraft
-	CleonPDF web page	Strona internetowa CleonPDF
 	CleonPDF on GitHub	CleonPDF na GitHubie
-	ArtCraft website	Strona internetowa ArtCraft
 	Check for updates…	Sprawdź aktualizacje…
 	About CleonPDF	O CleonPDF
 	Export a PDF	Eksportuj PDF
@@ -1384,7 +1378,6 @@
 	Discard	Odrzuć
 	Version {v}	Wersja {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Otwarta aplikacja PDF napisana w Rust na podstawie niezależnej implementacji. MIT OR Apache-2.0.
-	Part of	Część
 	Summarize Options	Opcje podsumowania
 	Choose a layout:	Wybierz układ:
 	Comments only	Tylko komentarze

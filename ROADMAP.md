@@ -1,5 +1,9 @@
 # CleonPDF roadmap
 
+> **Fork:** CleonPDF was forked from PdfCraft 0.8.0 on 2026-10-14. The stage, the numbers and every
+> progress-log entry before that date are PdfCraft's, measured by the PdfCraft team; they have not
+> been re-measured for CleonPDF.
+
 **Stage: alpha** · next: beta, ~26% (ready for real work 49% → 75%) and ~400–700 h away
 
 > **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-13 · **Change:** minor (M3 candidate: native opens retain chosen tools through password retries and defer startup intake while preparation is pending; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
@@ -149,6 +153,7 @@ Ranked; detail and the full milestone table in [docs/roadmap.md](docs/roadmap.md
 
 ## Progress log
 
+- **2026-10-14 (fork):** CleonPDF forked from PdfCraft 0.8.0 (storytold/pdfcraft@9931329). Renamed the app, binaries, 35 crates and identifiers (`io.github.kristianrama.cleonpdf`), gave the Windows installer its own upgrade code, removed the ArtCraft branding and community links, drew a new app icon, pointed the update check at kristianrama/cleonpdf, and removed the CI workflows that called `storytold/craft-common-actions@main` (no release workflow yet). Fixed the number parser in `cleonpdf-cos`: quadratic time on long malformed numbers (a 4 KB Flate content stream stalled it for about half an hour) and non-finite reals from `inf`, `nan` and overflowing input. Estimates unchanged.
 - **2026-10-13 (M3, native-opening candidate):** Chosen tools survive preparation, conversion and password retries; startup intake waits for pending preparation. Regression tests cover completion, cancellation and document identity. Estimates unchanged.
 - **2026-10-12 (M10, Windows printing without PowerShell, #1107):** craft-print now prints on Windows in-process: printers from EnumPrinters/GetDefaultPrinter, jobs drawn as vectors by Windows.Data.Pdf into the XPS print API with a driver-validated PrintTicket (exact paper, orientation, no scaling), so printing works where App Control for Business or AppLocker run PowerShell in Constrained Language Mode. Portrait and landscape sheets still print as one job (turned with /Rotate); a sheet size the driver lacks is refused rather than shrunk. Pins craft-libs f03ec27 (craft-libs#28); deny.toml allows the storytold/winprint.rs fork and adds a webpki-root-certs licence exception and a RUSTSEC-2024-0370 ignore for winprint's build-dependencies. An earlier craft-print revision was checked in Windows Sandbox under enforced WDAC: printers listed, CLI and desktop jobs spooled, and no powershell.exe in the 4688 audit. The final pinned revision passed craft-libs Windows CI, including a real paused-queue job; that Sandbox run has not been repeated. Estimates unchanged.
 - **2026-10-12 (M13, CLI robustness scans):** `cleonpdf-cli check` visits a directory once even when input roots overlap or directory symlinks lead back into the tree. PDFs reached through file symlinks remain accepted. Three real CLI regressions cover overlapping roots, a directory cycle and directory/file aliases. Estimates unchanged.

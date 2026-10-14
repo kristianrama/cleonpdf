@@ -3,7 +3,7 @@
 # from assets/app-icon/cleonpdf-document.svg. Both are master vectors.
 #
 # Needs: resvg (brew install resvg / cargo install resvg) and python3 (stdlib only, for the .ico).
-# On macOS, iconutil also writes the .icns. The outputs are committed, so building and packaging
+# On macOS, iconutil writes the .icns; elsewhere python3 does. The outputs are committed, so building and packaging
 # never need these tools. After running it, update the sha256 values in ATTRIBUTION.toml, then
 # `cargo xtask assets --write`.
 #
@@ -73,6 +73,22 @@ if command -v iconutil >/dev/null; then
   done
   iconutil -c icns -o "$DIR/cleonpdf.icns" "$SET"
 else
-  echo "warning: iconutil not found (macOS only); cleonpdf.icns not regenerated" >&2
+  # Elsewhere: write the .icns directly. Every entry is a PNG, which macOS has read for all of
+  # these types since 10.7.
+  ICNS_ARGS=()
+  for entry in icp4:16 icp5:32 icp6:64 ic07:128 ic08:256 ic09:512 ic10:1024 ic11:32 ic12:64 ic13:256 ic14:512; do
+    size="${entry#*:}"
+    [ -f "$TMP/mac-$size.png" ] || render "$MAC" "$size" "$TMP/mac-$size.png"
+    ICNS_ARGS+=("${entry%%:*}" "$TMP/mac-$size.png")
+  done
+  python3 - "$DIR/cleonpdf.icns" "${ICNS_ARGS[@]}" <<'PY'
+import struct, sys
+out, rest = sys.argv[1], sys.argv[2:]
+body = b""
+for kind, path in zip(rest[::2], rest[1::2]):
+    png = open(path, "rb").read()
+    body += kind.encode("ascii") + struct.pack(">I", 8 + len(png)) + png
+open(out, "wb").write(b"icns" + struct.pack(">I", 8 + len(body)) + body)
+PY
 fi
 echo "icons written to $DIR"

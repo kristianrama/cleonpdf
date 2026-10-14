@@ -15,8 +15,8 @@ release: ${RELEASE}
 section: graphics
 priority: optional
 maintainer: ${CLEONPDF_MAINTAINER}
-vendor: Learning Machines LLC
-homepage: https://getartcraft.com/apps/cleonpdf
+vendor: Kristian Rama
+homepage: https://github.com/kristianrama/cleonpdf
 license: MIT OR Apache-2.0
 description: |-
   Open-source, native PDF workbench: read, comment, fill and sign forms,

@@ -116,10 +116,7 @@
 	Split document…	Rozdělit dokument…
 	Number pages…	Očíslovat stránky…
 	Keyboard shortcuts	Klávesové zkratky
-	Join the ArtCraft Discord	Připojit se ke komunitě ArtCraft na Discordu
-	CleonPDF web page	Webová stránka CleonPDF
 	CleonPDF on GitHub	CleonPDF na GitHubu
-	ArtCraft website	Web ArtCraft
 	Check for updates…	Zkontrolovat aktualizace…
 	About CleonPDF	O aplikaci CleonPDF
 	Auto	Automaticky
@@ -223,7 +220,6 @@ key	Space	Mezerník
 	{folder} is already pinned to Home	Složka {folder} už je připnutá na úvodní obrazovce
 	You can pin up to {n} folders. Unpin one first.	Připnout lze nejvýše {n} složek. Nejdříve některou odepněte.
 	Pinned {folder} to Home	Složka {folder} je připnutá na úvodní obrazovce
-	Join our Discord	Připojit se k našemu Discordu
 	Close	Zavřít
 	Next / previous match	Další / předchozí shoda
 	Copy selected text	Kopírovat vybraný text
@@ -280,8 +276,6 @@ key	Space	Mezerník
 	Current page — type a page number or label (such as iv) and press Enter	Aktuální stránka — zadejte číslo nebo označení stránky (třeba iv) a stiskněte Enter
 	Welcome to CleonPDF	Vítá vás CleonPDF
 	An open-source PDF workbench — local, private, and scriptable.	Open-source dílna pro PDF — lokální, soukromá a skriptovatelná.
-	Join the ArtCraft community	Připojte se ke komunitě ArtCraft
-	Get help, share feedback and follow development on Discord.	Získejte pomoc, sdílejte zpětnou vazbu a sledujte vývoj na Discordu.
 	Recommended tools	Doporučené nástroje
 	Use now	Použít
 	Open file	Otevřít soubor
@@ -1468,7 +1462,6 @@ key	Space	Mezerník
 	Discard	Zahodit
 	Version {v}	Verze {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Open-source aplikace pro PDF napsaná v Rustu metodou clean-room. MIT OR Apache-2.0.
-	Part of	Součást
 	Summarize Options	Možnosti souhrnu
 	Choose a layout:	Vyberte rozvržení:
 	Comments only	Jen komentáře

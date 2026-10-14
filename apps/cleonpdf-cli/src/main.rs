@@ -70,7 +70,7 @@ cleonpdf-cli run    --script steps.json [--root DIR]      [{\"tool\": \"doc_open
     "\
 cleonpdf-cli ui     --control FILE <method> [key=value …] [--out shot.png]
                                                            drive a running app started with --control FILE
-help and feedback: https://discord.gg/artcraft"
+help and feedback: https://github.com/kristianrama/cleonpdf/issues"
 );
 
 fn main() -> ExitCode {
@@ -149,8 +149,7 @@ fn stdout_line(line: std::fmt::Arguments<'_>) -> Result<(), CliError> {
 
 fn version() -> Result<(), CliError> {
     stdout_line(format_args!("cleonpdf-cli {}", cleonpdf_engine::build_info::version()))?;
-    stdout_line(format_args!("Discord: {}  (help and feedback)", cleonpdf_engine::links::DISCORD))?;
-    stdout_line(format_args!("Web:     {}", cleonpdf_engine::links::APP_PAGE))?;
+    stdout_line(format_args!("Help:    {}  (problems and feedback)", cleonpdf_engine::links::ISSUES))?;
     stdout_line(format_args!("Source:  {}", cleonpdf_engine::links::GITHUB))?;
     Ok(())
 }

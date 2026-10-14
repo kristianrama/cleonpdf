@@ -229,7 +229,6 @@
 	Archive documents	Arhiviraj dokumente
 	Area	Ploščina
 	Arrow	Puščica
-	ArtCraft website	Spletna stran ArtCraft
 	Ask about this document	Vprašaj o tem dokumentu
 	Asks GitHub for the latest release. Nothing is downloaded or installed automatically.	Vpraša GitHub za najnovejšo izdajo. Ničesar se ne prenese ali namesti samodejno.
 	Associated with content	Povezano z vsebino
@@ -866,7 +865,6 @@
 	Full screen mode	Celozaslonski način
 	General	Splošno
 	Geospatial location	Geoprostorska lokacija
-	Get help, share feedback and follow development on Discord.	Poiščite pomoč, delite povratne informacije in spremljajte razvoj na Discordu.
 	Go to a page view	Pojdi na pogled strani
 	Go to page {p}	Pojdi na stran {p}
 	Go to page…	Pojdi na stran…
@@ -972,9 +970,6 @@
 	JavaScript console…	Konzola JavaScript…
 	JavaScript is turned off (Preferences ▸ JavaScript).	JavaScript je izklopljen (Nastavitve > JavaScript).
 	JavaScript, e.g. getField("total").value	JavaScript, npr. getField("total").value
-	Join our Discord	Discord kanal
-	Join the ArtCraft Discord	Pridružite se Discordu ArtCraft
-	Join the ArtCraft community	Pridružite se skupnosti ArtCraft
 	July	Julij
 	June	Junij
 	Justify	Obojestransko poravnano
@@ -1292,7 +1287,6 @@
 	Pages with links, comments or fields should tab in structure order. The fix sets each page's tab order to Use Document Structure.	Strani s povezavami, komentarji ali polji naj se pomikajo s tabulatorjem po vrstnem redu strukture. Popravek nastavi vrstni red tabulatorja vsake strani na Uporabi strukturo dokumenta.
 	Pages:	Strani:
 	Paper:	Papir:
-	Part of	Del
 	Passed	Uspešno
 	Password	Geslo
 	Password protection will be applied when you save	Zaščita z geslom bo uporabljena ob shranjevanju
@@ -1307,7 +1301,6 @@
 	Patterns (graphics objects)	Vzorci (grafični objekti)
 	CleonPDF didn't shut down normally. These documents had changes that were autosaved:	CleonPDF se ni zaprl običajno. Ti dokumenti so imeli samodejno shranjene spremembe:
 	CleonPDF on GitHub	CleonPDF na GitHubu
-	CleonPDF web page	Spletna stran CleonPDF
 	CleonPDF works offline. No telemetry, no account, and no cloud processing unless you add a provider.	CleonPDF deluje brez povezave. Brez telemetrije, brez računa in brez obdelave v oblaku, razen če dodate ponudnika.
 	CleonPDF {c} is up to date.	CleonPDF {c} je posodobljen.
 	CleonPDF {v} is available.	Na voljo je CleonPDF {v}.

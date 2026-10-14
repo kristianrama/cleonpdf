@@ -952,6 +952,478 @@ dependencies = [
 ]
 
 [[package]]
+name = "cleonpdf"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-engine",
+ "cleonpdf-ui-egui",
+ "eframe",
+ "egui",
+ "fmv-macos-events",
+ "log",
+ "pollster 1.0.1",
+ "rustls-native-certs",
+ "serde_json",
+ "uds_windows",
+ "ureq",
+ "wayland-client",
+ "wayland-protocols",
+ "windows",
+ "winresource",
+ "winsafe",
+]
+
+[[package]]
+name = "cleonpdf-a11y"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-filters",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-annot"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
+ "hayro-syntax",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-audit"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-edit",
+ "cleonpdf-model",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-automation"
+version = "0.8.0"
+dependencies = [
+ "base64 0.22.1",
+ "cleonpdf-cos",
+ "cleonpdf-engine",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
+ "cleonpdf-organize",
+ "cleonpdf-platform",
+ "cleonpdf-render",
+ "cleonpdf-xfa",
+ "flate2",
+ "image",
+ "png 0.18.1",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+]
+
+[[package]]
+name = "cleonpdf-cli"
+version = "0.8.0"
+dependencies = [
+ "base64 0.22.1",
+ "cleonpdf-audit",
+ "cleonpdf-automation",
+ "cleonpdf-cos",
+ "cleonpdf-engine",
+ "cleonpdf-render",
+ "rustix 1.1.5",
+ "serde_json",
+ "winresource",
+]
+
+[[package]]
+name = "cleonpdf-compare"
+version = "0.8.0"
+
+[[package]]
+name = "cleonpdf-content"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-cos",
+]
+
+[[package]]
+name = "cleonpdf-cos"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-crypt",
+ "cleonpdf-filters",
+ "hayro-syntax",
+ "proptest",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-create"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
+ "encoding_rs",
+ "hayro-syntax",
+ "image",
+ "png 0.18.1",
+ "thiserror 2.0.21",
+ "tiff",
+ "zune-jpeg",
+]
+
+[[package]]
+name = "cleonpdf-crypt"
+version = "0.8.0"
+dependencies = [
+ "aes",
+ "md-5",
+ "proptest",
+ "sha2 0.11.0",
+ "stringprep",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-edit"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-annot",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
+ "hayro-syntax",
+ "kurbo 0.13.1",
+ "thiserror 2.0.21",
+ "unicode-bidi",
+]
+
+[[package]]
+name = "cleonpdf-engine"
+version = "0.8.0"
+dependencies = [
+ "chrono",
+ "cleonpdf-a11y",
+ "cleonpdf-annot",
+ "cleonpdf-audit",
+ "cleonpdf-compare",
+ "cleonpdf-cos",
+ "cleonpdf-create",
+ "cleonpdf-edit",
+ "cleonpdf-export",
+ "cleonpdf-fonts",
+ "cleonpdf-forms",
+ "cleonpdf-geom",
+ "cleonpdf-js",
+ "cleonpdf-measure",
+ "cleonpdf-model",
+ "cleonpdf-ocr",
+ "cleonpdf-optimize",
+ "cleonpdf-organize",
+ "cleonpdf-preflight",
+ "cleonpdf-print",
+ "cleonpdf-redact",
+ "cleonpdf-render",
+ "cleonpdf-sign",
+ "cleonpdf-xfa",
+ "cleonpdf-xfdf",
+ "icu_properties",
+ "idna",
+ "image",
+ "png 0.18.1",
+ "thiserror 2.0.21",
+ "url",
+]
+
+[[package]]
+name = "cleonpdf-export"
+version = "0.8.0"
+dependencies = [
+ "flate2",
+]
+
+[[package]]
+name = "cleonpdf-filters"
+version = "0.8.0"
+dependencies = [
+ "flate2",
+ "proptest",
+ "thiserror 2.0.21",
+ "weezl 0.2.1",
+]
+
+[[package]]
+name = "cleonpdf-fonts"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-cos",
+ "harfrust",
+ "skrifa 0.44.0",
+ "unicode-bidi",
+]
+
+[[package]]
+name = "cleonpdf-forms"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
+ "hayro-syntax",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-geom"
+version = "0.8.0"
+
+[[package]]
+name = "cleonpdf-js"
+version = "0.8.0"
+dependencies = [
+ "boa_engine",
+]
+
+[[package]]
+name = "cleonpdf-measure"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-annot",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-model",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-model"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-cos",
+]
+
+[[package]]
+name = "cleonpdf-ocr"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-fonts",
+ "ocrs",
+ "rten",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-optimize"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-annot",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-model",
+ "cleonpdf-render",
+ "image",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-organize"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "hayro-syntax",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-platform"
+version = "0.8.0"
+dependencies = [
+ "async-channel",
+ "futures-lite",
+ "zbus",
+]
+
+[[package]]
+name = "cleonpdf-preflight"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-cos",
+ "cleonpdf-model",
+]
+
+[[package]]
+name = "cleonpdf-print"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-model",
+ "craft-print",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-redact"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-annot",
+ "cleonpdf-content",
+ "cleonpdf-cos",
+ "cleonpdf-edit",
+ "cleonpdf-fonts",
+ "cleonpdf-forms",
+ "cleonpdf-model",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-render"
+version = "0.8.0"
+dependencies = [
+ "bytemuck",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "flate2",
+ "getrandom 0.4.3",
+ "hayro",
+ "hayro-syntax",
+ "kurbo 0.13.1",
+ "log",
+ "lopdf",
+ "serde",
+ "skrifa 0.44.0",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-sign"
+version = "0.8.0"
+dependencies = [
+ "aes",
+ "aws-lc-rs",
+ "base64 0.22.1",
+ "bp256",
+ "bp384",
+ "cbc",
+ "cleonpdf-annot",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "crypto-bigint",
+ "des",
+ "ecdsa",
+ "ed25519-dalek",
+ "getrandom 0.4.3",
+ "hmac",
+ "p256",
+ "p384",
+ "p521",
+ "pbkdf2",
+ "rc2",
+ "ripemd",
+ "rsa",
+ "rustls-cng",
+ "security-framework",
+ "sha1 0.11.0",
+ "sha2 0.11.0",
+ "sha3",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-ui-egui"
+version = "0.8.0"
+dependencies = [
+ "arboard",
+ "base64 0.22.1",
+ "bytemuck",
+ "cleonpdf-cos",
+ "cleonpdf-engine",
+ "cleonpdf-fonts",
+ "cleonpdf-model",
+ "cleonpdf-platform",
+ "cleonpdf-render",
+ "cleonpdf-xfa",
+ "craft-ui",
+ "eframe",
+ "egui",
+ "egui_extras",
+ "egui_kittest",
+ "getrandom 0.4.3",
+ "image",
+ "js-sys",
+ "log",
+ "objc2 0.6.4",
+ "objc2-app-kit 0.3.2",
+ "objc2-foundation 0.3.2",
+ "png 0.18.1",
+ "pollster 1.0.1",
+ "rfd",
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
+ "skrifa 0.44.0",
+ "sys-locale",
+ "toml",
+ "unicode-bidi",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "winsafe",
+]
+
+[[package]]
+name = "cleonpdf-web"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-ui-egui",
+ "eframe",
+ "egui",
+ "js-sys",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "cleonpdf-xfa"
+version = "0.8.0"
+dependencies = [
+ "base64 0.22.1",
+ "cleonpdf-cos",
+ "cleonpdf-fonts",
+ "image",
+ "png 0.18.1",
+ "roxmltree",
+ "sha2 0.11.0",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cleonpdf-xfdf"
+version = "0.8.0"
+dependencies = [
+ "cleonpdf-annot",
+ "cleonpdf-cos",
+ "cleonpdf-forms",
+ "cleonpdf-model",
+ "roxmltree",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "clipboard-win"
 version = "5.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3871,478 +4343,6 @@ checksum = "112d82ceb8c5bf524d9af484d4e4970c9fd5a0cc15ba14ad93dccd28873b0629"
 dependencies = [
  "digest 0.11.3",
  "hmac",
-]
-
-[[package]]
-name = "cleonpdf"
-version = "0.8.0"
-dependencies = [
- "eframe",
- "egui",
- "fmv-macos-events",
- "log",
- "cleonpdf-engine",
- "cleonpdf-ui-egui",
- "pollster 1.0.1",
- "rustls-native-certs",
- "serde_json",
- "uds_windows",
- "ureq",
- "wayland-client",
- "wayland-protocols",
- "windows",
- "winresource",
- "winsafe",
-]
-
-[[package]]
-name = "cleonpdf-a11y"
-version = "0.8.0"
-dependencies = [
- "cleonpdf-content",
- "cleonpdf-cos",
- "cleonpdf-filters",
- "cleonpdf-fonts",
- "cleonpdf-model",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-annot"
-version = "0.8.0"
-dependencies = [
- "hayro-syntax",
- "cleonpdf-cos",
- "cleonpdf-fonts",
- "cleonpdf-model",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-audit"
-version = "0.8.0"
-dependencies = [
- "cleonpdf-content",
- "cleonpdf-cos",
- "cleonpdf-edit",
- "cleonpdf-model",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-automation"
-version = "0.8.0"
-dependencies = [
- "base64 0.22.1",
- "flate2",
- "image",
- "cleonpdf-cos",
- "cleonpdf-engine",
- "cleonpdf-fonts",
- "cleonpdf-model",
- "cleonpdf-organize",
- "cleonpdf-platform",
- "cleonpdf-render",
- "cleonpdf-xfa",
- "png 0.18.1",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
-]
-
-[[package]]
-name = "cleonpdf-cli"
-version = "0.8.0"
-dependencies = [
- "base64 0.22.1",
- "cleonpdf-audit",
- "cleonpdf-automation",
- "cleonpdf-cos",
- "cleonpdf-engine",
- "cleonpdf-render",
- "rustix 1.1.5",
- "serde_json",
- "winresource",
-]
-
-[[package]]
-name = "cleonpdf-compare"
-version = "0.8.0"
-
-[[package]]
-name = "cleonpdf-content"
-version = "0.8.0"
-dependencies = [
- "cleonpdf-cos",
-]
-
-[[package]]
-name = "cleonpdf-cos"
-version = "0.8.0"
-dependencies = [
- "hayro-syntax",
- "cleonpdf-crypt",
- "cleonpdf-filters",
- "proptest",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-create"
-version = "0.8.0"
-dependencies = [
- "encoding_rs",
- "hayro-syntax",
- "image",
- "cleonpdf-cos",
- "cleonpdf-fonts",
- "cleonpdf-model",
- "png 0.18.1",
- "thiserror 2.0.21",
- "tiff",
- "zune-jpeg",
-]
-
-[[package]]
-name = "cleonpdf-crypt"
-version = "0.8.0"
-dependencies = [
- "aes",
- "md-5",
- "proptest",
- "sha2 0.11.0",
- "stringprep",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-edit"
-version = "0.8.0"
-dependencies = [
- "hayro-syntax",
- "kurbo 0.13.1",
- "cleonpdf-annot",
- "cleonpdf-content",
- "cleonpdf-cos",
- "cleonpdf-fonts",
- "cleonpdf-model",
- "thiserror 2.0.21",
- "unicode-bidi",
-]
-
-[[package]]
-name = "cleonpdf-engine"
-version = "0.8.0"
-dependencies = [
- "chrono",
- "icu_properties",
- "idna",
- "image",
- "cleonpdf-a11y",
- "cleonpdf-annot",
- "cleonpdf-audit",
- "cleonpdf-compare",
- "cleonpdf-cos",
- "cleonpdf-create",
- "cleonpdf-edit",
- "cleonpdf-export",
- "cleonpdf-fonts",
- "cleonpdf-forms",
- "cleonpdf-geom",
- "cleonpdf-js",
- "cleonpdf-measure",
- "cleonpdf-model",
- "cleonpdf-ocr",
- "cleonpdf-optimize",
- "cleonpdf-organize",
- "cleonpdf-preflight",
- "cleonpdf-print",
- "cleonpdf-redact",
- "cleonpdf-render",
- "cleonpdf-sign",
- "cleonpdf-xfa",
- "cleonpdf-xfdf",
- "png 0.18.1",
- "thiserror 2.0.21",
- "url",
-]
-
-[[package]]
-name = "cleonpdf-export"
-version = "0.8.0"
-dependencies = [
- "flate2",
-]
-
-[[package]]
-name = "cleonpdf-filters"
-version = "0.8.0"
-dependencies = [
- "flate2",
- "proptest",
- "thiserror 2.0.21",
- "weezl 0.2.1",
-]
-
-[[package]]
-name = "cleonpdf-fonts"
-version = "0.8.0"
-dependencies = [
- "harfrust",
- "cleonpdf-cos",
- "skrifa 0.44.0",
- "unicode-bidi",
-]
-
-[[package]]
-name = "cleonpdf-forms"
-version = "0.8.0"
-dependencies = [
- "hayro-syntax",
- "cleonpdf-content",
- "cleonpdf-cos",
- "cleonpdf-fonts",
- "cleonpdf-model",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-geom"
-version = "0.8.0"
-
-[[package]]
-name = "cleonpdf-js"
-version = "0.8.0"
-dependencies = [
- "boa_engine",
-]
-
-[[package]]
-name = "cleonpdf-measure"
-version = "0.8.0"
-dependencies = [
- "cleonpdf-annot",
- "cleonpdf-content",
- "cleonpdf-cos",
- "cleonpdf-model",
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-model"
-version = "0.8.0"
-dependencies = [
- "cleonpdf-cos",
-]
-
-[[package]]
-name = "cleonpdf-ocr"
-version = "0.8.0"
-dependencies = [
- "ocrs",
- "cleonpdf-fonts",
- "rten",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-optimize"
-version = "0.8.0"
-dependencies = [
- "image",
- "cleonpdf-annot",
- "cleonpdf-content",
- "cleonpdf-cos",
- "cleonpdf-model",
- "cleonpdf-render",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-organize"
-version = "0.8.0"
-dependencies = [
- "hayro-syntax",
- "cleonpdf-content",
- "cleonpdf-cos",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-platform"
-version = "0.8.0"
-dependencies = [
- "async-channel",
- "futures-lite",
- "zbus",
-]
-
-[[package]]
-name = "cleonpdf-preflight"
-version = "0.8.0"
-dependencies = [
- "cleonpdf-cos",
- "cleonpdf-model",
-]
-
-[[package]]
-name = "cleonpdf-print"
-version = "0.8.0"
-dependencies = [
- "craft-print",
- "cleonpdf-content",
- "cleonpdf-cos",
- "cleonpdf-model",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-redact"
-version = "0.8.0"
-dependencies = [
- "cleonpdf-annot",
- "cleonpdf-content",
- "cleonpdf-cos",
- "cleonpdf-edit",
- "cleonpdf-fonts",
- "cleonpdf-forms",
- "cleonpdf-model",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-render"
-version = "0.8.0"
-dependencies = [
- "bytemuck",
- "flate2",
- "getrandom 0.4.3",
- "hayro",
- "hayro-syntax",
- "kurbo 0.13.1",
- "log",
- "lopdf",
- "cleonpdf-cos",
- "cleonpdf-fonts",
- "serde",
- "skrifa 0.44.0",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-sign"
-version = "0.8.0"
-dependencies = [
- "aes",
- "aws-lc-rs",
- "base64 0.22.1",
- "bp256",
- "bp384",
- "cbc",
- "crypto-bigint",
- "des",
- "ecdsa",
- "ed25519-dalek",
- "getrandom 0.4.3",
- "hmac",
- "p256",
- "p384",
- "p521",
- "pbkdf2",
- "cleonpdf-annot",
- "cleonpdf-cos",
- "cleonpdf-fonts",
- "rc2",
- "ripemd",
- "rsa",
- "rustls-cng",
- "security-framework",
- "sha1 0.11.0",
- "sha2 0.11.0",
- "sha3",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-ui-egui"
-version = "0.8.0"
-dependencies = [
- "arboard",
- "base64 0.22.1",
- "bytemuck",
- "craft-ui",
- "eframe",
- "egui",
- "egui_extras",
- "egui_kittest",
- "getrandom 0.4.3",
- "image",
- "js-sys",
- "log",
- "objc2 0.6.4",
- "objc2-app-kit 0.3.2",
- "objc2-foundation 0.3.2",
- "cleonpdf-cos",
- "cleonpdf-engine",
- "cleonpdf-fonts",
- "cleonpdf-model",
- "cleonpdf-platform",
- "cleonpdf-render",
- "cleonpdf-xfa",
- "png 0.18.1",
- "pollster 1.0.1",
- "rfd",
- "rustix 1.1.5",
- "serde",
- "serde_json",
- "skrifa 0.44.0",
- "sys-locale",
- "toml",
- "unicode-bidi",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "winsafe",
-]
-
-[[package]]
-name = "cleonpdf-web"
-version = "0.8.0"
-dependencies = [
- "eframe",
- "egui",
- "js-sys",
- "cleonpdf-ui-egui",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
-name = "cleonpdf-xfa"
-version = "0.8.0"
-dependencies = [
- "base64 0.22.1",
- "image",
- "cleonpdf-cos",
- "cleonpdf-fonts",
- "png 0.18.1",
- "roxmltree",
- "sha2 0.11.0",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cleonpdf-xfdf"
-version = "0.8.0"
-dependencies = [
- "cleonpdf-annot",
- "cleonpdf-cos",
- "cleonpdf-forms",
- "cleonpdf-model",
- "roxmltree",
- "thiserror 2.0.21",
 ]
 
 [[package]]

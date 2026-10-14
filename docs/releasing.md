@@ -1,5 +1,14 @@
 # Releasing CleonPDF
 
+> [!IMPORTANT]
+> **CleonPDF has no release workflow yet.** PdfCraft's release, FreeBSD, Windows ARM64 and
+> packaging-lint workflows called reusable workflows in `storytold/craft-common-actions` at `@main`.
+> That repository has no licence, so it can't be copied here, and calling it at `@main` would run
+> code someone else controls with this repository's write access and signing secrets. Those four
+> workflows were removed when CleonPDF was forked; `ci.yml` (build, tests, lint) remains. The rest of
+> this page describes PdfCraft's pipeline, which a CleonPDF release workflow can follow. The
+> per-platform scripts it ran are all here, in `packaging/`.
+
 Every push to the `release` branch runs `.github/workflows/release.yml`. It builds installers for
 macOS, Windows, Linux, FreeBSD and the web, signs the ones it has certificates for, and creates or
 updates a **draft** GitHub Release named `CleonPDF v<version>`. Nobody sees a draft until a

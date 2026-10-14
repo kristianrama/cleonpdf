@@ -72,7 +72,6 @@ comment menu	Edit	సవరించు
 	Side panels	సైడ్ ప్యానెల్‌లు
 	Enable Acrobat JavaScript	Acrobat JavaScriptను ప్రారంభించు
 	OK	సరే
-	Join our Discord	మా Discordలో చేరండి
 	Close	మూసివేయి
 	Next / previous match	తదుపరి / మునుపటి సరిపోలిక
 	Copy selected text	ఎంచుకున్న టెక్స్ట్‌ను కాపీ చేయి
@@ -140,8 +139,6 @@ comment menu	Edit	సవరించు
 	Current page — type a page number or label (such as iv) and press Enter	ప్రస్తుత పేజీ — పేజీ సంఖ్యను లేదా లేబుల్‌ను (iv వంటిది) టైప్ చేసి Enter నొక్కండి
 	Welcome to CleonPDF	CleonPDFకు స్వాగతం
 	An open-source PDF workbench — local, private, and scriptable.	ఓపెన్-సోర్స్ PDF వర్క్‌బెంచ్ — మీ కంప్యూటర్‌లోనే నడుస్తుంది, గోప్యంగా ఉంటుంది, స్క్రిప్ట్‌లతో ఆటోమేట్ చేయవచ్చు.
-	Join the ArtCraft community	ArtCraft కమ్యూనిటీలో చేరండి
-	Get help, share feedback and follow development on Discord.	Discordలో సహాయం పొందండి, మీ అభిప్రాయాన్ని పంచుకోండి, అభివృద్ధిని అనుసరించండి.
 	Recommended tools	సిఫార్సు చేసిన సాధనాలు
 	Use now	ఇప్పుడే ఉపయోగించు
 	Open file	ఫైల్‌ను తెరువు
@@ -286,10 +283,7 @@ comment menu	Edit	సవరించు
 	Split document…	పత్రాన్ని విభజించు…
 	Number pages…	పేజీలకు సంఖ్యలు వేయి…
 	Keyboard shortcuts	కీబోర్డ్ షార్ట్‌కట్‌లు
-	Join the ArtCraft Discord	ArtCraft Discordలో చేరండి
-	CleonPDF web page	CleonPDF వెబ్ పేజీ
 	CleonPDF on GitHub	GitHubలో CleonPDF
-	ArtCraft website	ArtCraft వెబ్‌సైట్
 	Check for updates…	అప్‌డేట్‌ల కోసం తనిఖీ చేయి…
 	About CleonPDF	CleonPDF గురించి
 	Export a PDF	PDFను ఎగుమతి చేయి
@@ -1370,7 +1364,6 @@ signature pad	Type	టైప్ చేయి
 	Discard	విస్మరించు
 	Version {v}	వెర్షన్ {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Rustలో రాసిన క్లీన్-రూమ్, ఓపెన్-సోర్స్ PDF అప్లికేషన్. MIT OR Apache-2.0.
-	Part of	దీనిలో భాగం:
 	Summarize Options	సారాంశ ఎంపికలు
 	Choose a layout:	లేఅవుట్‌ను ఎంచుకోండి:
 	Comments only	వ్యాఖ్యలు మాత్రమే

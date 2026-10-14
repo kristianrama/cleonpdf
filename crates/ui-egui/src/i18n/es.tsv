@@ -91,7 +91,6 @@
 	Flatten Fill & Sign when saving	Acoplar Rellenar y firmar al guardar
 	Text, marks and signatures become part of the page. Other comments stay editable.	El texto, las marcas y las firmas pasan a formar parte de la página. Los demás comentarios siguen siendo editables.
 	OK	Aceptar
-	Join our Discord	Únete a nuestro Discord
 	Close	Cerrar
 	Next / previous match	Coincidencia siguiente / anterior
 	Copy selected text	Copiar el texto seleccionado
@@ -159,8 +158,6 @@
 	Current page — type a page number or label (such as iv) and press Enter	Página actual: escribe un número o una etiqueta de página (por ejemplo, iv) y pulsa Intro
 	Welcome to CleonPDF	Te damos la bienvenida a CleonPDF
 	An open-source PDF workbench — local, private, and scriptable.	Un banco de trabajo PDF de código abierto: local, privado y automatizable.
-	Join the ArtCraft community	Únete a la comunidad de ArtCraft
-	Get help, share feedback and follow development on Discord.	Recibe ayuda, comparte tu opinión y sigue el desarrollo en Discord.
 	Recommended tools	Herramientas recomendadas
 	Use now	Usar ahora
 	Open file	Abrir archivo
@@ -305,10 +302,7 @@
 	Split document…	Dividir documento…
 	Number pages…	Numerar páginas…
 	Keyboard shortcuts	Atajos de teclado
-	Join the ArtCraft Discord	Únete al Discord de ArtCraft
-	CleonPDF web page	Página web de CleonPDF
 	CleonPDF on GitHub	CleonPDF en GitHub
-	ArtCraft website	Sitio web de ArtCraft
 	Check for updates…	Buscar actualizaciones…
 	About CleonPDF	Acerca de CleonPDF
 	Export a PDF	Exportar un PDF
@@ -1395,7 +1389,6 @@
 	Discard	Descartar
 	Version {v}	Versión {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Una aplicación PDF de código abierto, de sala limpia, escrita en Rust. MIT OR Apache-2.0.
-	Part of	Parte de
 	Summarize Options	Opciones de resumen
 	Choose a layout:	Elige una disposición:
 	Comments only	Solo comentarios

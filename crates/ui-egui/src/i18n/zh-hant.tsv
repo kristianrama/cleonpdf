@@ -1303,7 +1303,6 @@
 	Select all pages (Organize)	選取所有頁面（整理頁面）
 	Version {v}	版本{v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	用 Rust 從零編寫的開源 PDF 應用。MIT OR Apache-2.0 許可。
-	Part of	隸屬於
 	Summarize Options	彙總選項
 	Choose a layout:	選擇佈局：
 	Comments only	僅註解
@@ -1766,13 +1765,7 @@
 	Split document…	分割文件…
 	Number pages…	編訂頁碼…
 	Keyboard shortcuts	鍵盤快速鍵
-	Join the ArtCraft Discord	加入 ArtCraft Discord
-	Join the ArtCraft community	加入 ArtCraft 社群
-	Get help, share feedback and follow development on Discord.	在 Discord 取得協助、提供意見並追蹤開發進度。
-	Join our Discord	加入 Discord 社群
-	CleonPDF web page	CleonPDF 網頁
 	CleonPDF on GitHub	GitHub 上的 CleonPDF
-	ArtCraft website	ArtCraft 網站
 	Check for updates…	尋找更新…
 	About CleonPDF	關於 CleonPDF
 	JavaScript console…	JavaScript 主控台…
