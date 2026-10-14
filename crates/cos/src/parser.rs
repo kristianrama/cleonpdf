@@ -322,29 +322,57 @@ impl<'a> Lexer<'a> {
         let tok = self.token();
         let s = std::str::from_utf8(tok).map_err(|_| self.err("bad number"))?;
         if s.contains('.') {
-            // Tolerate forms like "--5", "5-" or "1.2.3" by parsing the longest valid prefix.
+            // Tolerate forms like "--5", "5-" or "1.2.3" by parsing the longest valid prefix. The
+            // prefix is found in one pass: retrying `parse` on every shorter prefix was quadratic,
+            // and one long malformed token (a few KB of Flate in a content stream) stalled the
+            // parser for minutes.
             let cleaned: String = s.trim_start_matches('+').replacen("--", "-", 1);
-            let mut end = cleaned.len();
-            while end > 0 {
-                // Only cut at character boundaries: a token can hold multi-byte UTF-8 (fuzzing
-                // found ".—", which panicked here).
-                if cleaned.is_char_boundary(end)
-                    && let Ok(v) = cleaned[..end].parse::<f64>()
-                {
-                    return Ok(Object::Real(v));
-                }
-                end -= 1;
-            }
-            return Ok(Object::Real(0.0));
+            let prefix = cleaned.get(..number_prefix_len(cleaned.as_bytes())).unwrap_or("");
+            return Ok(Object::Real(finite_or_zero(prefix.parse::<f64>())));
         }
         match s.trim_start_matches('+').parse::<i64>() {
             Ok(v) => Ok(Object::Int(v)),
-            Err(_) => {
-                // Out-of-range integers are treated as reals (§7.3.3 allows implementation limits).
-                s.parse::<f64>().map(Object::Real).map_err(|_| CosError::Syntax { offset: start, detail: format!("bad number {s:?}") })
-            }
+            // Out-of-range integers are treated as reals (§7.3.3 allows implementation limits).
+            // Only number syntax is read this way: `f64::from_str` alone also takes "inf" and "nan".
+            Err(_) if number_prefix_len(s.as_bytes()) == s.len() => Ok(Object::Real(finite_or_zero(s.parse::<f64>()))),
+            Err(_) => Err(CosError::Syntax { offset: start, detail: format!("bad number {s:?}") }),
         }
     }
+}
+
+/// Length of the longest prefix of `s` that reads as a number: an optional sign, digits with at
+/// most one decimal point (at least one digit), and an optional exponent. Exponents are not PDF
+/// syntax (§7.3.3) but damaged files use them and they were always accepted. 0 when no prefix is
+/// a number. Every prefix this accepts parses with `f64::from_str`, and it never accepts "inf" or
+/// "nan", which `from_str` would.
+fn number_prefix_len(s: &[u8]) -> usize {
+    let digits = |from: usize| s.get(from..).map_or(0, |rest| rest.iter().take_while(|b| b.is_ascii_digit()).count());
+    let mut end = usize::from(matches!(s.first(), Some(b'+' | b'-')));
+    let int = digits(end);
+    end += int;
+    let mut frac = 0;
+    if s.get(end) == Some(&b'.') {
+        frac = digits(end + 1);
+        end += 1 + frac;
+    }
+    if int + frac == 0 {
+        return 0;
+    }
+    if matches!(s.get(end), Some(b'e' | b'E')) {
+        let sign = usize::from(matches!(s.get(end + 1), Some(b'+' | b'-')));
+        let exp = digits(end + 1 + sign);
+        if exp > 0 {
+            end += 1 + sign + exp;
+        }
+    }
+    end
+}
+
+/// A parsed real, or 0 when it did not parse or overflowed to infinity. PDF has no infinite or NaN
+/// reals; letting them through reached every caller of `Object::as_f64`, and the writer already
+/// writes non-finite reals as 0.
+fn finite_or_zero(v: Result<f64, std::num::ParseFloatError>) -> f64 {
+    v.ok().filter(|v| v.is_finite()).unwrap_or(0.0)
 }
 
 fn hexval(b: u8) -> Option<u8> {
@@ -469,6 +497,61 @@ mod tests {
             let _ = Lexer::new(t.as_bytes(), 0).object();
         }
         assert_eq!(Lexer::new("1.5\u{2014}".as_bytes(), 0).object().unwrap(), Object::Real(1.5));
+    }
+
+    #[test]
+    fn long_malformed_numbers_parse_in_linear_time() {
+        // Each shorter prefix used to be retried with `parse`, which reads every digit before
+        // failing on the junk: this 512 KB token took about 40 s (and 4 MB half an hour). Flate in
+        // a content stream shrinks such a token to a few KB.
+        let n = 1 << 18;
+        let token = format!("0.{}{}", "1".repeat(n), "x".repeat(n));
+        let started = std::time::Instant::now();
+        let parsed = Lexer::new(token.as_bytes(), 0).object();
+        assert!(started.elapsed() < std::time::Duration::from_secs(5), "took {:?}", started.elapsed());
+        assert!(matches!(parsed, Ok(Object::Real(v)) if (v - 1.0 / 9.0).abs() < 1e-12), "{parsed:?}");
+    }
+
+    #[test]
+    fn reals_are_always_finite() {
+        // `f64::from_str` takes "inf", "nan" and exponents beyond f64; PDF has no such reals.
+        for t in ["1e999", "-1e999.", "1.5e99999", "99999999999999999999".repeat(20).as_str(), "-inf.", "+inf.", "-nan.", "-NaN.", "-infinity."] {
+            match Lexer::new(t.as_bytes(), 0).object() {
+                Ok(Object::Real(v)) => assert_eq!(v, 0.0, "{t}"),
+                other => panic!("{t}: {other:?}"),
+            }
+        }
+        for t in ["-inf", "+inf", "-nan", "+infinity", "-NaN"] {
+            assert!(Lexer::new(t.as_bytes(), 0).object().is_err(), "{t} is not a number");
+        }
+    }
+
+    #[test]
+    fn number_prefixes_match_the_previous_parser() {
+        // The same prefixes the per-prefix `parse` loop found, including exponents, which damaged
+        // files use and which were always accepted.
+        for (t, v) in [
+            ("1.2.3", 1.2),
+            ("5-.", 5.0),
+            ("--5.", -5.0),
+            ("+-5.", -5.0),
+            ("-+5.", 0.0),
+            ("1.5e3", 1500.0),
+            ("1.5E-2x", 0.015),
+            ("1.5e", 1.5),
+            ("1.5e+", 1.5),
+            ("5.e3", 5000.0),
+            (".5e1", 5.0),
+            (".e5", 0.0),
+            ("-.", 0.0),
+            (".", 0.0),
+        ] {
+            assert_eq!(obj(t), Object::Real(v), "{t}");
+        }
+        assert_eq!(obj("1e5"), Object::Real(100_000.0));
+        assert_eq!(obj("-12E2"), Object::Real(-1200.0));
+        assert!(Lexer::new(b"1-2", 0).object().is_err());
+        assert!(Lexer::new(b"5e", 0).object().is_err());
     }
 
     fn obj(s: &str) -> Object {
