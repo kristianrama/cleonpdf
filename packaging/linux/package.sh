@@ -22,6 +22,10 @@
 # (downloaded into $CARGO_TARGET_DIR if missing). Build on an old distro (CI: Ubuntu 22.04,
 # glibc 2.35) so the binaries run on newer ones. Optional: desktop-file-validate, appstreamcli,
 # zsyncmake (the zsync package) for the AppImage's .zsync.
+#
+# Pinned tools (CI sets both, after checking their SHA-256): APPIMAGETOOL is the appimagetool to
+# run, and APPIMAGE_RUNTIME the AppImage runtime it embeds. Without APPIMAGE_RUNTIME, appimagetool
+# downloads the runtime itself.
 set -euo pipefail
 # shellcheck source=../env.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../env.sh"
@@ -157,7 +161,11 @@ if has appimage; then
   # Extract-and-run: works without FUSE (containers, CI). The output embeds the static runtime,
   # so users don't need libfuse2 either. With zsyncmake on the host (CI installs the zsync
   # package) appimagetool also writes the .zsync, into its working directory, hence the cd.
-  (cd "$DIST" && ARCH="$ARCH" APPIMAGE_EXTRACT_AND_RUN=1 "$TOOL" --no-appstream -u "$UPDATE_INFO" "$APPDIR" "$OUT")
+  RUNTIME_ARGS=()
+  if [ -n "${APPIMAGE_RUNTIME:-}" ]; then
+    RUNTIME_ARGS=(--runtime-file "$(cd "$(dirname "$APPIMAGE_RUNTIME")" && pwd)/$(basename "$APPIMAGE_RUNTIME")")
+  fi
+  (cd "$DIST" && ARCH="$ARCH" APPIMAGE_EXTRACT_AND_RUN=1 "$TOOL" --no-appstream "${RUNTIME_ARGS[@]}" -u "$UPDATE_INFO" "$APPDIR" "$OUT")
   echo "wrote $OUT"
   if [ -s "$OUT.zsync" ]; then
     echo "wrote $OUT.zsync"
