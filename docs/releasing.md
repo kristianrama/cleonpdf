@@ -1,21 +1,18 @@
 # Releasing CleonPDF
 
-> [!IMPORTANT]
-> **CleonPDF has no release workflow yet.** PdfCraft's release, FreeBSD, Windows ARM64 and
-> packaging-lint workflows called reusable workflows in `storytold/craft-common-actions` at `@main`.
-> That repository has no licence, so it can't be copied here, and calling it at `@main` would run
-> code someone else controls with this repository's write access and signing secrets. Those four
-> workflows were removed when CleonPDF was forked; `ci.yml` (build, tests, lint) remains. The rest of
-> this page describes PdfCraft's pipeline, which a CleonPDF release workflow can follow. The
-> per-platform scripts it ran are all here, in `packaging/`.
-
 Every push to the `release` branch runs `.github/workflows/release.yml`. It builds installers for
-macOS, Windows, Linux, FreeBSD and the web, signs the ones it has certificates for, and creates or
-updates a **draft** GitHub Release named `CleonPDF v<version>`. Nobody sees a draft until a
-maintainer publishes it.
+macOS, Windows, Linux and the web, signs the ones it has certificates for, and creates or updates a
+**draft** GitHub Release named `CleonPDF v<version>`. Nobody sees a draft until it is published by
+hand.
 
-The pipeline was ported from PhotoCraft's. User-facing names say **CleonPDF**; files, binaries and
-ids stay lowercase (`cleonpdf-<version>-<platform>-<arch>.<ext>`, `io.github.kristianrama.cleonpdf`).
+The workflow is self-contained. Every action is pinned to a commit, and every tool it downloads
+(nfpm, appimagetool, the AppImage runtime) is pinned to a version and checked against its SHA-256.
+PdfCraft's release pipeline called reusable workflows in `storytold/craft-common-actions` at `@main`;
+that repository has no licence, so nothing was copied from it, and calling it would have run code
+someone else controls with this repository's write access and signing secrets.
+
+User-facing names say **CleonPDF**; files, binaries and ids stay lowercase
+(`cleonpdf-<version>-<platform>-<arch>.<ext>`, `io.github.kristianrama.cleonpdf`).
 
 ## Cutting a release
 
@@ -24,30 +21,34 @@ ids stay lowercase (`cleonpdf-<version>-<platform>-<arch>.<ext>`, `io.github.kri
 
    ```sh
    cargo xtask version                 # prints the current version
-   cargo xtask version set 0.3.0       # or 0.3.0-rc.1; updates Cargo.toml and Cargo.lock
+   cargo xtask version set 0.9.0       # or 0.9.0-rc.1; updates Cargo.toml and Cargo.lock
    ```
 
-   Commit the change through the normal review flow (see the `Release: CleonPDF v0.2.1` PR).
-2. **Merge `main` into `release`** (or fast-forward it) and push. The workflow starts by itself.
-3. **Wait for the draft.** When every job has finished (notarization is the slow part), the
-   Releases page has a draft `CleonPDF v0.3.0` targeting the pushed commit, with every artifact
-   and `SHA256SUMS.txt`. The notes are generated from the merged PRs.
+   Commit it through the normal flow (a PR into `main`, merged when CI is green).
+2. **Update `release`** to that commit and push it. The workflow starts by itself:
+
+   ```sh
+   git push origin main:release
+   ```
+
+3. **Wait for the draft.** When every job has finished, the Releases page has a draft
+   `CleonPDF v0.9.0` targeting the pushed commit, with every artifact and `SHA256SUMS.txt`. The notes
+   are generated from the merged PRs.
 4. **Check it.** Download an installer or two and read the job summaries. A `::warning::` there
    means a signing secret was missing and that artifact is unsigned.
-5. **Publish** the draft in the GitHub UI. Publishing creates the `v0.3.0` tag. Versions with a
+5. **Publish** the draft in the GitHub UI. Publishing creates the `v0.9.0` tag. Versions with a
    pre-release suffix (`-rc.1`) are marked as pre-releases.
 
 Pushing to `release` again before you publish rebuilds the same draft and replaces its assets.
 Once the draft is published, the workflow refuses to touch that version again, so bump it first.
 
-**Test runs:** *Actions ▸ Release ▸ Run workflow* runs the whole pipeline by hand. The optional
-`version` input (such as `0.3.0-rc.1`) overrides `Cargo.toml` for that run only; each job applies it
-with `cargo xtask version set` before building, so the binaries report it too. The signing jobs
-(macOS, Windows) and the draft-release job use the `release` environment, so pick the `release`
-branch in the dialog for a full run. On any other branch the same dispatch is a **dry run**: the
-Linux, Flatpak, FreeBSD and web jobs build and check everything, the signing jobs are refused by the
-environment's branch rule, and the draft-release job (which needs them) is skipped, so nothing is
-published (`gh workflow run release.yml --ref <branch>`).
+**Test runs:** *Actions ▸ Release ▸ Run workflow* runs the whole pipeline by hand, on any branch, and
+also makes a draft. The optional `version` input (such as `0.9.0-rc.1`) renames that run's files and
+its draft; the binaries still report the version in `Cargo.toml`. Delete the draft afterwards.
+
+**Cost.** GitHub Actions is free on public repositories. On a private one, GitHub Free includes
+2,000 minutes a month, and macOS minutes are billed at about ten times the Linux rate, so one release
+run uses a large share of them. A private repository builds Linux for x86_64 only.
 
 ## What gets built
 
@@ -55,18 +56,14 @@ published (`gh workflow run release.yml --ref <branch>`).
 |---|---|---|
 | macOS 11+ (universal: Apple silicon + Intel) | `cleonpdf-<v>-macos-universal.dmg`, `cleonpdf-cli-<v>-macos-universal.zip` | `macos-15` |
 | Windows 10+ x64 | `cleonpdf-<v>-windows-x64.msi`, `cleonpdf-<v>-windows-x64-portable.zip` | `windows-latest` |
-| Windows 10+ x86 (32-bit) | `cleonpdf-<v>-windows-x86.msi`, `cleonpdf-<v>-windows-x86-portable.zip` | `windows-latest` |
-| Windows 11 on ARM64 | `cleonpdf-<v>-windows-arm64.msi`, `cleonpdf-<v>-windows-arm64-portable.zip` | `windows-latest` (cross-compiled) |
 | Linux x86_64 | `cleonpdf-<v>-linux-x86_64.{AppImage,AppImage.zsync,deb,rpm,tar.gz}`, `cleonpdf-cli-<v>-linux-x86_64.tar.gz` | `ubuntu-22.04` |
-| Linux aarch64 | `cleonpdf-<v>-linux-aarch64.{AppImage,AppImage.zsync,deb,rpm,tar.gz}`, `cleonpdf-cli-<v>-linux-aarch64.tar.gz` | `ubuntu-22.04-arm` |
-| Linux riscv64 | `cleonpdf-<v>-linux-riscv64.tar.gz`, `cleonpdf-cli-<v>-linux-riscv64.tar.gz` (glibc 2.39+) | `ubuntu-24.04` (cross-compiled; CLI smoke-tested under QEMU) |
-| Flatpak x86_64 | `cleonpdf-<v>-linux-x86_64.flatpak` | `ubuntu-24.04` (repackages the Linux tarball) |
-| Flatpak aarch64 | `cleonpdf-<v>-linux-aarch64.flatpak` | `ubuntu-24.04-arm` (repackages the Linux tarball) |
-| FreeBSD 14 x86_64 | `cleonpdf-<v>-freebsd-x86_64.tar.gz` | FreeBSD VM on `ubuntu-latest` |
+| Linux aarch64 (public repository only) | `cleonpdf-<v>-linux-aarch64.{AppImage,AppImage.zsync,deb,rpm,tar.gz}`, `cleonpdf-cli-<v>-linux-aarch64.tar.gz` | `ubuntu-22.04-arm` |
 | Web | `cleonpdf-web-<v>.zip` (a static site; see [`packaging/web/README.md`](../packaging/web/README.md)) | `ubuntu-latest` |
 
-The ARM64 Windows build is cross-compiled on the x64 runner, so signing and WiX work as for the
-other Windows builds; `.github/workflows/windows-arm64.yml` installs and runs it on ARM64 hardware.
+**Not built yet**, although the scripts are here: Windows x86 and ARM64 (`package.ps1 -Arch x86|arm64`),
+Linux riscv64 (cross-compiled tarballs), the Flatpak bundles (`packaging/linux/flatpak-bundle.sh`) and
+FreeBSD (`packaging/freebsd/package.sh`, which needs a FreeBSD VM). PdfCraft's pipeline built them;
+each is a job to add to `release.yml`.
 
 Every binary reports its version (`cleonpdf --version`, `cleonpdf-cli --version`, *Help ▸ About*).
 The workflow sets `CLEONPDF_BUILD_SHA` and `CLEONPDF_BUILD_DATE` (`packaging/env.sh` fills them in
@@ -74,9 +71,9 @@ for local builds): the commit is recorded in the macOS `Info.plist` (`CleonPdfBu
 date in the AppStream metadata. The binaries don't embed the commit yet.
 
 **Fonts:** every job checks out [craft-fonts](https://github.com/storytold/craft-fonts) at the commit
-pinned in `release.yml` and builds with `CRAFT_FONTS_DIR` and `CRAFT_FONTS_REQUIRED=1`, so releases
-embed its Japanese fonts and fail rather than ship without them (`AGENTS.md` §1.4). Bump the pin
-deliberately.
+pinned in `release.yml` (`CRAFT_FONTS_REF`) and builds with `CRAFT_FONTS_DIR` and
+`CRAFT_FONTS_REQUIRED=1`, so releases embed its Japanese fonts and fail rather than ship without them
+(`AGENTS.md` §1.4). Bump the pin deliberately.
 
 **OCR models:** every desktop package ships the Scan & OCR models (#103). The packaging scripts call
 `stage_models` (`packaging/env.sh`; `package.ps1` on Windows), which runs `cargo xtask models` to
@@ -124,8 +121,7 @@ neither the MSI nor the portable zip needs the Visual C++ redistributable.
   desktop shortcut (on by default) and an App Paths entry. Both shortcuts are plain links to
   `cleonpdf.exe`, not advertised MSI shortcuts (#107, #143). The MSI version is the numeric `X.Y.Z`
   (MSI has no pre-release field), and same-version upgrades are allowed so release candidates replace
-  each other. Icon ids end in `.ico` or `.exe` (Windows Installer requires it); packaging-lint checks
-  this.
+  each other. Icon ids end in `.ico` or `.exe` (Windows Installer requires it).
 - `installer-ui.wxs` supplies native welcome, maintenance, progress, files-in-use and outcome
   dialogs. Full UI confirms success with Finish; failures and cancellations have distinct messages.
   The welcome dialog has a "Create a desktop shortcut" checkbox and an "Edit with CleonPDF"
@@ -143,9 +139,7 @@ neither the MSI nor the portable zip needs the Visual C++ redistributable.
   doesn't have.
 - `test-msi.ps1 <file.msi>` checks the compiled shortcut, context-menu and dialog tables, and
   evaluates the desktop shortcut's first-install and update conditions. Packaging
-  runs it in a child process before signing, so the MSI isn't held open when signtool runs. The ARM64 install
-  smoke test checks that both all-users shortcuts point at the installed `cleonpdf.exe` and are
-  removed on uninstall, and that `INSTALLDESKTOPSHORTCUT=0` skips the desktop one.
+  runs it in a child process before signing, so the MSI isn't held open when signtool runs.
 - The portable zip holds both executables, the README, the licences, the OFL licence of each
   embedded craft-fonts family, and `portable.txt`. That marker beside `cleonpdf.exe` keeps the
   settings, logs, crash recovery and new digital IDs in `CleonPdfData\` next to the exe instead of
@@ -171,30 +165,28 @@ xkbcommon) and the GPU (Vulkan, EGL) are loaded at runtime from the system; the 
 them as dependencies (see `nfpm.yaml`).
 
 Each AppImage embeds update information
-(`gh-releases-zsync|storytold|cleonpdf|latest|cleonpdf-*-linux-<arch>.AppImage.zsync`), and its
+(`gh-releases-zsync|kristianrama|cleonpdf|latest|cleonpdf-*-linux-<arch>.AppImage.zsync`), and its
 `.zsync` is published beside it, so AppImageUpdate and AppImageLauncher can update it in place,
 downloading only the changed blocks. `latest` is the newest published, non-pre-release version.
 `package.sh` writes the `.zsync` when `zsyncmake` (the `zsync` package) is installed and warns
-otherwise; the release job checks both.
+otherwise. The release job installs zsync, and runs a pinned appimagetool with a pinned runtime
+(`APPIMAGETOOL`, `APPIMAGE_RUNTIME`).
 
-**Flatpak:** the `flatpak` job turns each arch's tarball into a single-file bundle with
-`packaging/linux/flatpak-bundle.sh` and `flatpak/io.github.kristianrama.cleonpdf.bundle.yml` (no Rust build;
-the same binaries), then installs it and runs `cleonpdf-cli --version` in the sandbox.
-`flatpak/io.github.kristianrama.cleonpdf.yml` is the from-source manifest for a later Flathub submission;
-packaging-lint keeps the runtime and sandbox permissions (`finish-args`) of the two identical.
-Printing is not available in the Flatpak yet: it runs `lp`, which the freedesktop runtime lacks
-(the job logs a note); it needs the print portal. Users install the bundle with `flatpak install --user cleonpdf-<v>-linux-<arch>.flatpak`; the
-freedesktop runtime comes from Flathub.
+**Flatpak:** `packaging/linux/flatpak-bundle.sh` turns a tarball into a single-file bundle with
+`flatpak/io.github.kristianrama.cleonpdf.bundle.yml` (no Rust build; the same binaries), then installs
+it and runs `cleonpdf-cli --version` in the sandbox. The release workflow doesn't run it yet.
+`flatpak/io.github.kristianrama.cleonpdf.yml` is the from-source manifest for a later Flathub
+submission. Printing is not available in the Flatpak yet: it runs `lp`, which the freedesktop runtime
+lacks; it needs the print portal.
 
 Locally (on Linux, with nfpm): `packaging/linux/package.sh` or `--formats "deb tar"`; then
 `packaging/linux/flatpak-bundle.sh` for the Flatpak.
 
 ### FreeBSD
 
-GitHub has no FreeBSD runners, so the `freebsd` job runs `packaging/freebsd/package.sh` in a FreeBSD
-VM with the packages from `.github/workflows/freebsd.yml`. The tarball is a `/usr/local`-style tree
-with the same desktop entry, metainfo and icons as Linux. FreeBSD has no code signing for loose
-binaries; check the tarball against `SHA256SUMS.txt`.
+GitHub has no FreeBSD runners, so a FreeBSD build needs a FreeBSD VM (PdfCraft used one on
+`ubuntu-latest`) running `packaging/freebsd/package.sh`. The tarball is a `/usr/local`-style tree with
+the same desktop entry, metainfo and icons as Linux. The release workflow doesn't build it yet.
 
 ### Web
 
@@ -204,10 +196,10 @@ covered in [`packaging/web/README.md`](../packaging/web/README.md).
 
 ## Secrets
 
-The signing secrets live in the repository's **`release` environment** (*Settings ▸ Environments ▸
-release*), restricted to the `release` branch; every job in `release.yml` declares
-`environment: release`. Each secret is optional: if one is missing, that platform's artifacts are
-unsigned and the run shows a warning.
+The signing secrets are repository secrets (*Settings ▸ Secrets and variables ▸ Actions*). Each is
+optional: without them, the Windows files are unsigned and the macOS ones are ad-hoc signed and not
+notarized, and the run shows a warning. For more protection, move them into an environment limited to
+the `release` branch and add `environment: <name>` to the macOS and Windows jobs.
 
 | Secret | Used for |
 |---|---|
@@ -222,10 +214,13 @@ unsigned and the run shows a warning.
 
 ## Checks
 
-`.github/workflows/packaging-lint.yml` runs on changes to `packaging/` and the workflows: actionlint, shellcheck,
-a PowerShell parse, xmllint (WiX, plist, MIME), `desktop-file-validate`, `appstreamcli validate`, and
-the MSI icon-id check. The FreeBSD and Windows ARM64 workflows also exercise their packaging before a
-release does.
+There is no packaging-lint workflow yet. Before changing `packaging/` or the workflows, run locally:
+
+```sh
+actionlint .github/workflows/*.yml          # with shellcheck on PATH, it checks the run: scripts too
+shellcheck packaging/*.sh packaging/*/*.sh
+desktop-file-validate packaging/linux/io.github.kristianrama.cleonpdf.desktop
+```
 
 ## Scanner detections
 

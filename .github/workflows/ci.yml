@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Run by hand (Actions → CI → Run workflow) for the 15-minute fuzz job too. There is no nightly
+  # schedule: on a private repository it would use most of GitHub's free monthly minutes.
   workflow_dispatch:
-  schedule:
-    - cron: "17 3 * * *" # nightly fuzzing
 
 env:
   CARGO_TERM_COLOR: always
@@ -26,14 +26,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # No macOS on PRs, main or nightly: the org's 5 macOS slots are kept for release builds,
-        # and release.yml builds macOS (a failing release is fixed and rebuilt).
+        # No macOS here: on a private repository macOS minutes cost about ten times Linux ones, and
+        # release.yml builds macOS (a failing release is fixed and rebuilt).
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # The optional craft-fonts build input (Japanese fonts), so the Japanese font tests run on
-      # Linux; Windows tests the build without it. See craftrules standards/fonts.md.
+      # Linux; Windows tests the build without it.
       - name: Check out craft-fonts (Linux)
         if: runner.os == 'Linux'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -121,7 +121,7 @@ jobs:
 
   fuzz:
     name: fuzz (mutation, 15 min)
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
