@@ -1075,8 +1075,14 @@ impl Renderer {
                         // become native gradients instead of a texture sampled pixel by pixel.
                         // Upstream also shifts by half a pixel for vello_cpu 0.3; 0.0.8 already
                         // evaluates gradients at pixel centres, like the texture below.
-                        if let Some(native) =
-                            encoded.as_svg_gradient(bbox, NATIVE_GRADIENT_TOLERANCE)
+                        // CleonPDF patch: not under a soft mask or a blend mode. vello_cpu 0.0.8
+                        // paints an opaque gradient by overwriting the pixels, skipping both (it
+                        // checks them only for solid colours), so Chrome's gradient glows (an
+                        // opaque shading under a luminosity mask) covered the page. The texture
+                        // below is marked as possibly transparent there, which keeps both.
+                        if !self.force_images_may_have_transparency()
+                            && let Some(native) =
+                                encoded.as_svg_gradient(bbox, NATIVE_GRADIENT_TOLERANCE)
                         {
                             self.ctx
                                 .set_paint_transform(path_transform.inverse() * native.transform);

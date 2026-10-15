@@ -5914,6 +5914,55 @@ trailer << /Root 1 0 R >>
         }
     }
 
+    /// An opaque shading painted through a soft mask, or with a blend mode, keeps both. With
+    /// native gradients, vello_cpu 0.0.8 painted an opaque gradient by overwriting the pixels,
+    /// so the glows Chrome writes (a constant-colour radial shading, as `sh` or as a shading
+    /// pattern, under a luminosity mask) covered the whole page.
+    #[test]
+    fn opaque_gradients_keep_the_soft_mask_and_the_blend_mode() {
+        // A 100 × 100 page painted blue, then `paint` with the graphics state /G.
+        let render = |gs: &str, paint: &str| {
+            let content = format!("0 0 1 rg 0 0 100 100 re f q /G gs {paint} Q");
+            let left_white = "1 g 0 0 50 100 re f";
+            let pdf = format!(
+                "%PDF-1.7
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Contents 4 0 R /Resources << /ExtGState << /G 5 0 R >> /Shading << /Sh 7 0 R >> /Pattern << /P 8 0 R >> >> >> endobj
+4 0 obj << /Length {} >> stream
+{content}
+endstream endobj
+5 0 obj {gs} endobj
+6 0 obj << /Type /XObject /Subtype /Form /BBox [0 0 100 100] /Group << /S /Transparency /CS /DeviceGray >> /Length {} >> stream
+{left_white}
+endstream endobj
+7 0 obj << /ShadingType 3 /ColorSpace /DeviceRGB /Coords [50 50 0 50 50 40] /Extend [true true] /Function << /FunctionType 2 /Domain [0 1] /C0 [1 0.5 0] /C1 [1 0.5 0] /N 1 >> >> endobj
+8 0 obj << /Type /Pattern /PatternType 2 /Shading 7 0 R >> endobj
+trailer << /Root 1 0 R >>
+%%EOF",
+                content.len(),
+                left_white.len()
+            );
+            let mut r = PageRenderer::new(Arc::new(pdf.into_bytes()), RenderConfig::default());
+            let p = r.render(RenderRequest { page: 0, kind: RequestKind::Pixels, tile: None, scale: 1.0, tag: 0, ..Default::default() });
+            assert!(p.error.is_none(), "{:?}", p.error);
+            p
+        };
+        let near = |p: &RenderedPage, x: u32, want: [u8; 4]| {
+            let got = &p.rgba[((50 * p.width + x) * 4) as usize..][..4];
+            got.iter().zip(want).all(|(g, w)| g.abs_diff(w) <= 2)
+        };
+        let masked = "<< /Type /ExtGState /SMask << /Type /Mask /S /Luminosity /G 6 0 R >> >>";
+        for paint in ["/Sh sh", "/Pattern cs /P scn 0 0 100 100 re f"] {
+            let p = render(masked, paint);
+            assert!(near(&p, 25, [255, 128, 0, 255]), "{paint}: orange where the mask is white");
+            assert!(near(&p, 75, [0, 0, 255, 255]), "{paint}: blue where the mask is black");
+        }
+        // Orange multiplied with blue is black.
+        let p = render("<< /Type /ExtGState /BM /Multiply >>", "/Sh sh");
+        assert!(near(&p, 50, [0, 0, 0, 255]), "multiplied");
+    }
+
     /// An alpha soft mask whose transparency group has no /CS (as Chrome writes gradient text)
     /// must still mask. Regression test for the vendored hayro-interpret patch.
     #[test]
