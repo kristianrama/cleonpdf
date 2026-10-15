@@ -21,14 +21,15 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 ## macOS
 
-The app and the command-line tool are signed with a Developer ID Application certificate of
-Kristian Rama and notarized by Apple ([`packaging/macos/`](../packaging/macos/)).
+The macOS files are not signed with an Apple Developer ID or notarized: they carry an ad-hoc
+signature only ([`packaging/macos/`](../packaging/macos/)). The first time a new version opens,
+macOS refuses it; *System Settings ▸ Privacy & Security ▸ Open Anyway* opens it.
 
 ## Status
 
-Version 0.1.0 was released unsigned. Signing starts with the first release after it is set up:
-Windows once SignPath Foundation has accepted the project, macOS once the Apple Developer ID is in
-place. The release notes say whether a release is signed.
+Releases so far are unsigned. Windows signing starts with the first release after SignPath
+Foundation accepts the project; until then Windows asks, the first time a new version opens, to
+choose *More info ▸ Run anyway*.
 
 ## Team roles
 

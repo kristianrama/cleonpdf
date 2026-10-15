@@ -46,8 +46,8 @@ were taken.
 
 **Download** CleonPDF for macOS, Windows, Linux and the web from the
 [releases page](https://github.com/kristianrama/cleonpdf/releases/latest), which is also where the app
-looks for updates, or build it from source (below). Version 0.1.0 is not signed yet, so macOS and
-Windows warn the first time it opens: [Code signing policy](docs/code-signing.md).
+looks for updates, or build it from source (below). The releases are not signed yet, so macOS and
+Windows warn the first time a new version opens: [Code signing policy](docs/code-signing.md).
 
 ## What it does
 
