@@ -1,0 +1,16 @@
+11:13:32 screen 1920x1080
+11:13:37 shot 01-installer
+11:13:40 shot 02-installing
+11:13:50 shot 03-installed
+11:13:50 msiexec (UI) exit 0
+11:13:50 installed: 0.1.0
+11:13:54 shot 04-desktop
+11:13:54 settings folders before the first start: 
+11:14:08 shot 05-home
+11:14:23 scene 05-home: did not close; killing
+11:14:37 shot 06-viewer
+11:14:51 shot 07-dark
+11:15:06 shot 08-organize
+11:15:20 shot 09-forms
+11:15:35 shot 10-about
+11:15:39 done
