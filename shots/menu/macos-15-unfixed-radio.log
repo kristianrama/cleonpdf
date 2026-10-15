@@ -1,0 +1,8 @@
+0-start system: {'Pagina singola': True, 'Visualizzazione doppia': False, 'Scorrimento continuo': True} app: {'Pagina singola': True, 'Visualizzazione doppia': False, 'Scorrimento continuo': True} AGREE
+menu item Pagina singola of menu Visualizza of menu bar item Visualizza of menu bar 1 of application process cleonpdf
+1-single-again system: {'Pagina singola': False, 'Visualizzazione doppia': False, 'Scorrimento continuo': True} app: {'Pagina singola': True, 'Visualizzazione doppia': False, 'Scorrimento continuo': True} DISAGREE
+menu item Scorrimento continuo of menu Visualizza of menu bar item Visualizza of menu bar 1 of application process cleonpdf
+2-continuous-off system: {'Pagina singola': False, 'Visualizzazione doppia': False, 'Scorrimento continuo': False} app: {'Pagina singola': True, 'Visualizzazione doppia': False, 'Scorrimento continuo': False} DISAGREE
+menu item Visualizzazione doppia of menu Visualizza of menu bar item Visualizza of menu bar 1 of application process cleonpdf
+3-two-up system: {'Pagina singola': False, 'Visualizzazione doppia': True, 'Scorrimento continuo': False} app: {'Pagina singola': False, 'Visualizzazione doppia': True, 'Scorrimento continuo': False} AGREE
+21:41:38 done
