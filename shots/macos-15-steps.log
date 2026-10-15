@@ -1,0 +1,13 @@
+ProductName:		macOS
+ProductVersion:		15.7.9
+BuildVersion:		24G830
+30:78: execution error: Preview got an error: AppleEvent timed out. (-1712)
+15:41:15 shot glass-light
+15:41:15 scene glass-light exit 127
+15:41:43 shot glass-dark
+15:41:43 scene glass-dark exit 127
+15:42:12 shot glass-home
+15:42:12 scene glass-home exit 127
+15:42:40 shot opaque
+15:42:40 scene opaque exit 127
+15:42:43 done
