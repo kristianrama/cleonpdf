@@ -376,7 +376,7 @@ fn decode_text(bytes: &[u8]) -> String {
 fn tidy_title(title: &str) -> String {
     const ACRONYMS: &[&str] = &["PDF"];
     // Chrome drops the <br> between the two lines of the cover title.
-    if title == "CleonPdfShowcase" {
+    if title.split_whitespace().collect::<String>() == TITLE.replace(' ', "") {
         return TITLE.to_string();
     }
     let title = title.split_whitespace().collect::<Vec<_>>().join(" ");
@@ -541,4 +541,23 @@ fn xmp(producer: &str, now: &Stamp) -> String {
         producer = xml_escape(producer),
         padding = " ".repeat(1024),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_cover_heading_becomes_the_document_title() {
+        // Chrome's outline title for `Cleon<span>PDF</span><br>Showcase`.
+        assert_eq!(tidy_title("CleonPDFShowcase"), TITLE);
+        assert_eq!(tidy_title("CleonPDF Showcase"), TITLE);
+    }
+
+    #[test]
+    fn all_caps_headings_become_sentence_case() {
+        assert_eq!(tidy_title("WHAT TO LOOK FOR"), "What to look for");
+        assert_eq!(tidy_title("WHY A PDF?"), "Why a PDF?");
+        assert_eq!(tidy_title("Colophon"), "Colophon");
+    }
 }

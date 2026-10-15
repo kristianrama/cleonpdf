@@ -451,12 +451,19 @@ fn panel_limits(panel: &Panel) -> PanelLimits {
 mod tests {
     use super::*;
 
+    /// The panel titles are looked up at run time, so the catalog check can't see them: Italian,
+    /// Polish, Ukrainian and Arabic once showed "Tools" and "Inspector" in English.
     #[test]
-    fn lithuanian_translates_every_dynamic_panel_title() {
-        let lang = crate::i18n::Lang::from_code("lt").expect("Lithuanian is registered");
-        for panel in Panel::ALL {
-            assert_ne!(crate::i18n::tr(lang, panel.label()), panel.label(), "{} remains untranslated", panel.id());
+    fn every_language_translates_every_panel_title() {
+        let mut missing = Vec::new();
+        for lang in crate::i18n::Lang::all().filter(|l| l.code() != "en") {
+            for panel in Panel::ALL {
+                if !crate::i18n::has(lang, panel.label()) {
+                    missing.push(format!("{}: {}", lang.code(), panel.label()));
+                }
+            }
         }
+        assert!(missing.is_empty(), "untranslated panel titles: {missing:?}");
     }
 
     #[test]

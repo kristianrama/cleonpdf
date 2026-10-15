@@ -118,7 +118,7 @@ licence = "MIT OR Apache-2.0"
 licence_file = "LICENSE-MIT"
 kind = "translation"
 usage = "Italian UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
-sha256 = "3f18824b0bbecc48b3019ebc2c9c5d8ef4cb54f64a536fb5cd20cbfc13b91f5f"
+sha256 = "4116618bc504765ab9220f71d9cf354a38d22fa4112333c91b4d34acf5e2949c"
 
 [[asset]]
 path = "crates/ui-egui/src/i18n/pl.tsv"
@@ -129,7 +129,7 @@ licence = "MIT OR Apache-2.0"
 licence_file = "LICENSE-MIT"
 kind = "translation"
 usage = "Polish UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
-sha256 = "bca4bd4a1f43954a8730b71c0dddb7bbfe5efe272faae717f3b811892f690921"
+sha256 = "b37dc0154af7f61d493302ab5b89018e931e0807402d156aa40d4f4642d1095f"
 
 [[asset]]
 path = "crates/ui-egui/src/i18n/ru.tsv"
@@ -195,7 +195,7 @@ licence = "MIT OR Apache-2.0"
 licence_file = "LICENSE-MIT"
 kind = "translation"
 usage = "Ukrainian UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
-sha256 = "3d046e013c5a58f70ca4f890fe3d9e7a7dcf28dddd08f1d806f10aa83f74ab3f"
+sha256 = "0b8149c1e80a98af6922374bed03b16248e3d09d85607c2f6c152d3d5b2e5de1"
 
 [[asset]]
 path = "crates/ui-egui/src/i18n/ar.tsv"
@@ -206,7 +206,7 @@ licence = "MIT OR Apache-2.0"
 licence_file = "LICENSE-MIT"
 kind = "translation"
 usage = "Arabic UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
-sha256 = "812085b129e646c94b34a9dcdab9a0ca640bfc8bf0d949960f08e84c646dc150"
+sha256 = "0484604d73e75b537a4cc2043927c6308c9d7b42991b811d65038433b55ab710"
 
 [[asset]]
 path = "crates/ui-egui/src/i18n/tr.tsv"
@@ -2828,7 +2828,7 @@ source = "Contributor-original, after artwork supplied by the project owner on 2
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop); title-bar icon on Windows (apps/cleonpdf/src/main.rs)"
 sha256 = "64fa040fc1ae15ebc996dfcaddf40bec0738cd6c0c7ea23f40544a285f9ee0a3"
 
 [[asset]]
@@ -2854,6 +2854,17 @@ usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonp
 sha256 = "38fcda095afbf924294ee1b4c4049335aaaecad7f76b33cbb188b32f5892e52e"
 
 [[asset]]
+path = "assets/app-icon/cleonpdf-emblem-128.png"
+title = "CleonPDF app icon, emblem only, 128 px"
+author = "Kristian Rama (design); drawn as vectors by packaging/app-icon-svg.py"
+source = "Contributor-original, after artwork supplied by the project owner on 2026-10-14 (assets/app-icon/README.md); lettering in Inter (OFL-1.1), outlined"
+licence = "MIT OR Apache-2.0"
+licence_file = "assets/app-icon/LICENSE.txt"
+kind = "icon"
+usage = "About dialog icon (crates/ui-egui/src/widgets.rs)"
+sha256 = "5b0f7294a895619850d312596853ee5ac0c82faf288d678a62e60b23728ce968"
+
+[[asset]]
 path = "assets/app-icon/hicolor/128x128/apps/io.github.kristianrama.cleonpdf.png"
 title = "CleonPDF app icon, 128 px"
 author = "Kristian Rama (design); drawn as vectors by packaging/app-icon-svg.py"
@@ -2872,7 +2883,7 @@ source = "Contributor-original, after artwork supplied by the project owner on 2
 licence = "MIT OR Apache-2.0"
 licence_file = "assets/app-icon/LICENSE.txt"
 kind = "icon"
-usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop); runtime window icon on Windows and Linux (apps/cleonpdf/src/main.rs)"
+usage = "Linux hicolor theme icon (packaging/linux/io.github.kristianrama.cleonpdf.desktop); runtime window icon on Linux (apps/cleonpdf/src/main.rs)"
 sha256 = "129f88052bce0f346cb2711a5b40f68e567898683bd4c894048b8d639a7fc4d1"
 
 [[asset]]

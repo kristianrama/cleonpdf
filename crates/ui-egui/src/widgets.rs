@@ -499,8 +499,9 @@ pub fn progress_notice(app: &CleonPdfApp, ctx: &egui::Context) -> bool {
     cancel
 }
 
-/// The app icon at 128 px (assets/app-icon/README.md): enough for the About dialog at 2×.
-const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/io.github.kristianrama.cleonpdf.png");
+/// The app icon's emblem at 128 px (assets/app-icon/README.md): enough for the About dialog's
+/// 40 points at 3×. The full tile's "Cleon PDF" wordmark would be a smudge at that size.
+const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/app-icon/cleonpdf-emblem-128.png");
 
 /// The bundled app icon's pixels: `([width, height], RGBA)`. `None` only if the PNG isn't 8-bit
 /// RGBA or doesn't decode, which `the_app_icon_decodes` rules out.
@@ -524,7 +525,9 @@ fn app_icon_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
         return Some(texture);
     }
     let (size, rgba) = app_icon_rgba()?;
-    let texture = ctx.load_texture("cleonpdf-app-icon", egui::ColorImage::from_rgba_unmultiplied(size, &rgba), egui::TextureOptions::LINEAR);
+    // Mipmapped: it is drawn at a third of its size at 1×, where plain bilinear sampling shimmers.
+    let options = egui::TextureOptions { mipmap_mode: Some(egui::TextureFilter::Linear), ..egui::TextureOptions::LINEAR };
+    let texture = ctx.load_texture("cleonpdf-app-icon", egui::ColorImage::from_rgba_unmultiplied(size, &rgba), options);
     ctx.data_mut(|d| d.insert_temp(id, texture.clone()));
     Some(texture)
 }
@@ -619,6 +622,18 @@ mod tests {
         // Transparent outside the rounded tile, opaque in the middle.
         assert_eq!(rgba[3], 0, "corner");
         assert_eq!(rgba[(64 * 128 + 64) * 4 + 3], 255, "centre");
+    }
+
+    /// The About dialog's icon is the emblem alone: no near-white wordmark letters in the band
+    /// below the C, where the full tile has "Cleon PDF" (over a hundred such pixels).
+    #[test]
+    fn the_about_icon_has_no_wordmark() {
+        let (_, rgba) = app_icon_rgba().expect("the bundled app icon is 8-bit RGBA PNG");
+        let letters = (100..110)
+            .flat_map(|y| (20..108).map(move |x| (y * 128 + x) * 4))
+            .filter(|&i| rgba[i..i + 3].iter().all(|&c| c > 200) && rgba[i + 3] == 255)
+            .count();
+        assert_eq!(letters, 0);
     }
 
     #[test]

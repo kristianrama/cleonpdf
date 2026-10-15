@@ -43,7 +43,12 @@ mac() { # size -> the grid wrapper whose body suits that size
 # 1024 px on Apple's grid (also the runtime Dock icon on macOS, see apps/cleonpdf/src/main.rs).
 render "$(mac 1024)" 1024 "$DIR/cleonpdf-1024.png"
 
-# Linux hicolor theme (full bleed; hicolor/256x256 is also the runtime icon on Windows and Linux).
+# The emblem alone at 128 px, for icons the app draws itself at small sizes: the About dialog
+# shows it at 40 points (crates/ui-egui/src/widgets.rs).
+render "$SMALL" 128 "$DIR/cleonpdf-emblem-128.png"
+
+# Linux hicolor theme (full bleed). hicolor/256x256 is also the runtime icon on Linux, and
+# hicolor/32x32 (the emblem) the title-bar icon on Windows (apps/cleonpdf/src/main.rs).
 for s in 16 24 32 48 64 128 256 512; do
   mkdir -p "$DIR/hicolor/${s}x${s}/apps"
   render "$(master "$s")" "$s" "$DIR/hicolor/${s}x${s}/apps/$ID.png"

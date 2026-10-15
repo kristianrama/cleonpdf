@@ -30,11 +30,12 @@ Licence: [LICENSE.txt](LICENSE.txt) (`MIT OR Apache-2.0`, like the repo).
 | `cleonpdf.svg` | vector master: the full tile; every icon of 64 px and up is rendered from it |
 | `cleonpdf-small.svg` | vector master: the emblem alone; every icon below 64 px is rendered from it |
 | `cleonpdf-1024.png` | 1024 px on Apple's grid; also the runtime Dock icon on macOS |
+| `cleonpdf-emblem-128.png` | the emblem alone, 128 px: the About dialog's icon |
 | `cleonpdf.icns` | macOS icon (16–1024 px) |
 | `cleonpdf.ico` | Windows icon (16–256 px), embedded in `cleonpdf.exe` by `apps/cleonpdf/build.rs` |
 | `cleonpdf-document.svg` | Windows PDF file icon master: a Lucide document outline, navy badge and outlined PDF lettering (vector, unchanged by the raster artwork); no font dependency |
 | `cleonpdf-document.ico` | Windows PDF file icon (16–256 px), embedded as resource 2 in `cleonpdf.exe` |
-| `hicolor/<n>x<n>/apps/io.github.kristianrama.cleonpdf.png` | Linux hicolor theme, 16–512 px; the 256 px one is the runtime icon on Windows and Linux |
+| `hicolor/<n>x<n>/apps/io.github.kristianrama.cleonpdf.png` | Linux hicolor theme, 16–512 px; the 256 px one is the runtime icon on Linux, the 32 px one (the emblem) the title-bar icon on Windows |
 | `hicolor/scalable/apps/io.github.kristianrama.cleonpdf.svg` | Linux scalable icon (copy of `cleonpdf.svg`) |
 
 Where it shows: `apps/cleonpdf/src/main.rs` sets the window icon (Dock, taskbar, Alt-Tab, launcher) and the

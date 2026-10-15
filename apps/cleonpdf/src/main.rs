@@ -48,10 +48,14 @@ mod windows_manifest;
 const APP_ID: &str = "io.github.kristianrama.cleonpdf";
 
 /// The app icon (assets/app-icon/README.md). macOS gets the version on Apple's icon grid, with a
-/// transparent margin; Windows and Linux get the full-bleed tile.
+/// transparent margin, for the Dock; Linux the full-bleed tile. On Windows it is only the
+/// title-bar icon (16–32 px; the taskbar and Alt-Tab use the .ico in the executable), so it is the
+/// 32 px emblem: the full tile's wordmark is a smudge at that size.
 #[cfg(target_os = "macos")]
 const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/app-icon/cleonpdf-1024.png");
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/32x32/apps/io.github.kristianrama.cleonpdf.png");
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/io.github.kristianrama.cleonpdf.png");
 
 /// The app was called PrintCraft before; settings saved then are under this key.
@@ -223,7 +227,10 @@ fn main() -> eframe::Result {
         single_instance::Claim::Alone => None,
     };
     let choice = renderer_choice(std::env::var("CLEONPDF_RENDERER").ok().as_deref());
-    let launch = Launch { files, options, control_file, create_images, integrated, window_controls };
+    // No saved settings, so no saved window either: eframe opens the default size, centred on the
+    // primary monitor, and the app then fits it onto the screen (cleonpdf_ui_egui window_fit).
+    let first_start = settings_dir().is_none_or(|d| !d.join("app.ron").exists());
+    let launch = Launch { files, options, control_file, create_images, integrated, window_controls, first_start };
     // Finder, Open With and the Dock deliver files as Apple events, not arguments; catch the one
     // that launched us as well as later ones. Lives until the event loop returns.
     #[cfg(target_os = "macos")]
@@ -233,7 +240,7 @@ fn main() -> eframe::Result {
     let first = if choice == RendererChoice::Gl { eframe::Renderer::Glow } else { eframe::Renderer::Wgpu };
     let result = eframe::run_native(
         "CleonPDF",
-        native_options(launch.integrated, launch.window_controls.is_some(), first),
+        eframe::NativeOptions { centered: first_start, ..native_options(launch.integrated, launch.window_controls.is_some(), first) },
         app_creator(
             launch.clone(),
             Rc::clone(&started),
@@ -251,7 +258,10 @@ fn main() -> eframe::Result {
             log::error!("the GPU renderer (wgpu) didn't start: {e}. Starting with OpenGL instead; set CLEONPDF_RENDERER=gl to skip wgpu.");
             eframe::run_native(
                 "CleonPDF",
-                native_options(launch.integrated, launch.window_controls.is_some(), eframe::Renderer::Glow),
+                eframe::NativeOptions {
+                    centered: first_start,
+                    ..native_options(launch.integrated, launch.window_controls.is_some(), eframe::Renderer::Glow)
+                },
                 app_creator(
                     launch,
                     started,
@@ -330,6 +340,8 @@ struct Launch {
     integrated: bool,
     /// The window buttons the app draws, when the desktop leaves the frame to it.
     window_controls: Option<cleonpdf_ui_egui::window_controls::Layout>,
+    /// No settings were saved yet: fit the new window onto the screen.
+    first_start: bool,
 }
 
 fn app_creator<'a>(
@@ -338,7 +350,7 @@ fn app_creator<'a>(
     instance: Option<&'a single_instance::Server>,
     #[cfg(target_os = "macos")] apple_events: &'a apple_events::AppleEvents,
 ) -> eframe::AppCreator<'a> {
-    let Launch { files, options, control_file, create_images, integrated, window_controls } = launch;
+    let Launch { files, options, control_file, create_images, integrated, window_controls, first_start } = launch;
     Box::new(move |cc| {
         started.set(true);
         let mut app = CleonPdfApp::new();
@@ -353,6 +365,9 @@ fn app_creator<'a>(
         }
         app.integrated_titlebar = integrated;
         app.window_controls = window_controls;
+        if first_start {
+            app.fit_window_on_start();
+        }
         app.system_text_scale = text_scale::system();
         // Windows' Animation effects setting, which Preferences ▸ Animation effects follows unless
         // it is set to On or Off.
