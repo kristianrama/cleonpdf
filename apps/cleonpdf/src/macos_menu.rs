@@ -42,6 +42,10 @@ pub struct MacMenuBar {
     actions: Vec<(Action, Option<Shortcut>)>,
     /// Ids chosen since the app last asked, with whether a key press chose them.
     chosen: Arc<Mutex<Vec<(String, bool)>>>,
+    /// An item was chosen since the menus were last shown. `muda` flips a check item's mark when
+    /// it is clicked, before the app has acted (or refused to), so the marks are set again from
+    /// the app's state.
+    resync: bool,
 }
 
 impl MacMenuBar {
@@ -56,7 +60,7 @@ impl MacMenuBar {
             queue.lock().unwrap_or_else(PoisonError::into_inner).push((event.id.0, chosen_by_key()));
             ctx.request_repaint();
         }));
-        Self { bar: None, shown: Vec::new(), natives: Vec::new(), actions: Vec::new(), chosen }
+        Self { bar: None, shown: Vec::new(), natives: Vec::new(), actions: Vec::new(), chosen, resync: false }
     }
 
     fn build(&mut self, menus: &[Menu]) {
@@ -170,6 +174,30 @@ impl MacMenuBar {
         }
         true
     }
+
+    /// Set every check item's mark from `menus`, which have the layout the items were built for.
+    fn set_checks(&self, menus: &[Menu]) {
+        fn walk<'a>(natives: &mut impl Iterator<Item = &'a Native>, entries: &[Entry]) {
+            for entry in entries {
+                let Some(native) = natives.next() else { return };
+                match (entry, native) {
+                    (Entry::Item(item), Native::Check(check)) => check.set_checked(checked(item.mark)),
+                    (Entry::Submenu { entries, .. }, Native::Submenu(_)) => walk(natives, entries),
+                    _ => {}
+                }
+            }
+        }
+        let mut natives = self.natives.iter();
+        for menu in menus {
+            // The menu itself.
+            natives.next();
+            walk(&mut natives, &menu.entries);
+        }
+    }
+}
+
+fn checked(mark: Mark) -> bool {
+    matches!(mark, Mark::Toggle(true) | Mark::Radio(true))
 }
 
 fn update_entries<'a>(natives: &mut impl Iterator<Item = &'a Native>, old: &[Entry], new: &[Entry]) -> bool {
@@ -192,7 +220,7 @@ fn update_entries<'a>(natives: &mut impl Iterator<Item = &'a Native>, old: &[Ent
                     item.set_enabled(n.enabled);
                 }
                 if o.mark != n.mark {
-                    item.set_checked(matches!(n.mark, Mark::Toggle(true) | Mark::Radio(true)));
+                    item.set_checked(checked(n.mark));
                 }
             }
             (
@@ -221,18 +249,22 @@ fn update_entries<'a>(natives: &mut impl Iterator<Item = &'a Native>, old: &[Ent
 
 impl SystemMenu for MacMenuBar {
     fn show(&mut self, menus: &[Menu]) {
-        if self.bar.is_some() && self.shown == menus {
-            return;
-        }
-        let in_place = self.bar.is_some() && menu_bar::same_layout(&self.shown, menus) && self.update(menus);
+        let resync = std::mem::take(&mut self.resync);
+        let unchanged = self.bar.is_some() && self.shown == menus;
+        let in_place = unchanged || (self.bar.is_some() && menu_bar::same_layout(&self.shown, menus) && self.update(menus));
         if !in_place {
             self.build(menus);
+        } else if resync {
+            self.set_checks(menus);
         }
-        self.shown = menus.to_vec();
+        if !unchanged {
+            self.shown = menus.to_vec();
+        }
     }
 
     fn take_chosen(&mut self) -> Vec<Chosen> {
         let ids = std::mem::take(&mut *self.chosen.lock().unwrap_or_else(PoisonError::into_inner));
+        self.resync |= !ids.is_empty();
         ids.into_iter()
             .filter_map(|(id, by_key)| {
                 let (action, shortcut) = self.actions.get(id.parse::<usize>().ok()?)?.clone();
