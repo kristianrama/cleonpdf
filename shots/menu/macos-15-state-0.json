@@ -1,0 +1,151 @@
+{
+  "active": {
+    "auto_scrolling": false,
+    "comment_composer_open": false,
+    "doc": 1,
+    "find_open": false,
+    "fit": "Width",
+    "grid_zoom": 1.0,
+    "layout": "Single",
+    "organize": false,
+    "page": 1,
+    "page_errors": [],
+    "pages_on_screen": [
+      {
+        "page": 1,
+        "rect": [
+          346.0,
+          152.0,
+          528.0,
+          387.5294189453125
+        ]
+      },
+      {
+        "page": 2,
+        "rect": [
+          346.0,
+          402.0,
+          528.0,
+          637.5294189453125
+        ]
+      },
+      {
+        "page": 3,
+        "rect": [
+          346.0,
+          651.0,
+          528.0,
+          886.5294189453125
+        ]
+      }
+    ],
+    "raster_memory": {
+      "page_bytes": 687232,
+      "page_count": 4,
+      "pending_requests": 0,
+      "thumbnail_bytes": 0,
+      "thumbnail_count": 0,
+      "thumbnail_demand": 0,
+      "tile_bytes": 0,
+      "tile_count": 0
+    },
+    "selected_comment": null,
+    "selected_pages": [],
+    "viewport": [
+      276.0,
+      124.0,
+      598.0,
+      664.0
+    ],
+    "zoom_percent": 22.0
+  },
+  "close_prompt": false,
+  "combine": {
+    "expanded": [],
+    "files": [],
+    "preview": null,
+    "selected": [],
+    "showing": false,
+    "thumbnails": [],
+    "view": "grid",
+    "zoom": 1.0
+  },
+  "default_mode": "all",
+  "dialog": null,
+  "docking": {
+    "hidden": [],
+    "layout": {
+      "floating": [],
+      "root": {
+        "Split": {
+          "axis": "Horizontal",
+          "first": {
+            "Tabs": {
+              "active": 0,
+              "panels": [
+                "tools"
+              ]
+            }
+          },
+          "second": {
+            "Split": {
+              "axis": "Horizontal",
+              "first": {
+                "Tabs": {
+                  "active": 0,
+                  "panels": [
+                    "canvas"
+                  ]
+                }
+              },
+              "second": {
+                "Tabs": {
+                  "active": 0,
+                  "panels": [
+                    "inspector"
+                  ]
+                }
+              },
+              "size": {
+                "FixedSecond": 330.0
+              }
+            }
+          },
+          "size": {
+            "FixedFirst": 272.0
+          }
+        }
+      }
+    }
+  },
+  "documents": [
+    {
+      "active": true,
+      "dirty": false,
+      "doc": 1,
+      "name": "doc.pdf",
+      "pages": 13,
+      "path": "/Users/runner/work/cleonpdf/cleonpdf/shots/menu/doc.pdf",
+      "tab": 0
+    }
+  ],
+  "home": false,
+  "language": "it",
+  "left_panel": "AllTools",
+  "mode": "AllTools",
+  "notice": null,
+  "palette_open": false,
+  "password_prompt": false,
+  "pending_opens": [],
+  "progress": null,
+  "quick_tool": "select",
+  "right_panel": "Bookmarks",
+  "theme": "Light",
+  "theme_preference": "Light",
+  "tools_side": "left",
+  "window": {
+    "height": 664.0,
+    "pixels_per_point": 1.0,
+    "width": 976.0
+  }
+}
