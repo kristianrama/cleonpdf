@@ -13,7 +13,7 @@ fn winit_puts_a_glass_backdrop_under_transparent_macos_windows() {
     assert!(delegate.contains("fn install_glass_backdrop("), "no glass backdrop");
     assert!(delegate.contains("\"NSGlassEffectView\"") && delegate.contains("\"NSVisualEffectView\""), "Liquid Glass or its fallback is gone");
     assert!(delegate.contains("accessibilityDisplayShouldReduceTransparency"), "Reduce transparency isn't honoured");
-    assert!(delegate.contains("self.ivars().view.clone()"), "the view is cast from the content view, which is the backdrop now");
+    assert!(delegate.contains("Retained::cast(self.ivars().view.clone())"), "the view is taken from the content view, which is the backdrop now");
     let platform = std::fs::read_to_string(root.join("vendor/winit/src/platform/macos.rs")).unwrap();
     assert!(platform.contains("pub fn set_glass_backdrop(") && platform.contains("pub fn glass_backdrop("));
 }
