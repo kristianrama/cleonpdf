@@ -39,7 +39,8 @@ User-facing names say **CleonPDF**; files, binaries and ids stay lowercase
 5. **Publish** the draft in the GitHub UI. Publishing creates the `v0.9.0` tag. Versions with a
    pre-release suffix (`-rc.1`) are marked as pre-releases.
 
-Pushing to `release` again before you publish rebuilds the same draft and replaces its assets.
+Pushing to `release` again before you publish rebuilds the same draft, replaces its assets and moves
+its target to the new commit, so the tag lands on what was built last.
 Once the draft is published, the workflow refuses to touch that version again, so bump it first.
 
 **Test runs:** *Actions ▸ Release ▸ Run workflow* runs the whole pipeline by hand, on any branch, and

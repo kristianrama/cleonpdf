@@ -291,6 +291,9 @@ jobs:
               gh release create "$tag" "${flags[@]}" dist/*
               ;;
             true)
+              # The draft's tag is created when it is published, at its target: move the target
+              # to this build, or the tag would name the commit of the first build.
+              gh release edit "$tag" --target "$GITHUB_SHA"
               gh release upload "$tag" dist/* --clobber
               ;;
             *)
