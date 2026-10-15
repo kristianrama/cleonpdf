@@ -1,0 +1,8 @@
+2026-10-15T13:01:34.951Z INFO  [main] cleonpdf: CleonPDF 0.1.0, log file /home/runner/.local/share/cleonpdf/logs/cleonpdf.log
+2026-10-15T13:01:34.953Z WARN  [main] winit::platform_impl::linux::x11::xdisplay: error setting XSETTINGS; Xft options won't reload automatically
+2026-10-15T13:01:35.012Z INFO  [main] cleonpdf: drawing on llvmpipe (LLVM 15.0.7, 256 bits) (Cpu, Vulkan)
+2026-10-15T13:01:35.021Z WARN  [main] egui_wgpu: Software rasterizer detected - loss of performance expected. backend: Vulkan, device_type: Cpu, name: "llvmpipe (LLVM 15.0.7, 256 bits)", driver: "llvmpipe", driver_info: "Mesa 23.2.1-1ubuntu3.1~22.04.4 (LLVM 15.0.7)", vendor: Mesa (0x10005), subgroup_size: 8..=8, transient_saves_memory: Some(false), limit_bucket: None
+2026-10-15T13:01:35.028Z WARN  [?] zbus::proxy: Failed to populate properties cache via GetAll: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files. Property change streams will not produce values.
+2026-10-15T13:01:35.032Z INFO  [main] cleonpdf: UI control channel on 127.0.0.1:38651 (connection details in /home/runner/work/_temp/linux-06-viewer.control)
+2026-10-15T13:01:35.032Z INFO  [main] cleonpdf: renderer: wgpu; adapter: llvmpipe (LLVM 15.0.7, 256 bits) (Cpu, Vulkan); max_texture_dimension_2d: 16384
+2026-10-15T13:01:35.087Z INFO  [main] cleonpdf_ui_egui::system_fonts: interface font fallback: /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf (face 0)
