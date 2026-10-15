@@ -4,7 +4,7 @@ on:
   push:
     branches: [smoke/platforms]
 permissions:
-  contents: read
+  contents: write
 jobs:
   glass:
     strategy:
@@ -25,28 +25,15 @@ jobs:
         with:
           toolchain: stable
       - name: Build
-        run: cargo build --manifest-path src/Cargo.toml -p cleonpdf 2>&1 | tail -40
+        run: |
+          set -o pipefail
+          cargo build --manifest-path src/Cargo.toml -p cleonpdf 2>&1 | tail -60
       - name: Screenshots
         run: bash smoke/glass.sh src/target/debug/cleonpdf shots ${{ matrix.os }}
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - name: Commit the screenshots to this branch
         if: always()
-        with:
-          name: smoke-${{ matrix.os }}
-          path: shots
-  collect:
-    needs: [glass]
-    if: always()
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: smoke-*
-          merge-multiple: true
-          path: shots
-      - run: |
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f shots && git commit -q -m "Smoke test results" && git push origin HEAD:smoke/platforms
+          git add -f shots && git commit -q -m "Smoke results ${{ matrix.os }}"
+          for _ in 1 2 3 4 5; do git pull -q --rebase origin smoke/platforms && git push -q origin HEAD:smoke/platforms && break; sleep 5; done
