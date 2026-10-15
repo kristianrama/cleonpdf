@@ -26,8 +26,12 @@ jobs:
           toolchain: stable
       - name: Build
         run: |
-          set -o pipefail
-          cargo build --manifest-path src/Cargo.toml -p cleonpdf 2>&1 | tail -60
+          mkdir -p shots
+          cargo build --manifest-path src/Cargo.toml -p cleonpdf > "shots/${{ matrix.os }}-build.log" 2>&1
+          status=$?
+          grep -E -A12 '^(error|warning)' "shots/${{ matrix.os }}-build.log" | head -150 > "shots/${{ matrix.os }}-build-errors.log"
+          tail -5 "shots/${{ matrix.os }}-build.log"
+          exit $status
       - name: Screenshots
         run: bash smoke/glass.sh src/target/debug/cleonpdf shots ${{ matrix.os }}
       - name: Commit the screenshots to this branch
