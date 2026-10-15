@@ -1,0 +1,6 @@
+2026-10-15T16:08:56.866Z INFO  [main] cleonpdf: CleonPDF 0.1.1, log file /Users/runner/Library/Application Support/CleonPDF/logs/cleonpdf.log
+2026-10-15T16:08:56.885Z INFO  [main] cleonpdf: window backdrop: None
+2026-10-15T16:08:58.844Z INFO  [main] cleonpdf: renderer: wgpu; adapter: Apple Paravirtual device (IntegratedGpu, Metal); max_texture_dimension_2d: 16384
+2026-10-15T16:08:59.000Z INFO  [main] cleonpdf_ui_egui::system_fonts: interface font fallback: /System/Library/Fonts/Supplemental/DevanagariMT.ttc (face 0)
+2026-10-15T16:08:59.004Z INFO  [main] cleonpdf_ui_egui::system_fonts: interface font fallback: /System/Library/Fonts/KohinoorTelugu.ttc (face 0)
+2026-10-15T16:08:59.008Z INFO  [main] cleonpdf_ui_egui::system_fonts: interface font fallback: /System/Library/Fonts/SFArabic.ttf (face 0)

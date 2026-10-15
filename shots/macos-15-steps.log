@@ -1,0 +1,19 @@
+ProductName:		macOS
+ProductVersion:		15.7.9
+BuildVersion:		24G830
+30:78: execution error: Preview got an error: AppleEvent timed out. (-1712)
+16:09:22 shot glass-light
+16:09:22 scene glass-light exit 143
+16:09:50 shot glass-dark
+16:09:50 scene glass-dark exit 143
+16:10:18 shot glass-home
+16:10:18 scene glass-home exit 143
+16:10:47 shot opaque
+16:10:47 scene opaque exit 143
+2026-10-15T16:09:53.528Z INFO  [main] cleonpdf: window backdrop: None
+2026-10-15T16:09:53.725Z INFO  [main] cleonpdf: renderer: wgpu; adapter: Apple Paravirtual device (IntegratedGpu, Metal); max_texture_dimension_2d: 16384
+2026-10-15T16:09:25.251Z INFO  [main] cleonpdf: window backdrop: None
+2026-10-15T16:09:25.419Z INFO  [main] cleonpdf: renderer: wgpu; adapter: Apple Paravirtual device (IntegratedGpu, Metal); max_texture_dimension_2d: 16384
+2026-10-15T16:10:21.902Z INFO  [main] cleonpdf: window backdrop: None
+2026-10-15T16:10:22.321Z INFO  [main] cleonpdf: renderer: wgpu; adapter: Apple Paravirtual device (IntegratedGpu, Metal); max_texture_dimension_2d: 16384
+16:10:50 done
