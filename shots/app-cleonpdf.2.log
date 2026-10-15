@@ -1,0 +1,8 @@
+2026-10-15T09:09:48.378Z INFO  [main] cleonpdf: CleonPDF 0.1.0, log file C:\Users\runneradmin\AppData\Roaming\CleonPDF\data\logs\cleonpdf.log
+2026-10-15T09:09:48.402Z WARN  [main] wgpu_hal::gles::adapter: Returned GL context is 1.1, when 3.3+ is needed
+2026-10-15T09:09:48.403Z WARN  [main] wgpu_hal::gles::adapter: Returned GL context is 1.1, when 3.3+ is needed
+2026-10-15T09:09:48.403Z WARN  [main] egui_wgpu: Software rasterizer detected - loss of performance expected. backend: Dx12, device_type: Cpu, name: "Microsoft Basic Render Driver", driver: "10.0.26100.33438", vendor: Unknown (0x1414), device: 0x8C, subgroup_size: 4..=4, transient_saves_memory: Some(false), limit_bucket: None
+2026-10-15T09:09:48.419Z INFO  [main] cleonpdf: renderer: wgpu; adapter: Microsoft Basic Render Driver (Cpu, Dx12); max_texture_dimension_2d: 16384
+2026-10-15T09:09:48.451Z INFO  [main] cleonpdf_ui_egui::system_fonts: interface font fallback: C:\Windows\Fonts\Nirmala.ttc (face 0)
+2026-10-15T09:09:48.452Z INFO  [main] cleonpdf_ui_egui::system_fonts: interface font fallback: C:\Windows\Fonts\segoeui.ttf (face 0)
+2026-10-15T09:09:48.452Z INFO  [main] cleonpdf::motion: system animation effects: off
