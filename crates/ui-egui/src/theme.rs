@@ -134,7 +134,8 @@ impl Tokens {
             let [r, g, b, _] = c.to_srgba_unmultiplied();
             Color32::from_rgba_unmultiplied(r, g, b, alpha)
         };
-        let (bars, panels, pasteboard) = if self.dark() { (150, 170, 120) } else { (140, 160, 100) };
+        // Tried on macOS 15 and 26 runners: at about two thirds opaque the glass hardly showed.
+        let (bars, panels, pasteboard) = if self.dark() { (120, 140, 90) } else { (100, 120, 60) };
         Self {
             titlebar: see_through(self.titlebar, bars),
             chrome: see_through(self.chrome, panels),

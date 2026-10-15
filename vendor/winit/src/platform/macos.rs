@@ -535,7 +535,7 @@ pub enum OptionAsAlt {
 pub enum GlassBackdrop {
     /// Liquid Glass (`NSGlassEffectView`, macOS 26 and later).
     LiquidGlass,
-    /// A vibrancy blur (`NSVisualEffectView`, the under-window material), before macOS 26.
+    /// A vibrancy blur (`NSVisualEffectView`, the sidebar material), before macOS 26.
     Vibrancy,
 }
 

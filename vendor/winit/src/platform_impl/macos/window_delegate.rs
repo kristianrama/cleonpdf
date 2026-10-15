@@ -555,9 +555,10 @@ fn install_glass_backdrop(window: &WinitWindow, view: &WinitView, kind: GlassBac
                 }
             }
             GlassBackdrop::Vibrancy => {
-                // NSVisualEffectMaterialUnderWindowBackground, blending behind the window,
-                // following the window's active state like other apps' sidebars.
-                let _: () = msg_send![&*backdrop, setMaterial: 21isize];
+                // NSVisualEffectMaterialSidebar (the under-window material was nearly opaque on
+                // macOS 15), blending behind the window, following the window's active state
+                // like other apps' sidebars.
+                let _: () = msg_send![&*backdrop, setMaterial: 7isize];
                 let _: () = msg_send![&*backdrop, setBlendingMode: 0isize];
                 let _: () = msg_send![&*backdrop, setState: 0isize];
                 backdrop.addSubview(view);
