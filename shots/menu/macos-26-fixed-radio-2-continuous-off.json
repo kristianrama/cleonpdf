@@ -1,0 +1,1214 @@
+{
+  "menus": [
+    {
+      "items": [
+        {
+          "enabled": true,
+          "label": "Informazioni su CleonPDF"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "label": "Verifica aggiornamenti…"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "label": "Preferenze…",
+          "shortcut": "⌘,"
+        },
+        {
+          "separator": true
+        },
+        {
+          "label": "Servizi",
+          "system": true
+        },
+        {
+          "separator": true
+        },
+        {
+          "label": "Nascondi CleonPDF",
+          "system": true
+        },
+        {
+          "label": "Nascondi altre",
+          "system": true
+        },
+        {
+          "label": "Mostra tutte",
+          "system": true
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "label": "Esci da CleonPDF",
+          "shortcut": "⌘Q"
+        }
+      ],
+      "title": "CleonPDF"
+    },
+    {
+      "items": [
+        {
+          "enabled": true,
+          "label": "Apri…",
+          "shortcut": "⌘O"
+        },
+        {
+          "enabled": true,
+          "items": [
+            {
+              "enabled": true,
+              "label": "doc.pdf"
+            },
+            {
+              "separator": true
+            },
+            {
+              "enabled": true,
+              "label": "Svuota elenco recenti"
+            }
+          ],
+          "label": "Apri recenti"
+        },
+        {
+          "enabled": true,
+          "label": "Fissa una cartella sulla Home…"
+        },
+        {
+          "enabled": true,
+          "label": "Nuovo PDF vuoto"
+        },
+        {
+          "enabled": true,
+          "label": "Crea PDF da file…"
+        },
+        {
+          "enabled": true,
+          "label": "Crea PDF da più file…"
+        },
+        {
+          "enabled": true,
+          "label": "Crea PDF separati…"
+        },
+        {
+          "enabled": true,
+          "label": "Crea PDF da immagini…"
+        },
+        {
+          "enabled": true,
+          "label": "Crea PDF dagli appunti"
+        },
+        {
+          "enabled": true,
+          "label": "Combina file…"
+        },
+        {
+          "enabled": true,
+          "label": "Salva",
+          "shortcut": "⌘S"
+        },
+        {
+          "enabled": true,
+          "label": "Salva con nome…",
+          "shortcut": "⇧⌘S"
+        },
+        {
+          "enabled": true,
+          "label": "Chiudi file",
+          "shortcut": "⌘W"
+        },
+        {
+          "enabled": true,
+          "label": "Chiudi tutto",
+          "shortcut": "⇧⌘W"
+        },
+        {
+          "enabled": false,
+          "label": "Ripristina"
+        },
+        {
+          "enabled": true,
+          "label": "Stampa…",
+          "shortcut": "⌘P"
+        },
+        {
+          "enabled": true,
+          "label": "Proprietà documento…",
+          "shortcut": "⌘D"
+        },
+        {
+          "enabled": true,
+          "label": "Esporta come immagine…"
+        },
+        {
+          "enabled": true,
+          "label": "Riduci dimensione file…"
+        },
+        {
+          "enabled": true,
+          "label": "Ottimizza PDF…"
+        },
+        {
+          "enabled": true,
+          "label": "Esporta come testo…"
+        },
+        {
+          "enabled": true,
+          "label": "Esporta in Word…"
+        },
+        {
+          "enabled": true,
+          "label": "Esporta in PowerPoint…"
+        },
+        {
+          "enabled": true,
+          "label": "Esporta in HTML…"
+        },
+        {
+          "enabled": true,
+          "label": "Esporta in RTF…"
+        },
+        {
+          "enabled": true,
+          "label": "Esporta tutte le immagini…"
+        },
+        {
+          "enabled": true,
+          "label": "Proteggi con password…"
+        },
+        {
+          "enabled": false,
+          "label": "Rimuovi protezione"
+        },
+        {
+          "enabled": true,
+          "label": "Proprietà di sicurezza…"
+        }
+      ],
+      "title": "File"
+    },
+    {
+      "items": [
+        {
+          "enabled": false,
+          "label": "Annulla",
+          "shortcut": "⌘Z"
+        },
+        {
+          "enabled": false,
+          "label": "Ripeti",
+          "shortcut": "⇧⌘Z"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "label": "Taglia",
+          "shortcut": "⌘X"
+        },
+        {
+          "enabled": true,
+          "label": "Copia",
+          "shortcut": "⌘C"
+        },
+        {
+          "enabled": true,
+          "label": "Incolla",
+          "shortcut": "⌘V"
+        },
+        {
+          "enabled": true,
+          "label": "Seleziona tutto",
+          "shortcut": "⌘A"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "label": "Trova…",
+          "shortcut": "⌘F"
+        },
+        {
+          "enabled": true,
+          "label": "Ricerca avanzata…",
+          "shortcut": "⇧⌘F"
+        },
+        {
+          "enabled": true,
+          "label": "Selezione colonna"
+        },
+        {
+          "enabled": true,
+          "label": "Acquisisci istantanea"
+        },
+        {
+          "enabled": true,
+          "label": "Svuota il modulo"
+        }
+      ],
+      "title": "Modifica"
+    },
+    {
+      "items": [
+        {
+          "heading": "Ingrandimento"
+        },
+        {
+          "enabled": true,
+          "label": "Dimensione reale",
+          "shortcut": "⌘1"
+        },
+        {
+          "enabled": true,
+          "label": "Adatta alla pagina",
+          "shortcut": "⌘0"
+        },
+        {
+          "enabled": true,
+          "label": "Adatta alla larghezza",
+          "shortcut": "⌘2"
+        },
+        {
+          "enabled": true,
+          "label": "Adatta all'altezza"
+        },
+        {
+          "enabled": true,
+          "label": "Adatta all'area visibile",
+          "shortcut": "⌘3"
+        },
+        {
+          "enabled": true,
+          "label": "Aumenta ingrandimento",
+          "shortcut": "⌘+"
+        },
+        {
+          "enabled": true,
+          "label": "Riduci ingrandimento",
+          "shortcut": "⌘−"
+        },
+        {
+          "enabled": true,
+          "label": "Ruota vista in senso orario",
+          "shortcut": "⇧⌘+"
+        },
+        {
+          "enabled": true,
+          "label": "Ruota vista in senso antiorario",
+          "shortcut": "⇧⌘−"
+        },
+        {
+          "separator": true
+        },
+        {
+          "heading": "Navigazione pagine"
+        },
+        {
+          "enabled": false,
+          "label": "Vista precedente",
+          "shortcut": "⌘["
+        },
+        {
+          "enabled": false,
+          "label": "Vista successiva",
+          "shortcut": "⌘]"
+        },
+        {
+          "separator": true
+        },
+        {
+          "heading": "Visualizzazione pagina"
+        },
+        {
+          "checked": true,
+          "enabled": true,
+          "label": "Pagina singola"
+        },
+        {
+          "checked": false,
+          "enabled": true,
+          "label": "Visualizzazione doppia"
+        },
+        {
+          "separator": true
+        },
+        {
+          "checked": false,
+          "enabled": true,
+          "label": "Scorrimento continuo"
+        },
+        {
+          "checked": false,
+          "enabled": false,
+          "label": "Mostra la copertina in visualizzazione doppia"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "label": "Trova strumenti e comandi…",
+          "shortcut": "⌘K"
+        },
+        {
+          "enabled": true,
+          "label": "Ingrandimento selettivo"
+        },
+        {
+          "enabled": true,
+          "label": "Modalità schermo intero",
+          "shortcut": "⌘L"
+        },
+        {
+          "enabled": true,
+          "label": "Modalità lettura",
+          "shortcut": "⌃⌘H"
+        },
+        {
+          "enabled": true,
+          "label": "Scheda successiva",
+          "shortcut": "⌃Tab"
+        },
+        {
+          "enabled": true,
+          "label": "Scheda precedente",
+          "shortcut": "⌃⇧Tab"
+        },
+        {
+          "enabled": true,
+          "label": "Vai alla pagina…",
+          "shortcut": "⇧⌘N"
+        },
+        {
+          "enabled": true,
+          "label": "Ripristina disposizione pannelli"
+        },
+        {
+          "enabled": true,
+          "label": "Pannello commenti"
+        },
+        {
+          "enabled": true,
+          "label": "Pannello campi modulo"
+        },
+        {
+          "enabled": true,
+          "label": "Pannello firme"
+        },
+        {
+          "enabled": true,
+          "items": [
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Usa impostazioni di sistema"
+            },
+            {
+              "checked": true,
+              "enabled": true,
+              "label": "Grigio chiaro"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Grigio scuro"
+            },
+            {
+              "separator": true
+            },
+            {
+              "enabled": true,
+              "label": "Impostazioni aspetto…"
+            }
+          ],
+          "label": "Tema di visualizzazione"
+        },
+        {
+          "enabled": true,
+          "items": [
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Commenti"
+            },
+            {
+              "checked": true,
+              "enabled": true,
+              "label": "Segnalibri"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Pagine"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Campi"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Livelli"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Allegati"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Firme"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Controllo accessibilità"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Tag"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Cerca"
+            },
+            {
+              "checked": false,
+              "enabled": true,
+              "label": "Confronta"
+            }
+          ],
+          "label": "Pannelli laterali"
+        }
+      ],
+      "title": "Visualizza"
+    },
+    {
+      "items": [
+        {
+          "enabled": true,
+          "label": "Organizza pagine"
+        },
+        {
+          "enabled": true,
+          "label": "Nuovo segnalibro",
+          "shortcut": "⌘B"
+        },
+        {
+          "enabled": true,
+          "label": "Nuovi segnalibri dalla struttura"
+        },
+        {
+          "enabled": true,
+          "label": "Ruota pagine in senso orario"
+        },
+        {
+          "enabled": true,
+          "label": "Ruota pagine in senso antiorario"
+        },
+        {
+          "enabled": true,
+          "label": "Elimina pagine"
+        },
+        {
+          "enabled": true,
+          "label": "Inserisci pagina vuota"
+        },
+        {
+          "enabled": true,
+          "label": "Ruota pagine…"
+        },
+        {
+          "enabled": true,
+          "label": "Duplica pagine"
+        },
+        {
+          "enabled": true,
+          "label": "Ritaglia pagine"
+        },
+        {
+          "enabled": true,
+          "label": "Imposta riquadri pagina…"
+        },
+        {
+          "enabled": true,
+          "label": "Inserisci pagine da file…"
+        },
+        {
+          "enabled": true,
+          "label": "Sostituisci pagine…"
+        },
+        {
+          "enabled": true,
+          "label": "Estrai pagine…"
+        },
+        {
+          "enabled": true,
+          "label": "Dividi documento…"
+        },
+        {
+          "enabled": true,
+          "label": "Numera pagine…"
+        }
+      ],
+      "title": "Pagine"
+    },
+    {
+      "items": [
+        {
+          "label": "Riduci a icona",
+          "system": true
+        },
+        {
+          "label": "Ridimensiona",
+          "system": true
+        },
+        {
+          "separator": true
+        },
+        {
+          "label": "Porta tutto in primo piano",
+          "system": true
+        }
+      ],
+      "title": "Finestra"
+    },
+    {
+      "items": [
+        {
+          "enabled": true,
+          "label": "Scorciatoie da tastiera"
+        },
+        {
+          "enabled": true,
+          "label": "CleonPDF su GitHub"
+        }
+      ],
+      "title": "Aiuto"
+    }
+  ],
+  "read_back": [
+    {
+      "enabled": true,
+      "items": [
+        {
+          "enabled": true,
+          "title": "Informazioni su CleonPDF"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "title": "Verifica aggiornamenti…"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "key": "⌘,",
+          "title": "Preferenze…"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "items": [],
+          "title": "Servizi"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "key": "⌘h",
+          "title": "Nascondi CleonPDF"
+        },
+        {
+          "enabled": true,
+          "key": "⌥⌘h",
+          "title": "Nascondi altre"
+        },
+        {
+          "enabled": true,
+          "title": "Mostra tutte"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "key": "⌘q",
+          "title": "Esci da CleonPDF"
+        }
+      ],
+      "title": "CleonPDF"
+    },
+    {
+      "enabled": true,
+      "items": [
+        {
+          "enabled": true,
+          "key": "⌘o",
+          "title": "Apri…"
+        },
+        {
+          "enabled": true,
+          "items": [
+            {
+              "enabled": true,
+              "title": "doc.pdf"
+            },
+            {
+              "separator": true
+            },
+            {
+              "enabled": true,
+              "title": "Svuota elenco recenti"
+            }
+          ],
+          "title": "Apri recenti"
+        },
+        {
+          "enabled": true,
+          "title": "Fissa una cartella sulla Home…"
+        },
+        {
+          "enabled": true,
+          "title": "Nuovo PDF vuoto"
+        },
+        {
+          "enabled": true,
+          "title": "Crea PDF da file…"
+        },
+        {
+          "enabled": true,
+          "title": "Crea PDF da più file…"
+        },
+        {
+          "enabled": true,
+          "title": "Crea PDF separati…"
+        },
+        {
+          "enabled": true,
+          "title": "Crea PDF da immagini…"
+        },
+        {
+          "enabled": true,
+          "title": "Crea PDF dagli appunti"
+        },
+        {
+          "enabled": true,
+          "title": "Combina file…"
+        },
+        {
+          "enabled": true,
+          "key": "⌘s",
+          "title": "Salva"
+        },
+        {
+          "enabled": true,
+          "key": "⇧⌘s",
+          "title": "Salva con nome…"
+        },
+        {
+          "enabled": true,
+          "key": "⌘w",
+          "title": "Chiudi file"
+        },
+        {
+          "enabled": true,
+          "key": "⇧⌘w",
+          "title": "Chiudi tutto"
+        },
+        {
+          "enabled": false,
+          "title": "Ripristina"
+        },
+        {
+          "enabled": true,
+          "key": "⌘p",
+          "title": "Stampa…"
+        },
+        {
+          "enabled": true,
+          "key": "⌘d",
+          "title": "Proprietà documento…"
+        },
+        {
+          "enabled": true,
+          "title": "Esporta come immagine…"
+        },
+        {
+          "enabled": true,
+          "title": "Riduci dimensione file…"
+        },
+        {
+          "enabled": true,
+          "title": "Ottimizza PDF…"
+        },
+        {
+          "enabled": true,
+          "title": "Esporta come testo…"
+        },
+        {
+          "enabled": true,
+          "title": "Esporta in Word…"
+        },
+        {
+          "enabled": true,
+          "title": "Esporta in PowerPoint…"
+        },
+        {
+          "enabled": true,
+          "title": "Esporta in HTML…"
+        },
+        {
+          "enabled": true,
+          "title": "Esporta in RTF…"
+        },
+        {
+          "enabled": true,
+          "title": "Esporta tutte le immagini…"
+        },
+        {
+          "enabled": true,
+          "title": "Proteggi con password…"
+        },
+        {
+          "enabled": false,
+          "title": "Rimuovi protezione"
+        },
+        {
+          "enabled": true,
+          "title": "Proprietà di sicurezza…"
+        }
+      ],
+      "title": "File"
+    },
+    {
+      "enabled": true,
+      "items": [
+        {
+          "enabled": false,
+          "key": "⌘z",
+          "title": "Annulla"
+        },
+        {
+          "enabled": false,
+          "key": "⇧⌘z",
+          "title": "Ripeti"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "key": "⌘x",
+          "title": "Taglia"
+        },
+        {
+          "enabled": true,
+          "key": "⌘c",
+          "title": "Copia"
+        },
+        {
+          "enabled": true,
+          "key": "⌘v",
+          "title": "Incolla"
+        },
+        {
+          "enabled": true,
+          "key": "⌘a",
+          "title": "Seleziona tutto"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "key": "⌘f",
+          "title": "Trova…"
+        },
+        {
+          "enabled": true,
+          "key": "⇧⌘f",
+          "title": "Ricerca avanzata…"
+        },
+        {
+          "enabled": true,
+          "title": "Selezione colonna"
+        },
+        {
+          "enabled": true,
+          "title": "Acquisisci istantanea"
+        },
+        {
+          "enabled": true,
+          "title": "Svuota il modulo"
+        }
+      ],
+      "title": "Modifica"
+    },
+    {
+      "enabled": true,
+      "items": [
+        {
+          "enabled": false,
+          "title": "Ingrandimento"
+        },
+        {
+          "enabled": true,
+          "key": "⌘1",
+          "title": "Dimensione reale"
+        },
+        {
+          "enabled": true,
+          "key": "⌘0",
+          "title": "Adatta alla pagina"
+        },
+        {
+          "enabled": true,
+          "key": "⌘2",
+          "title": "Adatta alla larghezza"
+        },
+        {
+          "enabled": true,
+          "title": "Adatta all'altezza"
+        },
+        {
+          "enabled": true,
+          "key": "⌘3",
+          "title": "Adatta all'area visibile"
+        },
+        {
+          "enabled": true,
+          "key": "⌘+",
+          "title": "Aumenta ingrandimento"
+        },
+        {
+          "enabled": true,
+          "key": "⌘-",
+          "title": "Riduci ingrandimento"
+        },
+        {
+          "enabled": true,
+          "key": "⇧⌘+",
+          "title": "Ruota vista in senso orario"
+        },
+        {
+          "enabled": true,
+          "key": "⇧⌘-",
+          "title": "Ruota vista in senso antiorario"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": false,
+          "title": "Navigazione pagine"
+        },
+        {
+          "enabled": false,
+          "key": "⌘[",
+          "title": "Vista precedente"
+        },
+        {
+          "enabled": false,
+          "key": "⌘]",
+          "title": "Vista successiva"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": false,
+          "title": "Visualizzazione pagina"
+        },
+        {
+          "checked": true,
+          "enabled": true,
+          "title": "Pagina singola"
+        },
+        {
+          "enabled": true,
+          "title": "Visualizzazione doppia"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "title": "Scorrimento continuo"
+        },
+        {
+          "enabled": false,
+          "title": "Mostra la copertina in visualizzazione doppia"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "key": "⌘k",
+          "title": "Trova strumenti e comandi…"
+        },
+        {
+          "enabled": true,
+          "title": "Ingrandimento selettivo"
+        },
+        {
+          "enabled": true,
+          "key": "⌘l",
+          "title": "Modalità schermo intero"
+        },
+        {
+          "enabled": true,
+          "key": "⌃⌘h",
+          "title": "Modalità lettura"
+        },
+        {
+          "enabled": true,
+          "key": "⌃\t",
+          "title": "Scheda successiva"
+        },
+        {
+          "enabled": true,
+          "key": "⌃⇧\t",
+          "title": "Scheda precedente"
+        },
+        {
+          "enabled": true,
+          "key": "⇧⌘n",
+          "title": "Vai alla pagina…"
+        },
+        {
+          "enabled": true,
+          "title": "Ripristina disposizione pannelli"
+        },
+        {
+          "enabled": true,
+          "title": "Pannello commenti"
+        },
+        {
+          "enabled": true,
+          "title": "Pannello campi modulo"
+        },
+        {
+          "enabled": true,
+          "title": "Pannello firme"
+        },
+        {
+          "enabled": true,
+          "items": [
+            {
+              "enabled": true,
+              "title": "Usa impostazioni di sistema"
+            },
+            {
+              "checked": true,
+              "enabled": true,
+              "title": "Grigio chiaro"
+            },
+            {
+              "enabled": true,
+              "title": "Grigio scuro"
+            },
+            {
+              "separator": true
+            },
+            {
+              "enabled": true,
+              "title": "Impostazioni aspetto…"
+            }
+          ],
+          "title": "Tema di visualizzazione"
+        },
+        {
+          "enabled": true,
+          "items": [
+            {
+              "enabled": true,
+              "title": "Commenti"
+            },
+            {
+              "checked": true,
+              "enabled": true,
+              "title": "Segnalibri"
+            },
+            {
+              "enabled": true,
+              "title": "Pagine"
+            },
+            {
+              "enabled": true,
+              "title": "Campi"
+            },
+            {
+              "enabled": true,
+              "title": "Livelli"
+            },
+            {
+              "enabled": true,
+              "title": "Allegati"
+            },
+            {
+              "enabled": true,
+              "title": "Firme"
+            },
+            {
+              "enabled": true,
+              "title": "Controllo accessibilità"
+            },
+            {
+              "enabled": true,
+              "title": "Tag"
+            },
+            {
+              "enabled": true,
+              "title": "Cerca"
+            },
+            {
+              "enabled": true,
+              "title": "Confronta"
+            }
+          ],
+          "title": "Pannelli laterali"
+        }
+      ],
+      "title": "Visualizza"
+    },
+    {
+      "enabled": true,
+      "items": [
+        {
+          "enabled": true,
+          "title": "Organizza pagine"
+        },
+        {
+          "enabled": true,
+          "key": "⌘b",
+          "title": "Nuovo segnalibro"
+        },
+        {
+          "enabled": true,
+          "title": "Nuovi segnalibri dalla struttura"
+        },
+        {
+          "enabled": true,
+          "title": "Ruota pagine in senso orario"
+        },
+        {
+          "enabled": true,
+          "title": "Ruota pagine in senso antiorario"
+        },
+        {
+          "enabled": true,
+          "title": "Elimina pagine"
+        },
+        {
+          "enabled": true,
+          "title": "Inserisci pagina vuota"
+        },
+        {
+          "enabled": true,
+          "title": "Ruota pagine…"
+        },
+        {
+          "enabled": true,
+          "title": "Duplica pagine"
+        },
+        {
+          "enabled": true,
+          "title": "Ritaglia pagine"
+        },
+        {
+          "enabled": true,
+          "title": "Imposta riquadri pagina…"
+        },
+        {
+          "enabled": true,
+          "title": "Inserisci pagine da file…"
+        },
+        {
+          "enabled": true,
+          "title": "Sostituisci pagine…"
+        },
+        {
+          "enabled": true,
+          "title": "Estrai pagine…"
+        },
+        {
+          "enabled": true,
+          "title": "Dividi documento…"
+        },
+        {
+          "enabled": true,
+          "title": "Numera pagine…"
+        }
+      ],
+      "title": "Pagine"
+    },
+    {
+      "enabled": true,
+      "items": [
+        {
+          "enabled": true,
+          "key": "⌘m",
+          "title": "Riduci a icona"
+        },
+        {
+          "enabled": true,
+          "title": "Ridimensiona"
+        },
+        {
+          "separator": true
+        },
+        {
+          "enabled": true,
+          "title": "Porta tutto in primo piano"
+        },
+        {
+          "separator": true
+        },
+        {
+          "checked": true,
+          "enabled": true,
+          "title": "CleonPDF Showcase — CleonPDF"
+        }
+      ],
+      "title": "Finestra"
+    },
+    {
+      "enabled": true,
+      "items": [
+        {
+          "enabled": true,
+          "title": "Scorciatoie da tastiera"
+        },
+        {
+          "enabled": true,
+          "title": "CleonPDF su GitHub"
+        }
+      ],
+      "title": "Aiuto"
+    }
+  ],
+  "system": true
+}
