@@ -86,9 +86,9 @@ pub(crate) struct State {
 
     window: Retained<WinitWindow>,
 
-    /// CleonPDF patch: the window's `WinitView`. With a glass backdrop it isn't the content view
-    /// any more but sits inside it (`install_glass_backdrop`).
-    view: Retained<WinitView>,
+    /// CleonPDF patch: the window's `WinitView` (kept as `NSView`, which is `Debug`). With a glass
+    /// backdrop it isn't the content view any more but sits inside it (`install_glass_backdrop`).
+    view: Retained<NSView>,
 
     // During `windowDidResize`, we use this to only send Moved if the position changed.
     //
@@ -534,7 +534,8 @@ fn install_glass_backdrop(window: &WinitWindow, view: &WinitView, kind: GlassBac
     // SAFETY: both classes are NSView subclasses; `+new` returns a retained instance.
     let backdrop: Retained<NSView> = unsafe { msg_send_id![class, new] };
     window.setContentView(Some(&backdrop));
-    view.setFrame(backdrop.bounds());
+    // SAFETY: plain NSView geometry on views this function owns.
+    unsafe { view.setFrame(backdrop.bounds()) };
     // SAFETY: setters of NSView and of the two subclasses, each checked with
     // `respondsToSelector:` first where it is specific to one macOS version. The integer
     // arguments are NSInteger/NSUInteger enum values from the AppKit headers.
@@ -554,9 +555,10 @@ fn install_glass_backdrop(window: &WinitWindow, view: &WinitView, kind: GlassBac
                 }
             }
             GlassBackdrop::Vibrancy => {
-                // NSVisualEffectMaterialUnderWindowBackground, blending behind the window,
-                // following the window's active state like other apps' sidebars.
-                let _: () = msg_send![&*backdrop, setMaterial: 21isize];
+                // NSVisualEffectMaterialSidebar (the under-window material was nearly opaque on
+                // macOS 15), blending behind the window, following the window's active state
+                // like other apps' sidebars.
+                let _: () = msg_send![&*backdrop, setMaterial: 7isize];
                 let _: () = msg_send![&*backdrop, setBlendingMode: 0isize];
                 let _: () = msg_send![&*backdrop, setState: 0isize];
                 backdrop.addSubview(view);
@@ -804,7 +806,7 @@ impl WindowDelegate {
         let delegate = mtm.alloc().set_ivars(State {
             app_delegate: app_delegate.retain(),
             window: window.retain(),
-            view,
+            view: Retained::into_super(view),
             previous_position: Cell::new(flip_window_screen_coordinates(window.frame())),
             previous_scale_factor: Cell::new(scale_factor),
             resize_increments: Cell::new(resize_increments),
@@ -887,9 +889,10 @@ impl WindowDelegate {
 
     #[track_caller]
     pub(super) fn view(&self) -> Retained<WinitView> {
-        // CleonPDF patch: kept, not cast from the content view, which is the glass backdrop when
+        // CleonPDF patch: kept, not taken from the content view, which is the glass backdrop when
         // there is one.
-        self.ivars().view.clone()
+        // SAFETY: `view` is always the `WinitView` that `new_window` created for this window.
+        unsafe { Retained::cast(self.ivars().view.clone()) }
     }
 
     #[track_caller]

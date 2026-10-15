@@ -237,7 +237,11 @@ fn main() -> eframe::Result {
         let wanted = glass_wanted(&options, settings_dir().as_deref());
         winit::platform::macos::set_glass_backdrop(wanted);
         let backdrop = if wanted { winit::platform::macos::glass_backdrop() } else { None };
-        log::info!("window backdrop: {backdrop:?}");
+        match backdrop {
+            Some(kind) => log::info!("glass window: {kind:?}"),
+            None if wanted => log::info!("glass window: off while Reduce transparency is on"),
+            None => {}
+        }
         backdrop.is_some()
     };
     #[cfg(not(target_os = "macos"))]
