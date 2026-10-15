@@ -104,6 +104,9 @@ function Scene([string] $Name, [string[]] $AppArgs, [int] $Settle = 10) {
   Start-Sleep 2
 }
 $doc = '"Esempio CleonPDF.pdf"'
+# A first start: no saved settings, so no saved window.
+$settings = Get-ChildItem "$env:APPDATA", "$env:LOCALAPPDATA" -Directory -Filter 'CleonPDF*' -ErrorAction SilentlyContinue
+Note "settings folders before the first start: $($settings.FullName -join ', ')"
 Scene '05-home' @('--language', 'it', '--theme', 'light') 12
 Scene '06-viewer' @('--language', 'it', '--theme', 'light', '--panel', 'comments', '--zoom', '72', $doc)
 Scene '07-dark' @('--language', 'it', '--theme', 'dark', '--panel', 'comments', '--page', '11', '--zoom', '80', $doc)
