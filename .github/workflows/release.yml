@@ -5,7 +5,8 @@ name: Release
 #
 # Self-contained: every action is pinned to a commit, and every downloaded tool is pinned to a
 # version and checked against its SHA-256. Signing is optional; without the secrets the builds
-# are unsigned (Windows) or ad-hoc signed and not notarized (macOS), with a warning.
+# are unsigned (Windows) or ad-hoc signed and not notarized (macOS), with a warning. Windows can
+# also be signed through SignPath (the "windows (SignPath)" job; docs/code-signing.md).
 
 on:
   push:
@@ -186,6 +187,8 @@ jobs:
     runs-on: windows-latest
     env:
       CLEONPDF_VERSION: ${{ needs.version.outputs.version }}
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -216,11 +219,55 @@ jobs:
           AZURE_CERT_PROFILE: ${{ secrets.AZURE_CERT_PROFILE }}
         run: pwsh packaging/windows/package.ps1 -Arch x64
         shell: pwsh
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist-windows-x64
           path: dist/release/*
           if-no-files-found: error
+
+  # Windows signing through SignPath, free for open source (docs/code-signing.md). Runs only when
+  # the repository variable SIGNPATH_ORGANIZATION_ID is set. SignPath signs cleonpdf.exe and
+  # cleonpdf-cli.exe inside the MSI and the portable zip, then the MSI
+  # (packaging/windows/signpath-artifact-configuration.xml), once an approver approves the request
+  # in SignPath; this job waits up to four hours for that. The signed files replace the unsigned
+  # dist-windows-x64 artifact, so the draft gets them. If signing fails, there is no draft.
+  windows-signing:
+    name: windows (SignPath)
+    needs: [version, windows]
+    if: vars.SIGNPATH_ORGANIZATION_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 270
+    permissions:
+      actions: read
+      contents: read
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Sign (waits for approval in SignPath)
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'cleonpdf' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ needs.windows.outputs.artifact-id }}
+          parameters: |
+            version: "${{ needs.version.outputs.version }}"
+          wait-for-completion-timeout-in-seconds: 14400
+          output-artifact-directory: signed
+      - name: Check the signed files
+        run: |
+          set -euo pipefail
+          ls -la signed
+          test -f "signed/cleonpdf-$VERSION-windows-x64.msi"
+          test -f "signed/cleonpdf-$VERSION-windows-x64-portable.zip"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-windows-x64
+          path: signed/*
+          if-no-files-found: error
+          overwrite: true
 
   web:
     name: web
@@ -255,10 +302,12 @@ jobs:
 
   release:
     name: draft release
-    needs: [version, linux, macos, windows, web]
+    needs: [version, linux, macos, windows, windows-signing, web]
+    # windows-signing is skipped when SignPath isn't set up; when it is, its failure stops the draft.
     if: >-
       !cancelled() && needs.version.result == 'success' && needs.linux.result == 'success' &&
-      needs.macos.result == 'success' && needs.windows.result == 'success' && needs.web.result == 'success'
+      needs.macos.result == 'success' && needs.windows.result == 'success' && needs.web.result == 'success' &&
+      (needs.windows-signing.result == 'success' || needs.windows-signing.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -286,7 +335,10 @@ jobs:
           state="$(gh release view "$tag" --json isDraft --jq '.isDraft' 2>/dev/null || echo missing)"
           case "$state" in
             missing)
-              flags=(--draft --title "CleonPDF $tag" --target "$GITHUB_SHA" --generate-notes)
+              # Prepended to the generated notes: SignPath Foundation asks that the download page
+              # name the code signing policy.
+              notes="Code signing policy: https://github.com/$GH_REPO/blob/main/docs/code-signing.md"
+              flags=(--draft --title "CleonPDF $tag" --target "$GITHUB_SHA" --generate-notes --notes "$notes")
               [ "$PRERELEASE" = true ] && flags+=(--prerelease)
               gh release create "$tag" "${flags[@]}" dist/*
               ;;

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration for CleonPDF's Windows release (docs/code-signing.md).
+
+  The SignPath project uses this as its default artifact configuration; this file is the reference
+  copy, so a change here must be pasted into SignPath too. The release workflow's "windows
+  (SignPath)" job submits the dist-windows-x64 artifact: a zip holding the MSI and the portable zip.
+  SignPath signs cleonpdf.exe and cleonpdf-cli.exe inside both, then the MSI, and refuses programs
+  whose product name isn't CleonPDF or whose product version isn't the release's.
+
+  version: the release version, passed by the workflow (needs.version.outputs.version).
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <msi-file path="cleonpdf-${version}-windows-x64.msi">
+      <pe-file-set product-name="CleonPDF" product-version="${version}">
+        <include path="**/cleonpdf.exe" />
+        <include path="**/cleonpdf-cli.exe" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+      <authenticode-sign />
+    </msi-file>
+    <zip-file path="cleonpdf-${version}-windows-x64-portable.zip">
+      <pe-file-set product-name="CleonPDF" product-version="${version}">
+        <include path="**/cleonpdf.exe" />
+        <include path="**/cleonpdf-cli.exe" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+    </zip-file>
+  </zip-file>
+</artifact-configuration>

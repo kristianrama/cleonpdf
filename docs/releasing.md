@@ -210,6 +210,27 @@ the `release` branch and add `environment: <name>` to the macOS and Windows jobs
 | `WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD` | base64 `.pfx` code-signing certificate and its password |
 | `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` | service principal for Azure Trusted Signing (instead of a `.pfx`) |
 | `AZURE_SIGNING_ENDPOINT`, `AZURE_SIGNING_ACCOUNT`, `AZURE_CERT_PROFILE` | Trusted Signing endpoint, account and certificate profile |
+| `SIGNPATH_API_TOKEN` | SignPath API token of a user who may submit signing requests (below) |
+
+### Windows signing through SignPath
+
+CleonPDF's Windows files are signed through [SignPath](https://about.signpath.io/), free for open
+source, with SignPath Foundation's certificate ([code signing policy](code-signing.md)). The
+`windows (SignPath)` job runs when the repository **variable** `SIGNPATH_ORGANIZATION_ID` is set
+(*Settings ▸ Secrets and variables ▸ Actions ▸ Variables*); `SIGNPATH_PROJECT_SLUG` and
+`SIGNPATH_POLICY_SLUG` default to `cleonpdf` and `release-signing`. In the SignPath project:
+
+- the artifact configuration is
+  [`packaging/windows/signpath-artifact-configuration.xml`](../packaging/windows/signpath-artifact-configuration.xml),
+  set as the project's default;
+- the *GitHub.com* trusted build system is linked, and the SignPath GitHub app can read this
+  repository.
+
+The job sends the unsigned MSI and portable zip, then waits up to four hours for an approver to
+approve the request in SignPath (SignPath emails the approvers). Approved, the signed files replace
+the unsigned ones and the draft is made as usual. Rejected, failed or timed out, there is no draft;
+re-run the failed jobs to ask again. SignPath checks that the programs' product version is the
+release's version, so a test run with a `version` override can't be signed.
 
 `GITHUB_TOKEN` creates the release; only the final job gets `contents: write`.
 
