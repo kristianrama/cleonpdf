@@ -132,6 +132,7 @@ pub mod updates;
 mod wheel_pager;
 mod widgets;
 pub mod window_controls;
+mod window_fit;
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod open_worker_tests;
@@ -575,6 +576,8 @@ pub struct CleonPdfApp {
     pub toast: Option<(String, f64)>,
     /// Whether the macOS title bar is drawn by us (traffic lights over our tab strip).
     pub integrated_titlebar: bool,
+    /// A first start's window still to fit onto its monitor ([`window_fit`]).
+    window_fit: Option<window_fit::Pending>,
     /// Set when the desktop leaves the window frame to the app (GNOME on Wayland): the tab strip
     /// carries these window buttons and the window's edges resize it.
     pub window_controls: Option<window_controls::Layout>,
@@ -921,6 +924,7 @@ impl CleonPdfApp {
             pinned: Default::default(),
             toast: None,
             integrated_titlebar: false,
+            window_fit: None,
             window_controls: None,
             system_title_bar: false,
             app_frame_shown: None,
@@ -1828,6 +1832,12 @@ impl CleonPdfApp {
             || self.pending_link.is_some()
             || self.pending_remote_link.is_some()
             || self.updates.open
+    }
+
+    /// A first start: over its first frames, fit the window onto its monitor ([`window_fit`]).
+    /// The window must have been created on the primary monitor (eframe's `centered`).
+    pub fn fit_window_on_start(&mut self) {
+        self.window_fit = Some(window_fit::Pending::default());
     }
 
     /// Enable the UI control channel on `ctx` (opt-in; see [`control`]). Returns a client that
@@ -2792,6 +2802,7 @@ impl eframe::App for CleonPdfApp {
         self.sync_theme(ctx);
         let native = ctx.native_pixels_per_point().unwrap_or(1.0);
         ui_scale::sync(ctx, ui_scale::zoom(self.ui_scale, self.system_text_scale, native), &mut self.ui_scale_applied);
+        window_fit::step(&mut self.window_fit, ctx);
         // Remember user work even if its tab is subsequently closed or Home is selected.
         self.startup_superseded |= !self.views.is_empty() || self.combine_showing() || self.dialog.is_some() || self.password_prompt.is_some();
         // Also done in `raw_input_hook`, before input; here for hosts that don't call the hook.
