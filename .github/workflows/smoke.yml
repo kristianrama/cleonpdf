@@ -31,8 +31,14 @@ jobs:
           tail -5 "shots/${{ matrix.os }}-build.log"
           [ $status -eq 0 ] || cp "shots/${{ matrix.os }}-build.log" "shots/${{ matrix.os }}-build-failed.log"
           exit $status
-      - name: Screenshots
-        run: bash smoke/menu.sh src/target/debug/cleonpdf src/target/debug/cleonpdf-cli shots/menu ${{ matrix.os }}
+      - name: Check marks after a click
+        run: bash smoke/radio.sh src/target/debug/cleonpdf src/target/debug/cleonpdf-cli shots/menu ${{ matrix.os }}-fixed
+      - name: The same before the fix (6151b9e's macos_menu.rs)
+        run: |
+          git -C src fetch -q --depth 5 origin feat/macos-menu-bar
+          git -C src checkout -q 6151b9e -- apps/cleonpdf/src/macos_menu.rs
+          cargo build --manifest-path src/Cargo.toml -p cleonpdf > "shots/${{ matrix.os }}-rebuild.log" 2>&1
+          bash smoke/radio.sh src/target/debug/cleonpdf src/target/debug/cleonpdf-cli shots/menu ${{ matrix.os }}-unfixed
       - name: Commit the screenshots to this branch
         if: always()
         run: |
