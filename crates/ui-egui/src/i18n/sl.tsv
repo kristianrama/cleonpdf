@@ -2352,3 +2352,5 @@ animation effects	Off	Izklopljeni
 	This document is trying to open a local file:	Ta dokument poskuša odpreti lokalno datoteko:
 	Move tag earlier	Premakni oznako prej
 	Move tag later	Premakni oznako pozneje
+	Glass window	Stekleno okno
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Vrstica z zavihki, orodne vrstice in podokna prikazujejo zamegljeno namizje za oknom. Strani ostanejo neprosojne. Začne veljati ob ponovnem zagonu CleonPDF.

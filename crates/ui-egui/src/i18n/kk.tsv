@@ -2345,3 +2345,5 @@ animation effects	Off	Өшірулі
 	This document is trying to open a local file:	Бұл құжат жергілікті файлды ашуға әрекеттеніп жатыр:
 	Move tag earlier	Тегті ертерек жылжыту
 	Move tag later	Тегті кейінірек жылжыту
+	Glass window	Шыны терезе
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Қойындылар жолағы, құралдар тақталары мен панельдер терезенің артындағы жұмыс үстелін бұлыңғыр етіп көрсетеді. Беттер мөлдір емес күйінде қалады. CleonPDF қайта іске қосылғанда күшіне енеді.

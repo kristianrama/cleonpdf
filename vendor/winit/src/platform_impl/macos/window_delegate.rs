@@ -3,13 +3,14 @@ use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 use std::ffi::c_void;
 use std::ptr;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use core_graphics::display::{CGDisplay, CGPoint};
 use monitor::VideoModeHandle;
 use objc2::rc::{autoreleasepool, Retained};
-use objc2::runtime::{AnyObject, ProtocolObject};
-use objc2::{declare_class, msg_send_id, mutability, sel, ClassType, DeclaredClass};
+use objc2::runtime::{AnyClass, AnyObject, ProtocolObject};
+use objc2::{declare_class, msg_send, msg_send_id, mutability, sel, ClassType, DeclaredClass};
 use objc2_app_kit::{
     NSAppKitVersionNumber, NSAppKitVersionNumber10_12, NSAppearance, NSAppearanceCustomization,
     NSAppearanceNameAqua, NSApplication, NSApplicationPresentationOptions, NSBackingStoreType,
@@ -36,7 +37,7 @@ use super::{ffi, Fullscreen, MonitorHandle, OsError, WindowId};
 use crate::dpi::{LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize, Position, Size};
 use crate::error::{ExternalError, NotSupportedError, OsError as RootOsError};
 use crate::event::{InnerSizeWriter, WindowEvent};
-use crate::platform::macos::{OptionAsAlt, WindowExtMacOS};
+use crate::platform::macos::{GlassBackdrop, OptionAsAlt, WindowExtMacOS};
 use crate::window::{
     Cursor, CursorGrabMode, Icon, ImePurpose, ResizeDirection, Theme, UserAttentionType,
     WindowAttributes, WindowButtons, WindowLevel,
@@ -84,6 +85,10 @@ pub(crate) struct State {
     app_delegate: Retained<ApplicationDelegate>,
 
     window: Retained<WinitWindow>,
+
+    /// CleonPDF patch: the window's `WinitView`. With a glass backdrop it isn't the content view
+    /// any more but sits inside it (`install_glass_backdrop`).
+    view: Retained<WinitView>,
 
     // During `windowDidResize`, we use this to only send Moved if the position changed.
     //
@@ -490,11 +495,82 @@ impl Drop for WindowDelegate {
     }
 }
 
+/// CleonPDF patch: whether new transparent windows get a glass backdrop (`set_glass_backdrop`).
+static GLASS_BACKDROP: AtomicBool = AtomicBool::new(false);
+
+pub(crate) fn set_glass_backdrop(enabled: bool) {
+    GLASS_BACKDROP.store(enabled, Ordering::Relaxed);
+}
+
+/// CleonPDF patch: Liquid Glass where AppKit has it (macOS 26), a vibrancy blur before, and none
+/// while Reduce transparency is on.
+pub(crate) fn glass_backdrop() -> Option<GlassBackdrop> {
+    let workspace_class = AnyClass::get("NSWorkspace")?;
+    // SAFETY: `+[NSWorkspace sharedWorkspace]` takes no arguments and returns the shared object.
+    let workspace: Retained<AnyObject> = unsafe { msg_send_id![workspace_class, sharedWorkspace] };
+    // SAFETY: a BOOL property of NSWorkspace since macOS 10.10.
+    let reduce: bool = unsafe { msg_send![&*workspace, accessibilityDisplayShouldReduceTransparency] };
+    if reduce {
+        None
+    } else if AnyClass::get("NSGlassEffectView").is_some() {
+        Some(GlassBackdrop::LiquidGlass)
+    } else if AnyClass::get("NSVisualEffectView").is_some() {
+        Some(GlassBackdrop::Vibrancy)
+    } else {
+        None
+    }
+}
+
+/// CleonPDF patch: make a glass view the window's content view and put `view` inside it, filling
+/// it. The glass draws the blurred desktop; the view's transparent pixels let it show. Returns
+/// false, leaving the window alone, when AppKit lacks the class. NSGlassEffectView is looked up at
+/// run time: the objc2-app-kit this winit uses predates it.
+fn install_glass_backdrop(window: &WinitWindow, view: &WinitView, kind: GlassBackdrop) -> bool {
+    let name = match kind {
+        GlassBackdrop::LiquidGlass => "NSGlassEffectView",
+        GlassBackdrop::Vibrancy => "NSVisualEffectView",
+    };
+    let Some(class) = AnyClass::get(name) else { return false };
+    // SAFETY: both classes are NSView subclasses; `+new` returns a retained instance.
+    let backdrop: Retained<NSView> = unsafe { msg_send_id![class, new] };
+    window.setContentView(Some(&backdrop));
+    view.setFrame(backdrop.bounds());
+    // SAFETY: setters of NSView and of the two subclasses, each checked with
+    // `respondsToSelector:` first where it is specific to one macOS version. The integer
+    // arguments are NSInteger/NSUInteger enum values from the AppKit headers.
+    unsafe {
+        // NSViewWidthSizable | NSViewHeightSizable: follow the backdrop's size.
+        let _: () = msg_send![view, setAutoresizingMask: 18usize];
+        match kind {
+            GlassBackdrop::LiquidGlass => {
+                if msg_send![&*backdrop, respondsToSelector: sel!(setStyle:)] {
+                    // NSGlassEffectViewStyleRegular.
+                    let _: () = msg_send![&*backdrop, setStyle: 0isize];
+                }
+                if msg_send![&*backdrop, respondsToSelector: sel!(setContentView:)] {
+                    let _: () = msg_send![&*backdrop, setContentView: view];
+                } else {
+                    backdrop.addSubview(view);
+                }
+            }
+            GlassBackdrop::Vibrancy => {
+                // NSVisualEffectMaterialUnderWindowBackground, blending behind the window,
+                // following the window's active state like other apps' sidebars.
+                let _: () = msg_send![&*backdrop, setMaterial: 21isize];
+                let _: () = msg_send![&*backdrop, setBlendingMode: 0isize];
+                let _: () = msg_send![&*backdrop, setState: 0isize];
+                backdrop.addSubview(view);
+            }
+        }
+    }
+    true
+}
+
 fn new_window(
     app_delegate: &ApplicationDelegate,
     attrs: &WindowAttributes,
     mtm: MainThreadMarker,
-) -> Option<Retained<WinitWindow>> {
+) -> Option<(Retained<WinitWindow>, Retained<WinitView>)> {
     autoreleasepool(|_| {
         let screen = match attrs.fullscreen.clone().map(Into::into) {
             Some(Fullscreen::Borderless(Some(monitor)))
@@ -653,7 +729,15 @@ fn new_window(
         }
 
         // Configure the new view as the "key view" for the window
-        window.setContentView(Some(&view));
+        // CleonPDF patch: under a glass backdrop when asked for (`set_glass_backdrop`).
+        let backdrop = (attrs.transparent && GLASS_BACKDROP.load(Ordering::Relaxed))
+            .then(glass_backdrop)
+            .flatten()
+            .filter(|&kind| install_glass_backdrop(&window, &view, kind));
+        if backdrop.is_none() {
+            window.setContentView(Some(&view));
+        }
+        trace!("glass backdrop: {backdrop:?}");
         window.setInitialFirstResponder(Some(&view));
 
         if attrs.transparent {
@@ -668,7 +752,7 @@ fn new_window(
                 unsafe { NSFilenamesPboardType }.copy()
             ]));
 
-        Some(window)
+        Some((window, view))
     })
 }
 
@@ -678,7 +762,7 @@ impl WindowDelegate {
         attrs: WindowAttributes,
         mtm: MainThreadMarker,
     ) -> Result<Retained<Self>, RootOsError> {
-        let window = new_window(app_delegate, &attrs, mtm)
+        let (window, view) = new_window(app_delegate, &attrs, mtm)
             .ok_or_else(|| os_error!(OsError::CreationError("couldn't create `NSWindow`")))?;
 
         #[cfg(feature = "rwh_06")]
@@ -720,6 +804,7 @@ impl WindowDelegate {
         let delegate = mtm.alloc().set_ivars(State {
             app_delegate: app_delegate.retain(),
             window: window.retain(),
+            view,
             previous_position: Cell::new(flip_window_screen_coordinates(window.frame())),
             previous_scale_factor: Cell::new(scale_factor),
             resize_increments: Cell::new(resize_increments),
@@ -802,8 +887,9 @@ impl WindowDelegate {
 
     #[track_caller]
     pub(super) fn view(&self) -> Retained<WinitView> {
-        // SAFETY: The view inside WinitWindow is always `WinitView`
-        unsafe { Retained::cast(self.window().contentView().unwrap()) }
+        // CleonPDF patch: kept, not cast from the content view, which is the glass backdrop when
+        // there is one.
+        self.ivars().view.clone()
     }
 
     #[track_caller]

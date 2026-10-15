@@ -2329,3 +2329,5 @@ animation effects	Off	Wyłączone
 	This document is trying to open a local file:	Ten dokument próbuje otworzyć plik lokalny:
 	Move tag earlier	Przenieś znacznik wcześniej
 	Move tag later	Przenieś znacznik później
+	Glass window	Szklane okno
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Pasek kart, paski narzędzi i panele pokazują rozmyty pulpit za oknem. Strony pozostają nieprzezroczyste. Zmiana zadziała po ponownym uruchomieniu CleonPDF.

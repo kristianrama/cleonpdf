@@ -395,6 +395,12 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tok
             widgets::radio_value(ui, &mut app.animation_effects, choice, tl_ctx!("animation effects", choice.label()));
         }
     });
+    // Only where the window can have a glass backdrop (macOS).
+    if app.glass_available {
+        ui.add(widgets::checkbox(&mut app.window_glass, tl!("Glass window"))).on_hover_text(tl!(
+            "The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts."
+        ));
+    }
     // Only where the app draws the title bar (GNOME on Wayland); elsewhere the desktop draws it.
     if app.window_controls.is_some() {
         ui.add(widgets::checkbox(&mut app.system_title_bar, tl!("Use system title bar")))

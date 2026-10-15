@@ -578,6 +578,14 @@ pub struct CleonPdfApp {
     pub integrated_titlebar: bool,
     /// A first start's window still to fit onto its monitor ([`window_fit`]).
     window_fit: Option<window_fit::Pending>,
+    /// Preferences ▸ Glass window: the saved choice. It takes effect when the app next starts,
+    /// because the window is made transparent (or not) when it is created.
+    pub window_glass: bool,
+    /// Set by the host: this window was created with a glass backdrop, so the chrome is drawn
+    /// see-through ([`theme::Tokens::glass`]) and the window clears to transparent.
+    pub glass_active: bool,
+    /// Set by the host where a glass backdrop exists (macOS): shows Preferences ▸ Glass window.
+    pub glass_available: bool,
     /// Set when the desktop leaves the window frame to the app (GNOME on Wayland): the tab strip
     /// carries these window buttons and the window's edges resize it.
     pub window_controls: Option<window_controls::Layout>,
@@ -925,6 +933,9 @@ impl CleonPdfApp {
             toast: None,
             integrated_titlebar: false,
             window_fit: None,
+            window_glass: false,
+            glass_active: false,
+            glass_available: false,
             window_controls: None,
             system_title_bar: false,
             app_frame_shown: None,
@@ -1913,7 +1924,7 @@ impl CleonPdfApp {
         self.theme_preference = preference;
         if let Some(ctx) = self.ctx.clone() {
             self.sync_theme(&ctx);
-            theme::apply(&ctx, self.theme);
+            theme::apply_glass(&ctx, self.theme, self.glass_active);
         } else {
             self.theme = preference.resolve(None, ThemeKind::Light);
         }
@@ -1966,7 +1977,7 @@ impl CleonPdfApp {
         let kind = self.theme_preference.resolve(system, ThemeKind::Light);
         if kind != self.theme {
             self.theme = kind;
-            theme::apply(ctx, kind);
+            theme::apply_glass(ctx, kind, self.glass_active);
         }
     }
 
@@ -2106,7 +2117,7 @@ impl CleonPdfApp {
     /// Serialize the user's persistent state (recent files, theme). Local only.
     pub fn persist(&self) -> String {
         let trusted: Vec<String> = self.session.trusted_certificates().iter().map(cleonpdf_engine::sign::x509::to_pem).collect();
-        serde_json::json!({
+        let mut settings = serde_json::json!({
             "docking": self.docking,
             "docking_left_open": self.left_open,
             "docking_right": self.right,
@@ -2165,8 +2176,11 @@ impl CleonPdfApp {
             "combine_zoom": self.combine_zoom,
             "comments_panel_closed": self.comments_panel_closed,
             "right_panel_closed": self.right_panel_closed,
-        })
-        .to_string()
+        });
+        // Outside `json!`, whose expansion is at the compiler's recursion limit. The desktop app
+        // reads this one before its window exists (apps/cleonpdf `saved_glass`).
+        settings["window_glass"] = serde_json::Value::Bool(self.window_glass);
+        settings.to_string()
     }
 
     /// Restore state written by `persist`. Unknown or malformed data is ignored.
@@ -2200,6 +2214,9 @@ impl CleonPdfApp {
         self.last_session = last_session::LastSession::from_json(&v["last_session"]);
         if let Some(on) = v["system_title_bar"].as_bool() {
             self.system_title_bar = on;
+        }
+        if let Some(on) = v["window_glass"].as_bool() {
+            self.window_glass = on;
         }
         if let Some(on) = v["reload_changed_files"].as_bool() {
             self.reload_changed_files = on;
@@ -2566,6 +2583,13 @@ impl CleonPdfApp {
             }
             ("author", _) => self.comment_prefs.author = value.to_string(),
             ("ui-scale", _) => self.ui_scale = ui_scale::parse(value)?,
+            ("glass", _) => {
+                self.window_glass = match value {
+                    "on" | "true" => true,
+                    "off" | "false" => false,
+                    _ => return Err("glass must be on or off".into()),
+                };
+            }
             ("system-title-bar", _) => {
                 self.system_title_bar = match value {
                     "true" => true,
@@ -2751,6 +2775,12 @@ impl CleonPdfApp {
 }
 
 impl eframe::App for CleonPdfApp {
+    /// Transparent over a glass backdrop, so the desktop shows wherever the chrome is
+    /// see-through; otherwise eframe's default (only its colour matters in an opaque window).
+    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
+        if self.glass_active { [0.0; 4] } else { egui::Color32::from_rgba_unmultiplied(12, 12, 12, 180).to_normalized_gamma_f32() }
+    }
+
     /// While files are dragged over the window the system sends no pointer moves, so egui
     /// would keep the place the pointer entered at: tell it where the pointer really is, so the
     /// page grid can show (and use) the gap under it.
@@ -2789,7 +2819,7 @@ impl eframe::App for CleonPdfApp {
             egui_extras::install_image_loaders(ctx);
             theme::install_fonts_for(ctx, cjk);
             self.fonts_cjk = cjk;
-            theme::apply(ctx, self.theme);
+            theme::apply_glass(ctx, self.theme, self.glass_active);
             self.styled = true;
         } else {
             self.fonts_ready = true;

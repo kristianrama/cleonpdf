@@ -2348,3 +2348,5 @@ animation effects	Off	Aus
 	This document is trying to open a local file:	Dieses Dokument versucht, eine lokale Datei zu öffnen:
 	Move tag earlier	Tag früher verschieben
 	Move tag later	Tag später verschieben
+	Glass window	Glasfenster
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Tableiste, Werkzeugleisten und Seitenbereiche zeigen den Schreibtisch hinter dem Fenster verschwommen. Seiten bleiben deckend. Wirkt nach dem Neustart von CleonPDF.

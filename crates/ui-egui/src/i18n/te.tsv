@@ -2260,3 +2260,5 @@ animation effects	Off	ఆఫ్
 	This document is trying to open a local file:	ఈ పత్రం ఒక స్థానిక ఫైల్‌ను తెరవడానికి ప్రయత్నిస్తోంది:
 	Move tag earlier	ట్యాగ్‌ను ముందుకు తరలించు
 	Move tag later	ట్యాగ్‌ను వెనుకకు తరలించు
+	Glass window	గాజు విండో
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	ట్యాబ్ పట్టీ, టూల్ బార్‌లు, ప్యానెల్‌లు విండో వెనుక ఉన్న డెస్క్‌టాప్‌ను మసకగా చూపిస్తాయి. పేజీలు అపారదర్శకంగానే ఉంటాయి. CleonPDF మళ్లీ ప్రారంభించినప్పుడు అమలులోకి వస్తుంది.
