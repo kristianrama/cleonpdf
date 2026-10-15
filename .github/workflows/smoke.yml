@@ -6,11 +6,11 @@ on:
 permissions:
   contents: write
 jobs:
-  glass:
+  menu:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15]
+        os: [macos-15, macos-26]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     env:
@@ -18,20 +18,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Clone the branch under test
-        run: git clone -q --depth 1 -b main "https://github.com/${{ github.repository }}" src
+        run: git clone -q --depth 1 -b feat/macos-menu-bar "https://github.com/${{ github.repository }}" src
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
           toolchain: stable
       - name: Build
         run: |
           mkdir -p shots
-          cargo build --manifest-path src/Cargo.toml -p cleonpdf > "shots/${{ matrix.os }}-build.log" 2>&1
+          cargo build --manifest-path src/Cargo.toml -p cleonpdf -p cleonpdf-cli > "shots/${{ matrix.os }}-build.log" 2>&1
           status=$?
           grep -E -A12 '^(error|warning)' "shots/${{ matrix.os }}-build.log" | head -150 > "shots/${{ matrix.os }}-build-errors.log"
           tail -5 "shots/${{ matrix.os }}-build.log"
+          [ $status -eq 0 ] || cp "shots/${{ matrix.os }}-build.log" "shots/${{ matrix.os }}-build-failed.log"
           exit $status
       - name: Screenshots
-        run: bash smoke/glass.sh src/target/debug/cleonpdf shots ${{ matrix.os }}
+        run: bash smoke/menu.sh src/target/debug/cleonpdf src/target/debug/cleonpdf-cli shots/menu ${{ matrix.os }}
       - name: Commit the screenshots to this branch
         if: always()
         run: |
