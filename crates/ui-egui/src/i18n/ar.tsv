@@ -2372,3 +2372,15 @@ animation effects	Off	معطّلة
 	Move tag later	نقل العلامة للأسفل
 	Glass window	نافذة زجاجية
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	يُظهر شريط علامات التبويب وأشرطة الأدوات واللوحات سطح المكتب خلف النافذة بشكل ضبابي. تبقى الصفحات معتمة. يسري التغيير عند إعادة تشغيل CleonPDF.
+
+# The macOS menu bar
+	Services	الخدمات
+	Hide CleonPDF	إخفاء CleonPDF
+	Hide others	إخفاء الآخرين
+app menu	Show all	إظهار الكل
+	Quit CleonPDF	إنهاء CleonPDF
+	Window	نافذة
+window	Zoom	تغيير الحجم
+	Bring all to front	إحضار الكل إلى المقدمة
+	Paste	لصق
+	Select all	تحديد الكل

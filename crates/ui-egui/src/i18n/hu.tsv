@@ -2348,3 +2348,15 @@ animation effects	Off	Ki
 	Move tag later	Címke későbbre helyezése
 	Glass window	Üvegablak
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	A lapfülsor, az eszköztárak és a panelek elmosva mutatják az ablak mögötti asztalt. Az oldalak átlátszatlanok maradnak. A CleonPDF újraindítása után lép életbe.
+
+# The macOS menu bar
+	Services	Szolgáltatások
+	Hide CleonPDF	CleonPDF elrejtése
+	Hide others	Többi elrejtése
+app menu	Show all	Összes megjelenítése
+	Quit CleonPDF	Kilépés a CleonPDF-ből
+	Window	Ablak
+window	Zoom	Méretezés
+	Bring all to front	Összes előtérbe hozása
+	Paste	Beillesztés
+	Select all	Összes kijelölése

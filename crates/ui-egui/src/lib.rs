@@ -50,6 +50,7 @@ mod export_ui;
 mod js_ui;
 mod marks_ui;
 mod measure_ui;
+pub mod menu_bar;
 mod ocr_ui;
 mod optimize_ui;
 mod search_ui;
@@ -609,6 +610,11 @@ pub struct CleonPdfApp {
     pub unsaved_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
     /// Requests from the operating system, polled every frame (macOS Apple events).
     pub os_events: Option<OsEventsFn>,
+    /// The menu bar the operating system draws (macOS), set by the desktop app. While there is
+    /// one, the Menu button is left out ([`menu_bar`]).
+    pub system_menu: Option<Box<dyn menu_bar::SystemMenu>>,
+    /// Items chosen there with the pointer, run in the next `logic`.
+    system_choices: Vec<menu_bar::Action>,
     /// Save delivers to the embedding page instead of downloading (web, see [`HostSaveFn`]).
     pub host_save: Option<HostSaveFn>,
     /// Reports unsaved work to the embedding page (web, see [`HostDirtyFn`]).
@@ -948,6 +954,8 @@ impl CleonPdfApp {
             failed_inbox: Default::default(),
             unsaved_flag: Default::default(),
             os_events: None,
+            system_menu: None,
+            system_choices: Vec::new(),
             host_save: None,
             host_dirty: None,
             close_request: None,
@@ -2689,13 +2697,7 @@ impl CleonPdfApp {
                 && !ctx.egui_wants_keyboard_input()
                 && ctx.input_mut(|input| input.consume_shortcut(&egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, Key::A)))
             {
-                if self.is_preparing() {
-                    if let Some(doc) = self.session.get(self.views[i].id) {
-                        prepare::select_all(&mut self.views[i], &doc.form);
-                    }
-                } else {
-                    self.views[i].select_all();
-                }
+                self.select_all_in_document(i);
             }
             self.tool_keys(i, ctx);
             if self.quick_tool == QuickTool::EditText
@@ -2706,6 +2708,22 @@ impl CleonPdfApp {
             canvas::shortcuts(&mut self.views[i], ctx);
             self.copy_key(i, ctx);
             self.image_pick_keys(i, ctx);
+        }
+    }
+}
+
+impl CleonPdfApp {
+    /// Select all in view `i`: its fields while preparing a form, otherwise its text (or its
+    /// pages in the page grid).
+    pub(crate) fn select_all_in_document(&mut self, i: usize) {
+        let preparing = self.is_preparing();
+        let Some(view) = self.views.get_mut(i) else { return };
+        if preparing {
+            if let Some(doc) = self.session.get(view.id) {
+                prepare::select_all(view, &doc.form);
+            }
+        } else {
+            view.select_all();
         }
     }
 }
@@ -2785,6 +2803,8 @@ impl eframe::App for CleonPdfApp {
     /// would keep the place the pointer entered at: tell it where the pointer really is, so the
     /// page grid can show (and use) the gap under it.
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
+        // Items chosen in the system menu bar: some become this frame's input.
+        self.system_menu_input(ctx, raw);
         // Before egui reads this frame's wheel input.
         self.scroll_speed.apply(ctx, raw);
         if raw.hovered_files.is_empty() && raw.dropped_files.is_empty() {
@@ -2928,6 +2948,7 @@ impl eframe::App for CleonPdfApp {
         self.poll_print();
         // Shortcuts deferred last frame: the text field has taken that frame's typing since.
         let deferred = std::mem::take(&mut self.deferred_commands);
+        self.run_system_choices(ctx);
         self.shortcuts(ctx);
         // Scrolling and group-drag previews are transient: never resume after changing tabs,
         // opening a modal/palette, or returning to a window that lost focus.
@@ -2994,6 +3015,7 @@ impl eframe::App for CleonPdfApp {
             // Notices too: a refused field value or a failed save must be seen in full screen.
             self.show_progress(&ctx);
             widgets::toast(self, &ctx);
+            self.sync_system_menu(&ctx);
             self.finish_render_frame(&ctx);
             return;
         }
@@ -3034,6 +3056,7 @@ impl eframe::App for CleonPdfApp {
         dialogs::show(self, &ctx);
         self.show_progress(&ctx);
         widgets::toast(self, &ctx);
+        self.sync_system_menu(&ctx);
         self.finish_render_frame(&ctx);
     }
 }

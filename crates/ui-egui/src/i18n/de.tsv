@@ -2350,3 +2350,15 @@ animation effects	Off	Aus
 	Move tag later	Tag später verschieben
 	Glass window	Glasfenster
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Tableiste, Werkzeugleisten und Seitenbereiche zeigen den Schreibtisch hinter dem Fenster verschwommen. Seiten bleiben deckend. Wirkt nach dem Neustart von CleonPDF.
+
+# The macOS menu bar
+	Services	Dienste
+	Hide CleonPDF	CleonPDF ausblenden
+	Hide others	Andere ausblenden
+app menu	Show all	Alle einblenden
+	Quit CleonPDF	CleonPDF beenden
+	Window	Fenster
+window	Zoom	Zoomen
+	Bring all to front	Alle nach vorne bringen
+	Paste	Einfügen
+	Select all	Alles auswählen

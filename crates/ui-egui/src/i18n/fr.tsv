@@ -2349,3 +2349,15 @@ animation effects	Off	Désactivés
 	Move tag later	Déplacer la balise plus tard
 	Glass window	Fenêtre en verre
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	La barre d’onglets, les barres d’outils et les panneaux laissent voir, flouté, le bureau derrière la fenêtre. Les pages restent opaques. Prend effet au prochain démarrage de CleonPDF.
+
+# The macOS menu bar
+	Services	Services
+	Hide CleonPDF	Masquer CleonPDF
+	Hide others	Masquer les autres
+app menu	Show all	Tout afficher
+	Quit CleonPDF	Quitter CleonPDF
+	Window	Fenêtre
+window	Zoom	Réduire/agrandir
+	Bring all to front	Tout ramener au premier plan
+	Paste	Coller
+	Select all	Tout sélectionner

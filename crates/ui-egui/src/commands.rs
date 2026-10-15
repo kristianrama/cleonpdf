@@ -10,7 +10,6 @@ use cleonpdf_engine::commands::{self, COMMANDS, CommandSpec, Shortcut};
 use crate::{
     CleonPdfApp, Dialog, Mode, PropsTab, RightPanel, SaveTarget,
     theme::{ThemeKind, ThemePreference},
-    widgets,
 };
 
 /// Keys the document view handles itself (`canvas::shortcuts`), for the View menu, tooltips and
@@ -717,55 +716,6 @@ fn tab_after(current: Option<usize>, count: usize, forward: bool) -> Option<usiz
         }
         (Some(i), false) => i.checked_sub(1).unwrap_or(last),
     })
-}
-
-/// Render a top-level menu's registered commands (with live labels, shortcuts and enablement).
-pub(crate) fn registry_menu(app: &mut CleonPdfApp, ui: &mut egui::Ui, menu: &str) {
-    for spec in commands::menu(menu) {
-        let label = commands::current_label(spec, &app.session, app.active_ids().map(|(_, id)| id));
-        let label = crate::i18n::menu_label(spec.id, &label);
-        // Open Recent is a submenu of the live recent list, not one action: disabled while the
-        // list is empty, otherwise each entry opens its file (or focuses the tab showing it), and
-        // Clear Recent Files at the foot empties the list (#430).
-        if spec.id == "file.open_recent" {
-            if app.recent.is_empty() {
-                ui.add_enabled(false, egui::Button::new(label));
-                continue;
-            }
-            let mut open: Option<String> = None;
-            let mut clear = false;
-            ui.menu_button(label, |ui| {
-                for r in &app.recent {
-                    if ui.button(&r.name).on_hover_text(&r.path).clicked() {
-                        open = Some(r.path.clone());
-                        ui.close();
-                    }
-                }
-                ui.separator();
-                if ui.button(tl!("Clear Recent Files")).clicked() {
-                    clear = true;
-                    ui.close();
-                }
-            });
-            if let Some(p) = open {
-                app.open_recent(&p);
-                ui.close();
-            }
-            if clear {
-                app.execute("file.clear_recent");
-                ui.close();
-            }
-            continue;
-        }
-        let shortcut = spec.shortcut.map(|s| shortcut_label(ui.ctx(), s)).unwrap_or_default();
-        let enabled = app.command_enabled(spec);
-        let resp = ui.add_enabled(enabled, egui::Button::new(label).shortcut_text(shortcut));
-        if resp.clicked() {
-            app.execute(spec.id);
-            ui.close();
-        }
-    }
-    let _ = widgets::menu_item;
 }
 
 #[cfg(test)]

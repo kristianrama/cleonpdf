@@ -2593,3 +2593,13 @@ key	Space	Tarpas
 	Move tag later	Perkelti žymą vėliau
 	Glass window	Stiklinis langas
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Kortelių juosta, įrankių juostos ir skydeliai rodo už lango esantį darbalaukį, sulietą. Puslapiai lieka nepermatomi. Įsigalioja iš naujo paleidus CleonPDF.
+
+# The macOS menu bar
+	Services	Paslaugos
+	Hide CleonPDF	Slėpti CleonPDF
+	Hide others	Slėpti kitas
+app menu	Show all	Rodyti visas
+	Quit CleonPDF	Išeiti iš CleonPDF
+	Window	Langas
+window	Zoom	Keisti dydį
+	Bring all to front	Iškelti visus į priekį

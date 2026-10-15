@@ -291,25 +291,6 @@ pub fn tab_strip(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
         });
 }
 
-/// Both theme entry points use the same choices and command path.
-fn theme_menu(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
-    for (preference, command, label) in [
-        (ThemePreference::System, "view.theme.system", "Use system setting"),
-        (ThemePreference::Light, "view.theme.light", "Light gray"),
-        (ThemePreference::Dark, "view.theme.dark", "Dark gray"),
-    ] {
-        if ui.add(widgets::radio(app.theme_preference == preference, tl!(label))).clicked() {
-            app.execute(command);
-            ui.close();
-        }
-    }
-    ui.separator();
-    if ui.button(tl!("Appearance settings…")).clicked() {
-        app.dialog = Some(Dialog::Preferences);
-        ui.close();
-    }
-}
-
 /// The right-click menu on the title bar's theme button.
 fn appearance_menu(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
     if ui.button(tl!("Appearance settings…")).clicked() {
@@ -479,10 +460,12 @@ pub fn mode_bar(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
         .show(ui, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing.x = 2.0;
-                main_menu(app, ui);
-                ui.add_space(6.0);
-                ui.painter().vline(ui.cursor().left(), ui.max_rect().y_range().shrink(12.0), Stroke::new(1.0, t.divider));
-                ui.add_space(10.0);
+                if app.system_menu.is_none() {
+                    main_menu(app, ui);
+                    ui.add_space(6.0);
+                    ui.painter().vline(ui.cursor().left(), ui.max_rect().y_range().shrink(12.0), Stroke::new(1.0, t.divider));
+                    ui.add_space(10.0);
+                }
                 for (mode, label) in
                     [(Mode::AllTools, "All tools"), (Mode::Read, "Read"), (Mode::Edit, "Edit"), (Mode::Convert, "Convert"), (Mode::Sign, "E-Sign")]
                 {
@@ -516,89 +499,24 @@ pub fn mode_bar(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
         });
 }
 
+/// The Menu button: the menu bar ([`crate::menu_bar`]) in a popup. Left out where the system
+/// draws the menu bar (macOS).
 fn main_menu(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
-    let t = Tokens::get(ui.ctx());
     let resp = widgets::ghost_button(ui, "panel-left", tl!("Menu"));
+    let mut chosen = None;
     egui::Popup::menu(&resp).show(|ui| {
         ui.set_min_width(230.0);
-        ui.menu_button(tl!("File"), |ui| crate::commands::registry_menu(app, ui, "File"));
-        ui.menu_button(tl!("Edit"), |ui| crate::commands::registry_menu(app, ui, "Edit"));
-        ui.menu_button(tl!("Pages"), |ui| crate::commands::registry_menu(app, ui, "Pages"));
-        ui.menu_button(tl!("View"), |ui| {
-            if let Some(i) = app.active {
-                let v = &mut app.views[i];
-                let ctx = ui.ctx().clone();
-                let key = |s| crate::commands::shortcut_label(&ctx, s);
-                use crate::commands::{ACTUAL_SIZE, FIT_WIDTH, NEXT_VIEW, PAGE_LEVEL, PREV_VIEW, ROTATE_CCW, ROTATE_CW, ZOOM_IN, ZOOM_OUT};
-                ui.label(egui::RichText::new(tl!("Zoom")).color(t.text_faint).small());
-                if widgets::menu_item(ui, tl!("Actual size"), &key(ACTUAL_SIZE)).clicked() {
-                    v.set_zoom(1.0);
-                }
-                if widgets::menu_item(ui, tl!("Zoom to page level"), &key(PAGE_LEVEL)).clicked() {
-                    v.fit = Fit::Page;
-                }
-                if widgets::menu_item(ui, tl!("Fit to width"), &key(FIT_WIDTH)).clicked() {
-                    v.fit = Fit::Width;
-                }
-                if widgets::menu_item(ui, tl!("Fit to height"), "").clicked() {
-                    v.fit = Fit::Height;
-                    v.goto = Some((v.current, 0.0));
-                }
-                if widgets::menu_item(ui, tl!("Fit visible"), &crate::commands::command_shortcut_label(&ctx, "view.fit_visible")).clicked() {
-                    ui.close();
-                    app.execute("view.fit_visible");
-                    return;
-                }
-                if widgets::menu_item(ui, tl!("Zoom in"), &key(ZOOM_IN)).clicked() {
-                    v.zoom_step(true);
-                }
-                if widgets::menu_item(ui, tl!("Zoom out"), &key(ZOOM_OUT)).clicked() {
-                    v.zoom_step(false);
-                }
-                if widgets::menu_item(ui, tl!("Rotate view clockwise"), &key(ROTATE_CW)).clicked() {
-                    v.rotate_view(true);
-                }
-                if widgets::menu_item(ui, tl!("Rotate view counterclockwise"), &key(ROTATE_CCW)).clicked() {
-                    v.rotate_view(false);
-                }
-                ui.separator();
-                ui.label(egui::RichText::new(tl!("Page navigation")).color(t.text_faint).small());
-                if ui.add_enabled(!v.back.is_empty(), egui::Button::new(tl!("Previous view")).shortcut_text(key(PREV_VIEW))).clicked() {
-                    v.view_history(false);
-                }
-                if ui.add_enabled(!v.forward.is_empty(), egui::Button::new(tl!("Next view")).shortcut_text(key(NEXT_VIEW))).clicked() {
-                    v.view_history(true);
-                }
-                ui.separator();
-                if let Some(id) = page_display_menu(ui, &app.views[i]) {
-                    app.execute(id);
-                }
-                ui.separator();
-            }
-            crate::commands::registry_menu(app, ui, "View");
-            ui.menu_button(tl!("Display theme"), |ui| theme_menu(app, ui));
-            ui.menu_button(tl!("Side panels"), |ui| {
-                for (p, label) in [
-                    (RightPanel::Comments, tl!("Comments")),
-                    (RightPanel::Bookmarks, tl!("Bookmarks")),
-                    (RightPanel::Pages, tl!("Pages")),
-                    (RightPanel::Fields, tl!("Fields")),
-                    (RightPanel::Layers, tl!("Layers")),
-                    (RightPanel::Attachments, tl!("Attachments")),
-                    (RightPanel::Signatures, tl!("Signatures")),
-                    (RightPanel::Accessibility, tl!("Accessibility Checker")),
-                    (RightPanel::Tags, tl!("Tags")),
-                    (RightPanel::Search, tl!("Search")),
-                    (RightPanel::Compare, tl!("Compare")),
-                ] {
-                    if ui.add(widgets::radio(app.right == Some(p), tl!(label))).clicked() {
-                        app.choose_right_panel(Some(p));
-                    }
+        for menu in app.menu_bar(crate::menu_bar::Target::InApp) {
+            ui.menu_button(menu.title.as_str(), |ui| {
+                if let Some(action) = crate::menu_bar::show_entries(ui, &menu.entries) {
+                    chosen = Some(action);
                 }
             });
-        });
-        ui.menu_button(tl!("Help"), |ui| crate::commands::registry_menu(app, ui, "Help"));
+        }
     });
+    if let Some(action) = chosen {
+        app.menu_action(ui.ctx(), &action);
+    }
 }
 
 pub fn right_rail(app: &mut CleonPdfApp, ui: &mut egui::Ui) {

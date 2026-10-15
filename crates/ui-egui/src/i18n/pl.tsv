@@ -2331,3 +2331,15 @@ animation effects	Off	Wyłączone
 	Move tag later	Przenieś znacznik później
 	Glass window	Szklane okno
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Pasek kart, paski narzędzi i panele pokazują rozmyty pulpit za oknem. Strony pozostają nieprzezroczyste. Zmiana zadziała po ponownym uruchomieniu CleonPDF.
+
+# The macOS menu bar
+	Services	Usługi
+	Hide CleonPDF	Ukryj CleonPDF
+	Hide others	Ukryj pozostałe
+app menu	Show all	Pokaż wszystkie
+	Quit CleonPDF	Zakończ CleonPDF
+	Window	Okno
+window	Zoom	Zmień rozmiar
+	Bring all to front	Przenieś wszystko na wierzch
+	Paste	Wklej
+	Select all	Zaznacz wszystko

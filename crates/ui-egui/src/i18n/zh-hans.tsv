@@ -2313,3 +2313,15 @@ animation effects	Off	关
 	Move tag later	将标签后移
 	Glass window	玻璃窗口
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	标签栏、工具栏和面板会模糊地显示窗口后面的桌面。页面保持不透明。重新启动 CleonPDF 后生效。
+
+# The macOS menu bar
+	Services	服务
+	Hide CleonPDF	隐藏 CleonPDF
+	Hide others	隐藏其他
+app menu	Show all	全部显示
+	Quit CleonPDF	退出 CleonPDF
+	Window	窗口
+window	Zoom	缩放
+	Bring all to front	前置全部窗口
+	Paste	粘贴
+	Select all	全选
