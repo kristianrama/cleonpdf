@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Clone the branch under test
-        run: git clone -q --depth 1 -b feat/macos-menu-bar "https://github.com/${{ github.repository }}" src
+        run: git clone -q --depth 5 -b main "https://github.com/${{ github.repository }}" src
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
           toolchain: stable
@@ -35,7 +35,6 @@ jobs:
         run: bash smoke/radio.sh src/target/debug/cleonpdf src/target/debug/cleonpdf-cli shots/menu ${{ matrix.os }}-fixed
       - name: The same before the fix (6151b9e's macos_menu.rs)
         run: |
-          git -C src fetch -q --depth 5 origin feat/macos-menu-bar
           git -C src checkout -q 6151b9e -- apps/cleonpdf/src/macos_menu.rs
           cargo build --manifest-path src/Cargo.toml -p cleonpdf > "shots/${{ matrix.os }}-rebuild.log" 2>&1
           bash smoke/radio.sh src/target/debug/cleonpdf src/target/debug/cleonpdf-cli shots/menu ${{ matrix.os }}-unfixed
