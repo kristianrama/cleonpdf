@@ -8,6 +8,9 @@ L="$3"
 LOG="$OUT/$L-steps.log"
 log() { echo "$(date +%T) $*" | tee -a "$LOG"; }
 sw_vers >>"$LOG"
+log "reduceTransparency before: $(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
+defaults write com.apple.universalaccess reduceTransparency -bool false >>"$LOG" 2>&1 || log "defaults write failed"
+log "reduceTransparency after: $(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
 open -a Preview "$PWD/smoke/wallpaper.png"
 sleep 6
 osascript -e 'tell application "Preview" to set bounds of front window to {0, 25, 1024, 768}' >>"$LOG" 2>&1
