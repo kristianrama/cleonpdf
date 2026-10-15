@@ -1,0 +1,37 @@
+diff --git a/crates/ui-egui/src/lib.rs b/crates/ui-egui/src/lib.rs
+index 17cf42c..a0d3458 100644
+--- a/crates/ui-egui/src/lib.rs
++++ b/crates/ui-egui/src/lib.rs
+@@ -3040,7 +3040,10 @@ impl eframe::App for CleonPdfApp {
+             }
+         }
+         let t = theme::Tokens::get(&ctx);
+-        egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.pasteboard)).show(ui, |ui| {
++        // Over the glass backdrop the workspace's gaps and panels show the desktop; its document
++        // pane fills itself (docking.rs). In Read mode the document fills this panel.
++        let fill = if self.glass_active && self.mode != Mode::Read { egui::Color32::TRANSPARENT } else { t.pasteboard };
++        egui::CentralPanel::default().frame(egui::Frame::NONE.fill(fill)).show(ui, |ui| {
+             if self.mode == Mode::Read {
+                 match self.active {
+                     None if self.combine_showing() => combine_ui::page(self, ui),
+diff --git a/crates/ui-egui/src/theme.rs b/crates/ui-egui/src/theme.rs
+index f0d3ebe..fd7392e 100644
+--- a/crates/ui-egui/src/theme.rs
++++ b/crates/ui-egui/src/theme.rs
+@@ -135,14 +135,8 @@ impl Tokens {
+             Color32::from_rgba_unmultiplied(r, g, b, alpha)
+         };
+         // Tried on macOS 15 and 26 runners: at about two thirds opaque the glass hardly showed.
+-        let (bars, panels, pasteboard) = if self.dark() { (120, 140, 90) } else { (100, 120, 60) };
+-        Self {
+-            titlebar: see_through(self.titlebar, bars),
+-            chrome: see_through(self.chrome, panels),
+-            panel: see_through(self.panel, panels),
+-            pasteboard: see_through(self.pasteboard, pasteboard),
+-            ..self
+-        }
++        let (bars, panels) = if self.dark() { (120, 140) } else { (100, 120) };
++        Self { titlebar: see_through(self.titlebar, bars), chrome: see_through(self.chrome, panels), panel: see_through(self.panel, panels), ..self }
+     }
+ 
+     pub fn dark(&self) -> bool {

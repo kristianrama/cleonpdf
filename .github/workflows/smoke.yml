@@ -22,20 +22,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
           toolchain: stable
-      - name: Build (glass as in 0.1.3)
+      - name: Build with the document area opaque and the panels glass
         run: |
           mkdir -p shots/glass-compare
-          cargo build --manifest-path src/Cargo.toml -p cleonpdf > "shots/glass-compare/${{ matrix.os }}-build.log" 2>&1
-      - name: Screenshots, as in 0.1.3
-        run: bash smoke/glass-compare.sh src/target/debug/cleonpdf shots/glass-compare ${{ matrix.os }}-now
-      - name: Build with the area around the pages opaque
-        run: |
-          grep -n 'pasteboard: see_through' src/crates/ui-egui/src/theme.rs
-          sed -i '' '/pasteboard: see_through(self.pasteboard, pasteboard),/d' src/crates/ui-egui/src/theme.rs
+          git -C src apply ../smoke/glass-frame.patch
           git -C src diff --stat
-          cargo build --manifest-path src/Cargo.toml -p cleonpdf > "shots/glass-compare/${{ matrix.os }}-rebuild.log" 2>&1
-      - name: Screenshots, reduced
-        run: bash smoke/glass-compare.sh src/target/debug/cleonpdf shots/glass-compare ${{ matrix.os }}-reduced
+          cargo build --manifest-path src/Cargo.toml -p cleonpdf > "shots/glass-compare/${{ matrix.os }}-frame-build.log" 2>&1
+      - name: Screenshots, panels glass
+        run: bash smoke/glass-compare.sh src/target/debug/cleonpdf shots/glass-compare ${{ matrix.os }}-frame
       - name: Commit the screenshots to this branch
         if: always()
         run: |
