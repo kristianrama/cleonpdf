@@ -1,0 +1,18 @@
+ProductName:		macOS
+ProductVersion:		26.6.2
+BuildVersion:		25G83
+16:57:54 reduceTransparency before: 1
+16:57:54 reduceTransparency after: 0
+30:78: execution error: Preview got an error: AppleEvent timed out. (-1712)
+17:00:29 shot glass-light
+17:00:29 scene glass-light exit 143
+17:00:58 shot glass-dark
+17:00:58 scene glass-dark exit 143
+17:01:27 shot glass-home
+17:01:27 scene glass-home exit 143
+17:01:56 shot opaque
+17:01:56 scene opaque exit 143
+2026-10-15T17:01:02.128Z INFO  [main] cleonpdf: renderer: wgpu; adapter: Apple Paravirtual device (IntegratedGpu, Metal); max_texture_dimension_2d: 16384
+2026-10-15T17:00:33.255Z INFO  [main] cleonpdf: renderer: wgpu; adapter: Apple Paravirtual device (IntegratedGpu, Metal); max_texture_dimension_2d: 16384
+2026-10-15T17:01:31.044Z INFO  [main] cleonpdf: renderer: wgpu; adapter: Apple Paravirtual device (IntegratedGpu, Metal); max_texture_dimension_2d: 16384
+17:01:59 done
