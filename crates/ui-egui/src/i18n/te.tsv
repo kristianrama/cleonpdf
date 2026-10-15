@@ -2262,3 +2262,15 @@ animation effects	Off	ఆఫ్
 	Move tag later	ట్యాగ్‌ను వెనుకకు తరలించు
 	Glass window	గాజు విండో
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	ట్యాబ్ పట్టీ, టూల్ బార్‌లు, ప్యానెల్‌లు విండో వెనుక ఉన్న డెస్క్‌టాప్‌ను మసకగా చూపిస్తాయి. పేజీలు అపారదర్శకంగానే ఉంటాయి. CleonPDF మళ్లీ ప్రారంభించినప్పుడు అమలులోకి వస్తుంది.
+
+# The macOS menu bar
+	Services	సేవలు
+	Hide CleonPDF	CleonPDFని దాచు
+	Hide others	ఇతరాలను దాచు
+app menu	Show all	అన్నీ చూపించు
+	Quit CleonPDF	CleonPDF నుండి నిష్క్రమించు
+	Window	విండో
+window	Zoom	పరిమాణం మార్చు
+	Bring all to front	అన్నింటినీ ముందుకు తీసుకురా
+	Paste	అతికించు
+	Select all	అన్నీ ఎంచుకో

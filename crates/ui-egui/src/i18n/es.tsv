@@ -2479,3 +2479,15 @@ animation effects	Off	Desactivados
 	Move tag later	Mover etiqueta después
 	Glass window	Ventana de cristal
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	La barra de pestañas, las barras de herramientas y los paneles muestran, desenfocado, el escritorio que hay detrás de la ventana. Las páginas siguen opacas. Se aplica al reiniciar CleonPDF.
+
+# The macOS menu bar
+	Services	Servicios
+	Hide CleonPDF	Ocultar CleonPDF
+	Hide others	Ocultar los demás
+app menu	Show all	Mostrar todo
+	Quit CleonPDF	Salir de CleonPDF
+	Window	Ventana
+window	Zoom	Zoom
+	Bring all to front	Traer todo al frente
+	Paste	Pegar
+	Select all	Seleccionar todo

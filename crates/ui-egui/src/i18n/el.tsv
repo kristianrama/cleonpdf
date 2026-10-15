@@ -2359,3 +2359,15 @@ animation effects	Off	Ανενεργά
 	Move tag later	Μετακίνηση ετικέτας αργότερα
 	Glass window	Γυάλινο παράθυρο
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Η γραμμή καρτελών, οι γραμμές εργαλείων και τα πλαίσια δείχνουν θολή την επιφάνεια εργασίας πίσω από το παράθυρο. Οι σελίδες μένουν αδιαφανείς. Ισχύει μετά την επανεκκίνηση του CleonPDF.
+
+# The macOS menu bar
+	Services	Υπηρεσίες
+	Hide CleonPDF	Απόκρυψη CleonPDF
+	Hide others	Απόκρυψη των άλλων
+app menu	Show all	Εμφάνιση όλων
+	Quit CleonPDF	Τερματισμός CleonPDF
+	Window	Παράθυρο
+window	Zoom	Αλλαγή μεγέθους
+	Bring all to front	Μεταφορά όλων σε πρώτο πλάνο
+	Paste	Επικόλληση
+	Select all	Επιλογή όλων

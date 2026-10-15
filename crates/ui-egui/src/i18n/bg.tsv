@@ -2312,3 +2312,15 @@ animation effects	Off	Изключени
 	Move tag later	Преместване на етикета по-късно
 	Glass window	Стъклен прозорец
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Лентата с раздели, лентите с инструменти и панелите показват размазан работния плот зад прозореца. Страниците остават непрозрачни. Влиза в сила след рестартиране на CleonPDF.
+
+# The macOS menu bar
+	Services	Услуги
+	Hide CleonPDF	Скрий CleonPDF
+	Hide others	Скрий останалите
+app menu	Show all	Покажи всички
+	Quit CleonPDF	Изход от CleonPDF
+	Window	Прозорец
+window	Zoom	Мащабиране
+	Bring all to front	Всички на преден план
+	Paste	Постави
+	Select all	Избери всички

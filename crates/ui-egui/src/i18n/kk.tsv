@@ -2347,3 +2347,15 @@ animation effects	Off	Өшірулі
 	Move tag later	Тегті кейінірек жылжыту
 	Glass window	Шыны терезе
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Қойындылар жолағы, құралдар тақталары мен панельдер терезенің артындағы жұмыс үстелін бұлыңғыр етіп көрсетеді. Беттер мөлдір емес күйінде қалады. CleonPDF қайта іске қосылғанда күшіне енеді.
+
+# The macOS menu bar
+	Services	Қызметтер
+	Hide CleonPDF	CleonPDF жасыру
+	Hide others	Басқаларын жасыру
+app menu	Show all	Барлығын көрсету
+	Quit CleonPDF	CleonPDF-тен шығу
+	Window	Терезе
+window	Zoom	Өлшемін өзгерту
+	Bring all to front	Барлығын алдыңғы жоспарға шығару
+	Paste	Қою
+	Select all	Барлығын таңдау

@@ -2345,3 +2345,15 @@ animation effects	Off	Kapalı
 	Move tag later	Etiketi daha geç taşı
 	Glass window	Cam pencere
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Sekme şeridi, araç çubukları ve paneller pencerenin arkasındaki masaüstünü bulanık gösterir. Sayfalar opak kalır. CleonPDF yeniden başlatıldığında geçerli olur.
+
+# The macOS menu bar
+	Services	Hizmetler
+	Hide CleonPDF	CleonPDF'i gizle
+	Hide others	Diğerlerini gizle
+app menu	Show all	Tümünü göster
+	Quit CleonPDF	CleonPDF'ten çık
+	Window	Pencere
+window	Zoom	Boyutlandır
+	Bring all to front	Tümünü öne getir
+	Paste	Yapıştır
+	Select all	Tümünü seç

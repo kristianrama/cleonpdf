@@ -36,6 +36,14 @@ fmv-macos-events = "=0.1.0"
 # `platform::macos::{set_glass_backdrop, glass_backdrop}` (vendor/README.md). eframe doesn't
 # re-export winit; this is the same patched copy.
 winit = { version = "0.30", default-features = false }
+# The menus in the system menu bar (src/macos_menu.rs). Menu items need an Objective-C target
+# object, i.e. `unsafe`, which our workspace forbids; Tauri's menu crate wraps it behind a safe
+# API. No default features: they are GTK menus for Linux.
+muda = { version = "0.21", default-features = false }
+# Whether a menu item was chosen by its key (NSApp's current event) and what the menu bar holds
+# (`ui.menu_bar`). Safe calls; both are already in the tree through muda and arboard.
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSCell", "NSEvent", "NSMenu", "NSMenuItem", "NSResponder"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Asks the Wayland compositor which GPU it draws with (linux-dmabuf feedback), so the window is

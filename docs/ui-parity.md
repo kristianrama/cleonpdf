@@ -28,6 +28,7 @@ No dump of Acrobat's menu tree has been diffed against the registry yet (gap 24)
 | All tools pane, tool sets | yes | yes, with milestone badges | shipped |
 | Quick-action toolbar, customisable | yes | fixed | partial (`view.customize-quick-tools` planned) |
 | Command search | "Search tools" | command palette (⌘K), matches translated and English labels | shipped |
+| Menus in the macOS menu bar | yes | yes: app menu, Edit's Cut/Copy/Paste/Select all, a Window menu; the Menu button on Windows, Linux and the web | shipped |
 | Document tabs | yes | yes, with unsaved marker | shipped |
 | Multiple windows, drag a tab out | yes | no | planned |
 | Split window, spreadsheet split | yes | no | planned |

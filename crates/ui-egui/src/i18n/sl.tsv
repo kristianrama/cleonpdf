@@ -2354,3 +2354,15 @@ animation effects	Off	Izklopljeni
 	Move tag later	Premakni oznako pozneje
 	Glass window	Stekleno okno
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Vrstica z zavihki, orodne vrstice in podokna prikazujejo zamegljeno namizje za oknom. Strani ostanejo neprosojne. Začne veljati ob ponovnem zagonu CleonPDF.
+
+# The macOS menu bar
+	Services	Storitve
+	Hide CleonPDF	Skrij CleonPDF
+	Hide others	Skrij druge
+app menu	Show all	Pokaži vse
+	Quit CleonPDF	Končaj CleonPDF
+	Window	Okno
+window	Zoom	Spremeni velikost
+	Bring all to front	Postavi vse v ospredje
+	Paste	Prilepi
+	Select all	Izberi vse

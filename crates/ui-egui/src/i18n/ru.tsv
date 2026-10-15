@@ -2262,3 +2262,15 @@ animation effects	Off	Выкл
 	Move tag later	Переместить тег позже
 	Glass window	Стеклянное окно
 	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Панель вкладок, панели инструментов и боковые панели показывают размытый рабочий стол за окном. Страницы остаются непрозрачными. Вступает в силу после перезапуска CleonPDF.
+
+# The macOS menu bar
+	Services	Службы
+	Hide CleonPDF	Скрыть CleonPDF
+	Hide others	Скрыть остальные
+app menu	Show all	Показать все
+	Quit CleonPDF	Завершить CleonPDF
+	Window	Окно
+window	Zoom	Изменить масштаб
+	Bring all to front	Все окна — на передний план
+	Paste	Вставить
+	Select all	Выделить все

@@ -632,3 +632,139 @@ fn ctrl_tab_steps_through_the_tabs_in_order_and_wraps_around() {
         assert!(!doc.dirty, "switching tabs changes no document");
     }
 }
+
+// ── The system menu bar (macOS) ──────────────────────────────────────────────────────────────
+
+use cleonpdf_ui_egui::menu_bar::{Action, Chosen, EditStep, Entry, Item, Menu, Role, SystemMenu, ViewStep};
+
+/// A system menu bar that keeps what it was last shown and hands out the choices a test queues.
+#[derive(Clone, Default)]
+struct FakeMenuBar(std::rc::Rc<std::cell::RefCell<(Vec<Menu>, Vec<Chosen>)>>);
+
+impl SystemMenu for FakeMenuBar {
+    fn show(&mut self, menus: &[Menu]) {
+        self.0.borrow_mut().0 = menus.to_vec();
+    }
+
+    fn take_chosen(&mut self) -> Vec<Chosen> {
+        std::mem::take(&mut self.0.borrow_mut().1)
+    }
+}
+
+impl FakeMenuBar {
+    fn item(&self, action: &Action) -> Option<Item> {
+        fn find(entries: &[Entry], action: &Action) -> Option<Item> {
+            entries.iter().find_map(|e| match e {
+                Entry::Item(i) if &i.action == action => Some(i.clone()),
+                Entry::Submenu { entries, .. } => find(entries, action),
+                _ => None,
+            })
+        }
+        self.0.borrow().0.iter().find_map(|m| find(&m.entries, action))
+    }
+}
+
+fn system_menu_harness() -> (Harness<'static, CleonPdfApp>, FakeMenuBar) {
+    let menu = FakeMenuBar::default();
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe({
+        let menu = menu.clone();
+        move |_cc| {
+            let mut app = CleonPdfApp::new();
+            app.set_option("language", "en").unwrap();
+            app.open_bytes("doc.pdf", None, fixture(3)).unwrap();
+            app.system_menu = Some(Box::new(menu));
+            app
+        }
+    });
+    h.ctx.set_os(OperatingSystem::Mac);
+    h.run_steps(4);
+    (h, menu)
+}
+
+/// Choose the item running `action`, as the system menu bar reports it, and run the frames that
+/// follow. eframe calls the app's `raw_input_hook` before each frame; kittest doesn't, so it is
+/// called here the same way.
+fn choose(h: &mut Harness<'static, CleonPdfApp>, menu: &FakeMenuBar, action: Action, by_key: bool) {
+    let item = menu.item(&action).unwrap_or_else(|| panic!("{action:?} isn't in the menu bar"));
+    assert!(item.enabled, "{action:?} is disabled");
+    menu.0.borrow_mut().1.push(Chosen { action, shortcut: item.shortcut, by_key });
+    let ctx = h.ctx.clone();
+    let mut raw = egui::RawInput::default();
+    eframe::App::raw_input_hook(h.state_mut(), &ctx, &mut raw);
+    h.input_mut().events.extend(raw.events);
+    h.run_steps(3);
+}
+
+fn rotation(h: &Harness<'static, CleonPdfApp>) -> u16 {
+    let app = h.state();
+    app.session.get(app.views[0].id).unwrap().info.pages[0].rotation
+}
+
+#[test]
+fn the_system_menu_bar_replaces_the_menu_button() {
+    let (h, menu) = system_menu_harness();
+    assert!(h.query_by_label("Menu").is_none(), "no Menu button beside the system menu bar");
+    let roles: Vec<Role> = menu.0.borrow().0.iter().map(|m| m.role).collect();
+    assert_eq!(roles.first(), Some(&Role::App), "the system menu bar was shown the macOS menus");
+    assert!(menu.item(&Action::View(ViewStep::ActualSize)).is_some_and(|i| i.enabled));
+    harness().get_by_label("Menu");
+}
+
+#[test]
+fn system_menu_items_chosen_with_the_pointer_run_like_the_menu_buttons() {
+    let (mut h, menu) = system_menu_harness();
+    choose(&mut h, &menu, Action::Command("page.rotate"), false);
+    assert_eq!(rotation(&h), 90);
+    assert_eq!(menu.item(&Action::Command("edit.undo")).map(|i| i.label), Some("Undo Rotate page".into()), "the menu bar follows the history");
+    choose(&mut h, &menu, Action::Command("edit.undo"), false);
+    assert_eq!(rotation(&h), 0);
+    choose(&mut h, &menu, Action::View(ViewStep::ActualSize), false);
+    assert_eq!(h.state().views[0].zoom, 1.0);
+    choose(&mut h, &menu, Action::Panel(cleonpdf_ui_egui::RightPanel::Bookmarks), false);
+    assert_eq!(h.state().right, Some(cleonpdf_ui_egui::RightPanel::Bookmarks));
+}
+
+/// The system menu bar takes a key press that matches an item before the window sees it: the
+/// key is handed back, so the keyboard works as it does without a menu bar.
+#[test]
+fn system_menu_items_chosen_by_key_act_as_their_keys() {
+    let (mut h, menu) = system_menu_harness();
+    h.state_mut().apply_edit(cleonpdf_engine::Edit::RotatePages { pages: vec![0], degrees: 90 });
+    h.state_mut().views[0].set_zoom(2.0);
+    h.run_steps(2);
+    choose(&mut h, &menu, Action::View(ViewStep::ActualSize), true);
+    assert_eq!(h.state().views[0].zoom, 1.0, "⌘1 as pressed");
+    // A text field has the keyboard: ⌘A, ⌘X and ⌘Z are its own, not the document's.
+    h.state_mut().views[0].open_find();
+    h.run_steps(3);
+    h.event(egui::Event::Text("abc".into()));
+    h.run_steps(3);
+    assert_eq!(h.state().views[0].find.as_ref().map(|f| f.query.as_str()), Some("abc"));
+    assert!(menu.item(&Action::Command("edit.undo")).is_some_and(|i| i.label == "Undo"), "Undo is the field's while it has the keyboard");
+    choose(&mut h, &menu, Action::Edit(EditStep::SelectAll), true);
+    choose(&mut h, &menu, Action::Edit(EditStep::Cut), true);
+    assert_eq!(h.state().views[0].find.as_ref().map(|f| f.query.as_str()), Some(""), "Select all and Cut acted on the field");
+    choose(&mut h, &menu, Action::Command("edit.undo"), true);
+    assert_eq!(rotation(&h), 90, "⌘Z went to the field, not the document");
+    choose(&mut h, &menu, Action::Command("edit.undo"), false);
+    assert_eq!(rotation(&h), 90, "so does Undo chosen with the pointer");
+    h.key_press(Key::Escape);
+    h.run_steps(3);
+    choose(&mut h, &menu, Action::Command("edit.undo"), true);
+    assert_eq!(rotation(&h), 0, "without a text field, ⌘Z undoes the rotation");
+}
+
+#[test]
+fn quit_in_the_app_menu_closes_the_window_through_the_unsaved_changes_question() {
+    let (mut h, menu) = system_menu_harness();
+    let quit = menu.item(&Action::Quit).expect("Quit is in the app menu");
+    assert_eq!(quit.shortcut.map(|s| s.label(true)), Some("⌘Q".into()));
+    let ctx = h.ctx.clone();
+    menu.0.borrow_mut().1.push(Chosen { action: Action::Quit, shortcut: quit.shortcut, by_key: true });
+    let mut raw = egui::RawInput::default();
+    eframe::App::raw_input_hook(h.state_mut(), &ctx, &mut raw);
+    assert!(raw.events.is_empty(), "⌘Q isn't handed to egui, which has no use for it");
+    h.step();
+    let closes = h.output().viewport_output.values().any(|v| v.commands.iter().any(|c| matches!(c, egui::ViewportCommand::Close)));
+    assert!(closes, "a window close, which `guard_quit` turns into the save question when needed");
+}
