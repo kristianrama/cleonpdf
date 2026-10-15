@@ -888,6 +888,45 @@ fn preferences_selects_default_workspace_for_next_open() {
     assert_eq!(h.state().mode, Mode::Read);
 }
 
+/// Preferences ▸ Glass window (macOS): offered where the host has a glass backdrop, saved for the
+/// next start, and with the backdrop in place the chrome is see-through and the window clears to
+/// transparent while cards stay opaque.
+#[test]
+fn glass_window_is_a_saved_choice_that_shows_the_backdrop() {
+    use egui::accesskit::Role;
+    let mut h = harness(|app| {
+        app.glass_available = true;
+        app.set_option("dialog", "preferences").unwrap();
+    });
+    h.run_steps(2);
+    h.get_by_role_and_label(Role::CheckBox, "Glass window").scroll_to_me();
+    h.run_steps(4);
+    h.get_by_role_and_label(Role::CheckBox, "Glass window").click();
+    h.run_steps(2);
+    assert!(h.state().window_glass);
+    assert!(!h.state().glass_active, "the window changes only when CleonPDF restarts");
+    let saved = h.state().persist();
+    assert!(saved.contains(r#""window_glass":true"#), "{saved}");
+    let mut restored = CleonPdfApp::new();
+    restored.restore(&saved);
+    assert!(restored.window_glass);
+    restored.set_option("glass", "off").unwrap();
+    assert!(!restored.window_glass);
+    assert!(restored.set_option("glass", "maybe").is_err());
+    // Without a backdrop (Windows, Linux, the web) there is nothing to choose.
+    let mut h = harness(|app| app.set_option("dialog", "preferences").unwrap());
+    h.run_steps(2);
+    assert!(h.query_by_label("Glass window").is_none());
+    // Over a backdrop.
+    let h = harness(|app| app.glass_active = true);
+    let t = cleonpdf_ui_egui::theme::Tokens::get(&h.ctx);
+    assert!(t.titlebar.a() < 255 && t.chrome.a() < 255 && t.panel.a() < 255 && t.pasteboard.a() < 255, "see-through chrome");
+    assert!(t.card.a() == 255 && t.field.a() == 255, "opaque cards, menus and fields");
+    assert_eq!(eframe::App::clear_color(h.state(), &egui::Visuals::light()), [0.0; 4]);
+    let h = harness(|_| {});
+    assert_eq!(cleonpdf_ui_egui::theme::Tokens::get(&h.ctx).panel.a(), 255, "opaque without one");
+}
+
 /// GNOME on Wayland: the tab strip carries the window buttons until Preferences ▸ Use system title
 /// bar gives the window back its frame, at once and without a restart (#553, #1001). The choice
 /// is saved; desktops that draw the frame themselves don't offer it.

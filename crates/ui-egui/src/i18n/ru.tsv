@@ -2260,3 +2260,5 @@ animation effects	Off	Выкл
 	This document is trying to open a local file:	Этот документ пытается открыть локальный файл:
 	Move tag earlier	Переместить тег раньше
 	Move tag later	Переместить тег позже
+	Glass window	Стеклянное окно
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Панель вкладок, панели инструментов и боковые панели показывают размытый рабочий стол за окном. Страницы остаются непрозрачными. Вступает в силу после перезапуска CleonPDF.

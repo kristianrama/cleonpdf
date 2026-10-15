@@ -2358,3 +2358,5 @@ animation effects	Off	Disattivati
 	This document is trying to open a local file:	Questo documento sta tentando di aprire un file locale:
 	Move tag earlier	Sposta tag prima
 	Move tag later	Sposta tag dopo
+	Glass window	Finestra in vetro
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	La barra delle schede, le barre degli strumenti e i pannelli mostrano, sfocata, la scrivania dietro la finestra. Le pagine restano opache. Ha effetto al prossimo avvio di CleonPDF.

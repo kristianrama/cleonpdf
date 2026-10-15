@@ -2370,3 +2370,5 @@ animation effects	Off	معطّلة
 	This document is trying to open a local file:	يحاول هذا المستند فتح ملف محلي:
 	Move tag earlier	نقل العلامة للأعلى
 	Move tag later	نقل العلامة للأسفل
+	Glass window	نافذة زجاجية
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	يُظهر شريط علامات التبويب وأشرطة الأدوات واللوحات سطح المكتب خلف النافذة بشكل ضبابي. تبقى الصفحات معتمة. يسري التغيير عند إعادة تشغيل CleonPDF.

@@ -2346,3 +2346,5 @@ animation effects	Off	Ki
 	This document is trying to open a local file:	Ez a dokumentum egy helyi fájlt próbál megnyitni:
 	Move tag earlier	Címke korábbra helyezése
 	Move tag later	Címke későbbre helyezése
+	Glass window	Üvegablak
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	A lapfülsor, az eszköztárak és a panelek elmosva mutatják az ablak mögötti asztalt. Az oldalak átlátszatlanok maradnak. A CleonPDF újraindítása után lép életbe.

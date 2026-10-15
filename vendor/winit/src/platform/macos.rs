@@ -529,3 +529,28 @@ pub enum OptionAsAlt {
     #[default]
     None,
 }
+
+/// CleonPDF patch: the backdrop a transparent window gets after [`set_glass_backdrop`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GlassBackdrop {
+    /// Liquid Glass (`NSGlassEffectView`, macOS 26 and later).
+    LiquidGlass,
+    /// A vibrancy blur (`NSVisualEffectView`, the under-window material), before macOS 26.
+    Vibrancy,
+}
+
+/// CleonPDF patch: give every window created from now on with
+/// [`WindowAttributes::with_transparent`] a glass backdrop: the desktop behind it shows through,
+/// blurred, wherever the window's own pixels are transparent. It goes under the window's view, so
+/// what the app draws stays on top. [`glass_backdrop`] says which backdrop that is.
+#[cfg(macos_platform)]
+pub fn set_glass_backdrop(enabled: bool) {
+    crate::platform_impl::set_glass_backdrop(enabled);
+}
+
+/// CleonPDF patch: the backdrop [`set_glass_backdrop`] gives a window on this Mac now, or `None`
+/// while *Reduce transparency* is on (System Settings ▸ Accessibility ▸ Display).
+#[cfg(macos_platform)]
+pub fn glass_backdrop() -> Option<GlassBackdrop> {
+    crate::platform_impl::glass_backdrop()
+}

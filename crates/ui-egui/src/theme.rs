@@ -125,6 +125,25 @@ impl Tokens {
         ctx.data(|d| d.get_temp::<Tokens>(egui::Id::new("cleonpdf-theme"))).unwrap_or_else(|| Self::for_kind(ThemeKind::Light))
     }
 
+    /// The colours over a glass window backdrop (Preferences ▸ Glass window, macOS): the title
+    /// bar, the tool bars, the panels and the area around the pages let the blurred desktop show
+    /// through. Cards, menus, dialogs and fields stay opaque, and pages are drawn opaque on top,
+    /// so documents and text fields read as before.
+    pub fn glass(self) -> Self {
+        let see_through = |c: Color32, alpha: u8| {
+            let [r, g, b, _] = c.to_srgba_unmultiplied();
+            Color32::from_rgba_unmultiplied(r, g, b, alpha)
+        };
+        let (bars, panels, pasteboard) = if self.dark() { (150, 170, 120) } else { (140, 160, 100) };
+        Self {
+            titlebar: see_through(self.titlebar, bars),
+            chrome: see_through(self.chrome, panels),
+            panel: see_through(self.panel, panels),
+            pasteboard: see_through(self.pasteboard, pasteboard),
+            ..self
+        }
+    }
+
     pub fn dark(&self) -> bool {
         self.kind == ThemeKind::Dark
     }
@@ -377,11 +396,16 @@ pub fn semibold(size: f32) -> FontId {
 }
 
 pub fn apply(ctx: &egui::Context, kind: ThemeKind) {
+    apply_glass(ctx, kind, false);
+}
+
+/// [`apply`], and with `glass` the window's chrome see-through (see [`Tokens::glass`]).
+pub fn apply_glass(ctx: &egui::Context, kind: ThemeKind, glass: bool) {
     // Keep the native window inherited. A concrete egui theme pins macOS's
     // NSWindow appearance and prevents winit from delivering ThemeChanged.
     // Our saved choice owns the palette; both egui branches receive it below.
     ctx.set_theme(egui::ThemePreference::System);
-    let t = Tokens::for_kind(kind);
+    let t = if glass { Tokens::for_kind(kind).glass() } else { Tokens::for_kind(kind) };
     ctx.data_mut(|d| d.insert_temp(egui::Id::new("cleonpdf-theme"), t));
     let mut v = if t.dark() { Visuals::dark() } else { Visuals::light() };
     v.panel_fill = t.panel;

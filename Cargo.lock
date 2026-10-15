@@ -962,6 +962,7 @@ dependencies = [
  "fmv-macos-events",
  "log",
  "pollster 1.0.1",
+ "ron",
  "rustls-native-certs",
  "serde_json",
  "uds_windows",
@@ -969,6 +970,7 @@ dependencies = [
  "wayland-client",
  "wayland-protocols",
  "windows",
+ "winit",
  "winresource",
  "winsafe",
 ]

@@ -26,6 +26,8 @@ pub(crate) use self::event_loop::{
 pub(crate) use self::monitor::{MonitorHandle, VideoModeHandle};
 pub(crate) use self::window::WindowId;
 pub(crate) use self::window_delegate::PlatformSpecificWindowAttributes;
+// CleonPDF patch: `platform::macos::{set_glass_backdrop, glass_backdrop}`.
+pub(crate) use self::window_delegate::{glass_backdrop, set_glass_backdrop};
 use crate::event::DeviceId as RootDeviceId;
 
 pub(crate) use self::cursor::CustomCursor as PlatformCustomCursor;

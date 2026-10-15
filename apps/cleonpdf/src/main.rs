@@ -230,7 +230,19 @@ fn main() -> eframe::Result {
     // No saved settings, so no saved window either: eframe opens the default size, centred on the
     // primary monitor, and the app then fits it onto the screen (cleonpdf_ui_egui window_fit).
     let first_start = settings_dir().is_none_or(|d| !d.join("app.ron").exists());
-    let launch = Launch { files, options, control_file, create_images, integrated, window_controls, first_start };
+    // Preferences ▸ Glass window (macOS): the window is created transparent, over a glass
+    // backdrop (Liquid Glass on macOS 26, a vibrancy blur before), unless Reduce transparency is on.
+    #[cfg(target_os = "macos")]
+    let glass = {
+        let wanted = glass_wanted(&options, settings_dir().as_deref());
+        winit::platform::macos::set_glass_backdrop(wanted);
+        let backdrop = if wanted { winit::platform::macos::glass_backdrop() } else { None };
+        log::info!("window backdrop: {backdrop:?}");
+        backdrop.is_some()
+    };
+    #[cfg(not(target_os = "macos"))]
+    let glass = false;
+    let launch = Launch { files, options, control_file, create_images, integrated, window_controls, first_start, glass };
     // Finder, Open With and the Dock deliver files as Apple events, not arguments; catch the one
     // that launched us as well as later ones. Lives until the event loop returns.
     #[cfg(target_os = "macos")]
@@ -240,7 +252,7 @@ fn main() -> eframe::Result {
     let first = if choice == RendererChoice::Gl { eframe::Renderer::Glow } else { eframe::Renderer::Wgpu };
     let result = eframe::run_native(
         "CleonPDF",
-        eframe::NativeOptions { centered: first_start, ..native_options(launch.integrated, launch.window_controls.is_some(), first) },
+        with_window(native_options(launch.integrated, launch.window_controls.is_some(), first), first_start, glass),
         app_creator(
             launch.clone(),
             Rc::clone(&started),
@@ -258,10 +270,7 @@ fn main() -> eframe::Result {
             log::error!("the GPU renderer (wgpu) didn't start: {e}. Starting with OpenGL instead; set CLEONPDF_RENDERER=gl to skip wgpu.");
             eframe::run_native(
                 "CleonPDF",
-                eframe::NativeOptions {
-                    centered: first_start,
-                    ..native_options(launch.integrated, launch.window_controls.is_some(), eframe::Renderer::Glow)
-                },
+                with_window(native_options(launch.integrated, launch.window_controls.is_some(), eframe::Renderer::Glow), first_start, glass),
                 app_creator(
                     launch,
                     started,
@@ -298,6 +307,37 @@ fn renderer_choice(value: Option<&str>) -> RendererChoice {
 /// nobody, and it failed before the app was created (so while starting the renderer, not later).
 fn retry_with_gl(choice: RendererChoice, app_started: bool) -> bool {
     choice == RendererChoice::Auto && !app_started
+}
+
+/// `native` centred on the primary monitor on a first start, and transparent over a glass backdrop.
+fn with_window(mut native: eframe::NativeOptions, first_start: bool, glass: bool) -> eframe::NativeOptions {
+    native.centered = first_start;
+    if glass {
+        native.viewport = native.viewport.with_transparent(true);
+    }
+    native
+}
+
+/// Preferences ▸ Glass window, needed before the window exists (it is made transparent, or not,
+/// when it is created): `--glass on|off` on the command line, else the choice saved in `app.ron`.
+// Only macOS has the backdrop; the tests run everywhere.
+#[cfg_attr(all(not(target_os = "macos"), not(test)), expect(dead_code))]
+fn glass_wanted(options: &[(String, String)], settings: Option<&std::path::Path>) -> bool {
+    if let Some((_, value)) = options.iter().rev().find(|(key, _)| key == "glass") {
+        return matches!(value.as_str(), "on" | "true");
+    }
+    settings.and_then(|dir| std::fs::read_to_string(dir.join("app.ron")).ok()).is_some_and(|text| saved_glass(&text))
+}
+
+/// The `window_glass` choice in eframe's `app.ron`: a RON map whose `cleonpdf` entry is the app's
+/// settings as JSON (`CleonPdfApp::persist`). Anything unreadable counts as off.
+#[cfg_attr(all(not(target_os = "macos"), not(test)), expect(dead_code))]
+fn saved_glass(ron_text: &str) -> bool {
+    let Ok(map) = ron::from_str::<std::collections::HashMap<String, String>>(ron_text) else { return false };
+    map.get("cleonpdf")
+        .and_then(|json| serde_json::from_str::<serde_json::Value>(json).ok())
+        .and_then(|settings| settings.get("window_glass").and_then(serde_json::Value::as_bool))
+        .unwrap_or(false)
 }
 
 /// The window and renderer settings for one run.
@@ -342,6 +382,8 @@ struct Launch {
     window_controls: Option<cleonpdf_ui_egui::window_controls::Layout>,
     /// No settings were saved yet: fit the new window onto the screen.
     first_start: bool,
+    /// The window has a glass backdrop (Preferences ▸ Glass window).
+    glass: bool,
 }
 
 fn app_creator<'a>(
@@ -350,7 +392,7 @@ fn app_creator<'a>(
     instance: Option<&'a single_instance::Server>,
     #[cfg(target_os = "macos")] apple_events: &'a apple_events::AppleEvents,
 ) -> eframe::AppCreator<'a> {
-    let Launch { files, options, control_file, create_images, integrated, window_controls, first_start } = launch;
+    let Launch { files, options, control_file, create_images, integrated, window_controls, first_start, glass } = launch;
     Box::new(move |cc| {
         started.set(true);
         let mut app = CleonPdfApp::new();
@@ -368,6 +410,8 @@ fn app_creator<'a>(
         if first_start {
             app.fit_window_on_start();
         }
+        app.glass_available = cfg!(target_os = "macos");
+        app.glass_active = glass;
         app.system_text_scale = text_scale::system();
         // Windows' Animation effects setting, which Preferences ▸ Animation effects follows unless
         // it is set to On or Off.
@@ -751,6 +795,31 @@ mod tests {
     fn gpu() -> std::sync::MutexGuard<'static, ()> {
         // A test that panicked while holding it leaves nothing to clean up.
         GPU.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// Preferences ▸ Glass window is read from `app.ron` before the window exists, and
+    /// `--glass on|off` overrides it for one run.
+    #[test]
+    fn the_glass_choice_comes_from_the_command_line_then_app_ron() {
+        // As eframe writes it: a RON map of strings, the app's settings as JSON inside.
+        let ron = |json: &str| ron::to_string(&std::collections::HashMap::from([("cleonpdf".to_string(), json.to_string())])).unwrap();
+        assert!(super::saved_glass(&ron(r#"{"theme":"Dark","window_glass":true}"#)));
+        assert!(!super::saved_glass(&ron(r#"{"window_glass":false}"#)));
+        assert!(!super::saved_glass(&ron(r#"{"theme":"Dark"}"#)), "not chosen yet");
+        assert!(!super::saved_glass(&ron("not json")));
+        assert!(!super::saved_glass("not ron"));
+        assert!(!super::saved_glass(""));
+
+        let dir = std::env::temp_dir().join(format!("cleonpdf-glass-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("app.ron"), ron(r#"{"window_glass":true}"#)).unwrap();
+        let option = |value: &str| vec![("glass".to_string(), value.to_string())];
+        assert!(super::glass_wanted(&[], Some(&dir)), "saved");
+        assert!(!super::glass_wanted(&option("off"), Some(&dir)), "the command line wins");
+        assert!(super::glass_wanted(&option("on"), None));
+        assert!(!super::glass_wanted(&[], None), "no settings folder");
+        assert!(!super::glass_wanted(&[], Some(&dir.join("missing"))), "no app.ron");
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

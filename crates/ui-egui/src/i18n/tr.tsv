@@ -2343,3 +2343,5 @@ animation effects	Off	Kapalı
 	This document is trying to open a local file:	Bu belge yerel bir dosya açmaya çalışıyor:
 	Move tag earlier	Etiketi daha erken taşı
 	Move tag later	Etiketi daha geç taşı
+	Glass window	Cam pencere
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Sekme şeridi, araç çubukları ve paneller pencerenin arkasındaki masaüstünü bulanık gösterir. Sayfalar opak kalır. CleonPDF yeniden başlatıldığında geçerli olur.

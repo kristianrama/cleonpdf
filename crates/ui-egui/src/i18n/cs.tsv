@@ -2421,3 +2421,5 @@ animation effects	Off	Vypnuto
 	This document is trying to open a local file:	Tento dokument se pokouší otevřít místní soubor:
 	Move tag earlier	Přesunout značku dříve
 	Move tag later	Přesunout značku později
+	Glass window	Skleněné okno
+	The tab strip, tool bars and panels show the desktop behind the window, blurred. Pages stay opaque. Takes effect when CleonPDF restarts.	Pruh karet, panely nástrojů a postranní panely ukazují rozmazanou plochu za oknem. Stránky zůstávají neprůhledné. Projeví se po restartu CleonPDF.
