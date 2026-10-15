@@ -1718,8 +1718,8 @@ milestone = "M4"
 status = "shipped"
 commands = []
 tools = []
-evidence = ["crates/ui-egui/tests/commands.rs::the_pages_menu_comes_from_the_registry"]
-notes = ""
+evidence = ["crates/ui-egui/tests/commands.rs::the_pages_menu_comes_from_the_registry", "crates/ui-egui/src/menu_bar.rs::both_menu_bars_list_every_registered_menu_command_once", "crates/ui-egui/tests/commands.rs::the_system_menu_bar_replaces_the_menu_button", "crates/ui-egui/tests/commands.rs::system_menu_items_chosen_with_the_pointer_run_like_the_menu_buttons", "crates/ui-egui/tests/commands.rs::system_menu_items_chosen_by_key_act_as_their_keys", "crates/ui-egui/tests/commands.rs::quit_in_the_app_menu_closes_the_window_through_the_unsaved_changes_question"]
+notes = "One description of the menus (crates/ui-egui/src/menu_bar.rs) feeds the Menu button (Windows, Linux, the web) and, on macOS, the system menu bar (apps/cleonpdf/src/macos_menu.rs, through muda), which adds the app menu (About, Check for updates, Preferences, Services, Hide, Quit), Cut/Copy/Paste/Select all and a Window menu. A key the system menu bar takes is handed back to egui as that key, so text and form fields keep their keys; Quit asks about unsaved changes. The routing is tested with a stand-in menu bar. Not yet: macOS's own Enter Full Screen item (⌃⌘F; ⌘L is CleonPDF's full screen), the Dock menu's items, and a diff against Acrobat's menus (gap 24)"
 
 [[feature]]
 id = "view.about-dialog"
