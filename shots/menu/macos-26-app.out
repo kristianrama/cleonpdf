@@ -1,0 +1,6 @@
+2026-10-15T21:23:47.342Z INFO  [main] cleonpdf: CleonPDF 0.1.2, log file /Users/runner/Library/Application Support/CleonPDF/logs/cleonpdf.log
+2026-10-15T21:23:49.712Z INFO  [main] cleonpdf: UI control channel on 127.0.0.1:49203 (connection details in /Users/runner/work/_temp/menu.control)
+2026-10-15T21:23:49.712Z INFO  [main] cleonpdf: renderer: wgpu; adapter: Apple Paravirtual device (IntegratedGpu, Metal); max_texture_dimension_2d: 16384
+2026-10-15T21:23:49.843Z INFO  [main] cleonpdf_ui_egui::system_fonts: interface font fallback: /System/Library/Fonts/Supplemental/DevanagariMT.ttc (face 0)
+2026-10-15T21:23:49.850Z INFO  [main] cleonpdf_ui_egui::system_fonts: interface font fallback: /System/Library/Fonts/KohinoorTelugu.ttc (face 0)
+2026-10-15T21:23:49.857Z INFO  [main] cleonpdf_ui_egui::system_fonts: interface font fallback: /System/Library/Fonts/SFArabic.ttf (face 0)

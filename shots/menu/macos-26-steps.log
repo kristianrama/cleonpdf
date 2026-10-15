@@ -1,0 +1,45 @@
+ProductName:		macOS
+ProductVersion:		26.6.2
+BuildVersion:		25G83
+system: True
+read back: ['CleonPDF', 'File', 'Modifica', 'Visualizza', 'Pagine', 'Finestra', 'Aiuto']
+   CleonPDF | Informazioni su CleonPDF · Verifica aggiornamenti… · Preferenze… ⌘, · Servizi · Nascondi CleonPDF ⌘h · Nascondi altre ⌥⌘h · Mostra tutte · Esci da CleonPDF ⌘q
+   File | Apri… ⌘o · Apri recenti · Fissa una cartella sulla Home… · Nuovo PDF vuoto · Crea PDF da file… · Crea PDF da più file… · Crea PDF separati… · Crea PDF da immagini… · Crea PDF dagli appunti · Combina file… · Salva ⌘s · Salva con nome… ⇧⌘s · Chiudi file ⌘w · Chiudi tutto ⇧⌘w · Ripristina · Stampa… ⌘p · Proprietà documento… ⌘d · Esporta come immagine… · Riduci dimensione file… · Ottimizza PDF… · Esporta come testo… · Esporta in Word… · Esporta in PowerPoint… · Esporta in HTML… · Esporta in RTF… · Esporta tutte le immagini… · Proteggi con password… · Rimuovi protezione · Proprietà di sicurezza…
+   Modifica | Annulla ⌘z · Ripeti ⇧⌘z · Taglia ⌘x · Copia ⌘c · Incolla ⌘v · Seleziona tutto ⌘a · Trova… ⌘f · Ricerca avanzata… ⇧⌘f · Selezione colonna · Acquisisci istantanea · Svuota il modulo
+   Visualizza | Ingrandimento · Dimensione reale ⌘1 · Adatta alla pagina ⌘0 · Adatta alla larghezza ⌘2 · Adatta all'altezza · Adatta all'area visibile ⌘3 · Aumenta ingrandimento ⌘+ · Riduci ingrandimento ⌘- · Ruota vista in senso orario ⇧⌘+ · Ruota vista in senso antiorario ⇧⌘- · Navigazione pagine · Vista precedente ⌘[ · Vista successiva ⌘] · Visualizzazione pagina · Pagina singola · Visualizzazione doppia · Scorrimento continuo · Mostra la copertina in visualizzazione doppia · Trova strumenti e comandi… ⌘k · Ingrandimento selettivo · Modalità schermo intero ⌘l · Modalità lettura ⌃⌘h · Scheda successiva ⌃ · Scheda precedente ⌃⇧ · Vai alla pagina… ⇧⌘n · Ripristina disposizione pannelli · Pannello commenti · Pannello campi modulo · Pannello firme · Tema di visualizzazione · Pannelli laterali
+   Pagine | Organizza pagine · Nuovo segnalibro ⌘b · Nuovi segnalibri dalla struttura · Ruota pagine in senso orario · Ruota pagine in senso antiorario · Elimina pagine · Inserisci pagina vuota · Ruota pagine… · Duplica pagine · Ritaglia pagine · Imposta riquadri pagina… · Inserisci pagine da file… · Sostituisci pagine… · Estrai pagine… · Dividi documento… · Numera pagine…
+   Finestra | Riduci a icona ⌘m · Ridimensiona · Porta tutto in primo piano · CleonPDF Showcase — CleonPDF
+   Aiuto | Scorciatoie da tastiera · CleonPDF su GitHub
+0.json dirty: [False] zoom: 22.0 find_open: False close_prompt: False
+21:24:01 shot window
+21:24:02 frontmost: 
+21:24:03 menu bar items: Apple, cleonpdf, File, Modifica, Visualizza, Pagine, Finestra, Aiuto
+21:24:03 click menu 2: menu bar item cleonpdf of menu bar 1 of application process cleonpdf
+21:24:05 shot menu 2
+21:24:07 click menu 3: menu bar item File of menu bar 1 of application process cleonpdf
+21:24:09 shot menu 3
+21:24:11 click menu 4: menu bar item Modifica of menu bar 1 of application process cleonpdf
+21:24:12 shot menu 4
+21:24:14 click menu 5: menu bar item Visualizza of menu bar 1 of application process cleonpdf
+21:24:15 shot menu 5
+21:24:17 click menu 6: menu bar item Pagine of menu bar 1 of application process cleonpdf
+21:24:18 shot menu 6
+21:24:20 click menu 7: menu bar item Finestra of menu bar 1 of application process cleonpdf
+21:24:21 shot menu 7
+21:24:23 click menu 8: menu bar item Aiuto of menu bar 1 of application process cleonpdf
+21:24:24 shot menu 8
+21:24:26 rotate: menu item Ruota pagine in senso orario of menu Pagine of menu bar item Pagine of menu bar 1 of application process cleonpdf
+rotated.json dirty: [True] zoom: 17.0 find_open: False close_prompt: False
+21:24:28 cmd-1: 
+size.json dirty: [True] zoom: 100.0 find_open: False close_prompt: False
+21:24:30 cmd-f: 
+find.json dirty: [True] zoom: 100.0 find_open: True close_prompt: False
+21:24:34 cmd-a, cmd-x in the find field:  
+21:24:35 cmd-z in the find field: 
+field.json dirty: [True] zoom: 100.0 find_open: True close_prompt: False
+21:24:38 cmd-z: 
+undone.json dirty: [True] zoom: 100.0 find_open: False close_prompt: False
+21:24:41 rotate again: menu item Ruota pagine in senso orario of menu Pagine of menu bar item Pagine of menu bar 1 of application process cleonpdf
+21:24:43 cmd-q: 
+quit.json dirty: [True] zoom: 100.0 find_open: False close_prompt: True
+21:24:46 done
