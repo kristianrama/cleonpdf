@@ -31,3 +31,10 @@ jobs:
         with:
           name: windows-screenshots
           path: shots
+      - name: Commit the screenshots to this branch
+        if: always()
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f shots && git commit -q -m "Windows screenshots" && git push origin HEAD:chore/windows-screenshots
