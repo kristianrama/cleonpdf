@@ -123,6 +123,32 @@ jobs:
         with:
           command: check
 
+  interop:
+    name: interop (qpdf, Poppler, MuPDF, Ghostscript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: interop
+      # Other readers, run as external processes on every kind of PDF we write (never linked).
+      - name: Install the readers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qpdf poppler-utils mupdf-tools ghostscript
+      - name: Interop suite
+        run: cargo xtask interop --require-all
+      - name: Upload the outputs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: interop-out
+          path: interop-out/out
+          if-no-files-found: ignore
+
   fuzz:
     name: fuzz (mutation, 15 min)
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'

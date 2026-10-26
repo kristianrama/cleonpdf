@@ -7,6 +7,7 @@ mod corpus;
 mod demo_pdf;
 mod fuzz;
 mod gates;
+mod interop;
 mod layers;
 mod macos_integration;
 mod parity;
@@ -31,6 +32,11 @@ const COMMANDS: &[(&str, &str, Command)] = &[
         "macos-integration",
         "Report macOS bundle, Quick Look, Spotlight and PDF integration diagnostics without mutating system state",
         macos_integration::run,
+    ),
+    (
+        "interop",
+        "Open every kind of PDF we write in qpdf, Poppler, MuPDF and Ghostscript; outputs in interop-out/ (--only NAME, --require-all)",
+        interop::run_cmd,
     ),
     ("text-oracle", "Compare text extraction with pdftotext over corpus/ (word F1; target median ≥ 0.97)", gates::text_oracle),
     ("screenshots", "Regenerate the README screenshots in docs/images/ and their ATTRIBUTION entries", screenshots::run),

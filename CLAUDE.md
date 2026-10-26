@@ -42,6 +42,7 @@ CleonPDF is a clean-room, open-source, Rust-native PDF application targeting Ado
 - `cargo run -p cleonpdf -- <file.pdf>` opens the desktop app.
 - `cargo run -p cleonpdf-cli -- run --script steps.json --root DIR` drives the engine headlessly through the automation tools (`cleonpdf-cli tools` lists them). Use it, together with `page_render`, to check engine changes. `cleonpdf-cli mcp` is the opt-in MCP server (AGENTS.md §3).
 - `cargo xtask fuzz --time 300` mutation-fuzzes open/render/edit/save in child processes. Findings land in `fuzz-out/findings/` (git-ignored; never commit corpus-derived files). Turn every real finding into a small synthetic regression test before fixing it.
+- `cargo xtask interop` opens every kind of PDF we write in qpdf, Poppler, MuPDF and Ghostscript (install them; CI runs it with `--require-all`). A new way of writing or saving PDFs gets a case in `xtask/src/interop.rs`.
 - `cargo xtask parity [--partial]` reports Acrobat-parity progress from `parity/acrobat-features.toml`. Update the entry when a feature ships.
 - `cargo xtask demo-pdf` builds `dist/demo/cleonpdf-showcase.pdf` (needs Chrome) for visual checks.
 - For UI work, **look at the result**. Either launch `cleonpdf --control FILE doc.pdf` and use `cleonpdf-cli ui --control FILE screenshot --out x.png` (plus `inspect`, `click`, `key`, `type`, `command`, `set`), or take a headless shot with `cargo run -p cleonpdf-ui-egui --example shot`. Control-channel tests use kittest (`crates/ui-egui/tests/control.rs`).
