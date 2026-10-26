@@ -14,6 +14,27 @@ someone else controls with this repository's write access and signing secrets.
 User-facing names say **CleonPDF**; files, binaries and ids stay lowercase
 (`cleonpdf-<version>-<platform>-<arch>.<ext>`, `io.github.kristianrama.cleonpdf`).
 
+## Version numbers
+
+This is the official scheme, set by the owner on 2026-10-26.
+
+- **0.x until CleonPDF is stable.** The stage (alpha, then beta) is stated in the docs and in the
+  release title, never by a pre-release suffix. The update check (*Help ▸ Check for updates*) and the
+  AppImage updater follow only the newest release that isn't a pre-release, so a `0.2.0-beta.1`
+  would never reach installed copies.
+- **Minor (0.2.0, 0.3.0, …):** a release that brings one of the beta requirements
+  ([target-app-parity.md](target-app-parity.md#stage), "To reach beta") or another capability users
+  notice.
+- **Patch (0.2.1, 0.2.2, …):** fixes and small features between them.
+- **Beta:** the first release that meets the beta gate keeps the number it gets (say 0.7.0) and is
+  named a beta in its title and in the docs.
+- **1.0.0:** stable, ready for real work.
+- **What triggers a release:** the number follows what a release contains, not what is planned. Work
+  users don't see, such as a test suite or a CI job, waits for the next release instead of making
+  one.
+- **Release candidates:** a release can still be tried as a candidate (`-rc.1`) before it is
+  published. Candidates are pre-releases, so they don't reach installed copies.
+
 ## Cutting a release
 
 1. **Bump the version** on `main`. It lives only in `[workspace.package] version` in the root
