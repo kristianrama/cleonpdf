@@ -4,7 +4,8 @@
 //! present). Each iteration mutates a seed, writes it to `fuzz-out/work/`, and runs
 //! `cleonpdf-cli check-one <file> --edit` in a child process with a timeout. That opens,
 //! inspects, renders and extracts text from every page (the bootstrap renderer), then runs our
-//! object layer end to end: decode streams, edit, save incrementally and in full, reopen.
+//! object layer end to end: decode streams, edit, save incrementally and in full, reopen. Last it
+//! finds the printed table of contents and links it (Pages ▸ Link the table of contents).
 //!
 //! A child that dies (panic outside a safety net, abort, stack overflow, signal) is a **crash**,
 //! and one that runs past the timeout is a **hang**. Each finding is minimized (chunks are
@@ -145,7 +146,7 @@ fn find(hay: &[u8], needle: &[u8]) -> Option<usize> {
 }
 
 /// Synthetic seeds, so fuzzing works without the corpus: plain, object-stream and encrypted
-/// shapes, nested page trees, annotations, forms and inline images.
+/// shapes, nested page trees, annotations, forms, inline images and printed tables of contents.
 fn synthetic_seeds() -> Vec<Vec<u8>> {
     let build = |objs: &[&str], trailer: &str| {
         let mut out = b"%PDF-1.7\n".to_vec();
@@ -164,6 +165,36 @@ fn synthetic_seeds() -> Vec<Vec<u8>> {
     };
     let content = "BT /F1 24 Tf 20 150 Td (Hello) Tj ET 0 0 1 rg 10 10 50 50 re f q 20 0 0 20 100 100 cm BI /W 2 /H 2 /BPC 8 /CS /G ID \u{0}\u{ff}\u{ff}\u{0} EI Q";
     let stream = format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len());
+    // A printed table of contents (Pages ▸ Link the table of contents): rows with leader dots, a
+    // chapter row without them, page numbers right-aligned in a column, and the pages they name
+    // with their headings and printed page numbers. `labels`: numbered by page labels instead.
+    let toc_book = |labels: bool| {
+        let text = |size: u32, x: u32, y: u32, s: &str| format!("BT /F1 {size} Tf {x} {y} Td ({s}) Tj ET\n");
+        let entries = [("Introduction", "1", true), ("1 Getting started", "2", true), ("1.1 Installing", "3", true), ("2 Using it", "4", false)];
+        let mut contents = text(18, 72, 760, "Contents");
+        for (i, (title, n, dots)) in (0u32..).zip(entries) {
+            let y = 720 - 20 * i;
+            contents.push_str(&text(10, 72, y, &if dots { format!("{title} . . . . . . . . . . . .") } else { title.to_string() }));
+            contents.push_str(&text(10, 494, y, n));
+        }
+        let mut pages = vec![contents];
+        pages.extend(entries.iter().map(|(title, n, _)| format!("{}{}", text(14, 72, 760, title), text(10, 295, 40, n))));
+        let page_labels = if labels { " /PageLabels << /Nums [0 << /S /r >> 1 << /S /D >>] >>" } else { "" };
+        let mut objs = vec![
+            format!("<< /Type /Catalog /Pages 2 0 R{page_labels} >>"),
+            format!(
+                "<< /Type /Pages /Kids [{}] /Count {} /MediaBox [0 0 595 842] >>",
+                (0..pages.len()).map(|i| format!("{} 0 R", 4 + 2 * i)).collect::<Vec<_>>().join(" "),
+                pages.len()
+            ),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_string(),
+        ];
+        for (i, body) in pages.iter().enumerate() {
+            objs.push(format!("<< /Type /Page /Parent 2 0 R /Contents {} 0 R /Resources << /Font << /F1 3 0 R >> >> >>", 5 + 2 * i));
+            objs.push(format!("<< /Length {} >>\nstream\n{body}endstream", body.len()));
+        }
+        build(&objs.iter().map(String::as_str).collect::<Vec<_>>(), "/Root 1 0 R")
+    };
     vec![
         build(
             &[
@@ -188,6 +219,8 @@ fn synthetic_seeds() -> Vec<Vec<u8>> {
             ],
             "/Root 1 0 R",
         ),
+        toc_book(false),
+        toc_book(true),
     ]
 }
 
