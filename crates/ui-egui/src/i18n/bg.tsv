@@ -2324,3 +2324,24 @@ window	Zoom	Мащабиране
 	Bring all to front	Всички на преден план
 	Paste	Постави
 	Select all	Избери всички
+
+# Link the table of contents
+	Link the table of contents…	Свързване на съдържанието…
+	Link the table of contents	Свързване на съдържанието
+	Entries found: {count}. In this file: {linked}.	Намерени записи: {count}. В този файл: {linked}.
+	Printed page 1 is PDF page	Отпечатаната страница 1 е страница от PDF
+	Matched through the document's page labels.	Съпоставено по етикетите на страниците на документа.
+	Matched through the page numbers printed on the pages.	Съпоставено по номерата, отпечатани на страниците.
+	Matched through the headings the entries name.	Съпоставено по заглавията, които записите посочват.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	По страниците не са намерени номера: проверете накъде водят първите записи и при нужда поправете числото по-горе.
+	Entry	Запис
+	Printed page	Отпечатана страница
+	PDF page	Страница от PDF
+	not in this file	не е в този файл
+	Make the entries clickable	Записите да станат връзки
+	Add them as bookmarks	Добавяне като отметки
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	В текста на този документ не е намерено съдържание. Ако е сканиран, първо разпознайте текста му.
+	The table of contents is already linked	Съдържанието вече е свързано
+	The table of contents is linked and in the bookmarks	Съдържанието е свързано и е в отметките
+	The table of contents is linked	Съдържанието е свързано
+	The table of contents is in the bookmarks	Съдържанието е в отметките

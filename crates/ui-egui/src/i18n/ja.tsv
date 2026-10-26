@@ -2361,3 +2361,24 @@ window	Zoom	拡大／縮小
 	Bring all to front	すべてを手前に移動
 	Paste	貼り付け
 	Select all	すべてを選択
+
+# Link the table of contents
+	Link the table of contents…	目次をリンク…
+	Link the table of contents	目次をリンク
+	Entries found: {count}. In this file: {linked}.	見つかった項目: {count}。このファイル内: {linked}。
+	Printed page 1 is PDF page	印刷ページ 1 は PDF のページ
+	Matched through the document's page labels.	文書のページラベルで対応付けました。
+	Matched through the page numbers printed on the pages.	ページに印刷されたページ番号で対応付けました。
+	Matched through the headings the entries name.	項目が示す見出しで対応付けました。
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	ページにページ番号が見つかりませんでした。最初の項目のリンク先を確認し、必要なら上の数値を修正してください。
+	Entry	項目
+	Printed page	印刷ページ
+	PDF page	PDF ページ
+	not in this file	このファイルにはありません
+	Make the entries clickable	項目をクリックできるようにする
+	Add them as bookmarks	しおりとして追加
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	この文書のテキストに目次が見つかりませんでした。スキャンした文書の場合は、先にテキストを認識してください。
+	The table of contents is already linked	目次はすでにリンクされています
+	The table of contents is linked and in the bookmarks	目次をリンクし、しおりに追加しました
+	The table of contents is linked	目次をリンクしました
+	The table of contents is in the bookmarks	目次をしおりに追加しました

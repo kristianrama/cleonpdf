@@ -2274,3 +2274,24 @@ window	Zoom	పరిమాణం మార్చు
 	Bring all to front	అన్నింటినీ ముందుకు తీసుకురా
 	Paste	అతికించు
 	Select all	అన్నీ ఎంచుకో
+
+# Link the table of contents
+	Link the table of contents…	విషయ సూచికను లింక్ చేయి…
+	Link the table of contents	విషయ సూచికను లింక్ చేయి
+	Entries found: {count}. In this file: {linked}.	కనుగొన్న నమోదులు: {count}. ఈ ఫైల్‌లో: {linked}.
+	Printed page 1 is PDF page	ముద్రిత పేజీ 1 అనేది PDF పేజీ
+	Matched through the document's page labels.	పత్రం యొక్క పేజీ లేబుల్‌ల ద్వారా జతచేయబడింది.
+	Matched through the page numbers printed on the pages.	పేజీలపై ముద్రించిన పేజీ సంఖ్యల ద్వారా జతచేయబడింది.
+	Matched through the headings the entries name.	నమోదులు పేర్కొనే శీర్షికల ద్వారా జతచేయబడింది.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	పేజీలపై పేజీ సంఖ్యలు కనుగొనబడలేదు: మొదటి నమోదులు ఎక్కడికి తీసుకెళ్తాయో తనిఖీ చేసి, అవసరమైతే పై సంఖ్యను సరిచేయండి.
+	Entry	నమోదు
+	Printed page	ముద్రిత పేజీ
+	PDF page	PDF పేజీ
+	not in this file	ఈ ఫైల్‌లో లేదు
+	Make the entries clickable	నమోదులను క్లిక్ చేయగలిగేలా చేయి
+	Add them as bookmarks	వాటిని బుక్‌మార్క్‌లుగా జోడించు
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	ఈ పత్రం యొక్క టెక్స్ట్‌లో విషయ సూచిక కనుగొనబడలేదు. ఇది స్కాన్ అయితే, ముందుగా దాని టెక్స్ట్‌ను గుర్తించండి.
+	The table of contents is already linked	విషయ సూచిక ఇప్పటికే లింక్ చేయబడింది
+	The table of contents is linked and in the bookmarks	విషయ సూచిక లింక్ చేయబడింది మరియు బుక్‌మార్క్‌లలో ఉంది
+	The table of contents is linked	విషయ సూచిక లింక్ చేయబడింది
+	The table of contents is in the bookmarks	విషయ సూచిక బుక్‌మార్క్‌లలో ఉంది

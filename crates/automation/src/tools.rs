@@ -592,6 +592,23 @@ pub fn tools() -> Vec<ToolDef> {
         t("links_from_urls", "Create links from URLs", "Find web addresses (http://, https://, www.) in the text of every page and make them clickable links. Returns the URLs. Undoable.")
             .cmd("edit.links_from_urls")
             .with(schema(json!({ "doc": doc() }), &["doc"])),
+        t(
+            "toc_find",
+            "Find the table of contents",
+            "Find the table of contents printed in the document's text (its layout: page numbers in an aligned column, most after leader dots). Returns each entry's title, level, printed page number and to_page, the PDF page it leads to (null when that page isn't in this file), and how printed numbers were matched to PDF pages: labels, printed_numbers, headings or assumed. first_page, the PDF page (1-based) that printed page 1 is, corrects the match. A scanned document needs ocr_recognize first.",
+        )
+        .ro()
+        .with(schema(json!({ "doc": doc(), "first_page": { "type": "integer" } }), &["doc"])),
+        t(
+            "toc_link",
+            "Link the table of contents",
+            "Make the entries of the printed table of contents (as toc_find finds them) clickable links to their pages, and/or add them as bookmarks after any already there, nested by level. links and bookmarks default to true; first_page as in toc_find. Rows already under a link are skipped. Undoable.",
+        )
+        .cmd("page.link_toc")
+        .with(schema(
+            json!({ "doc": doc(), "first_page": { "type": "integer" }, "links": { "type": "boolean" }, "bookmarks": { "type": "boolean" } }),
+            &["doc"],
+        )),
         t("links_remove", "Remove all links", "Remove every link in the document (or on the given pages). Undoable.")
             .destructive()
             .cmd("edit.remove_links")

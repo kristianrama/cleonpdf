@@ -195,6 +195,42 @@ impl Automation {
         Ok(out)
     }
 
+    /// The table of contents found in the document, corrected by `first_page` when given.
+    fn toc(&self, a: &Args) -> Result<cleonpdf_engine::toc::Toc> {
+        let id = self.doc(a)?.id;
+        let mut toc = self
+            .session
+            .find_toc(id)
+            .ok_or_else(|| failed("no table of contents was found in the document's text (a scanned document needs ocr_recognize first)"))?;
+        if let Some(first) = a.opt_int("first_page")? {
+            if !(-99_999..=99_999).contains(&first) {
+                return Err(bad("first_page must be between -99999 and 99999"));
+            }
+            toc.retarget(first.saturating_sub(2));
+        }
+        Ok(toc)
+    }
+
+    pub(crate) fn toc_find(&self, a: &Args) -> Result<Value> {
+        Ok(toc_value(&self.toc(a)?))
+    }
+
+    pub(crate) fn toc_link(&mut self, a: &Args) -> Result<Value> {
+        let toc = self.toc(a)?;
+        let id = self.doc(a)?.id;
+        let (links, bookmarks) = (a.opt_bool("links")?.unwrap_or(true), a.opt_bool("bookmarks")?.unwrap_or(true));
+        if !links && !bookmarks {
+            return Err(bad("links and bookmarks are both false: nothing to do"));
+        }
+        let edit = self
+            .session
+            .toc_edit(id, &toc, links, bookmarks)
+            .ok_or_else(|| failed("nothing to link: no entry leads to a page of this document, or every entry is linked already"))?;
+        let mut out = self.apply(a, edit)?;
+        out["toc"] = toc_value(&toc);
+        Ok(out)
+    }
+
     pub(crate) fn links_remove(&mut self, a: &Args) -> Result<Value> {
         let pages = match a.opt_ints("pages")? {
             Some(_) => Some(self.pages(a, "pages")?),
@@ -208,6 +244,22 @@ impl Automation {
         out["removed"] = json!(before);
         Ok(out)
     }
+}
+
+fn toc_value(toc: &cleonpdf_engine::toc::Toc) -> Value {
+    use cleonpdf_engine::toc::Mapping;
+    let entries: Vec<Value> = toc
+        .entries
+        .iter()
+        .map(|e| json!({ "page": e.page + 1, "title": e.title, "level": e.level, "printed": e.printed, "to_page": e.target.map(|t| t + 1) }))
+        .collect();
+    let mapping = match toc.mapping {
+        Mapping::Labels => "labels",
+        Mapping::PrintedNumbers => "printed_numbers",
+        Mapping::Headings => "headings",
+        Mapping::Assumed => "assumed",
+    };
+    json!({ "mapping": mapping, "first_page": toc.first_page(), "count": entries.len(), "in_file": toc.linked().count(), "entries": entries })
 }
 
 fn dest_view_value(view: DestView) -> Value {

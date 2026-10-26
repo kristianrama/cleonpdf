@@ -768,3 +768,98 @@ fn quit_in_the_app_menu_closes_the_window_through_the_unsaved_changes_question()
     let closes = h.output().viewport_output.values().any(|v| v.commands.iter().any(|c| matches!(c, egui::ViewportCommand::Close)));
     assert!(closes, "a window close, which `guard_quit` turns into the save question when needed");
 }
+
+/// A six-page A4 book: a cover, a table of contents (leaders, page numbers right-aligned at x =
+/// 500), then printed pages 1–4, each opening with the heading its entry names and numbered at its
+/// foot. Printed page n is PDF page n + 2.
+fn toc_book() -> Vec<u8> {
+    let entries = [("Introduction", "1"), ("1 Getting started", "2"), ("1.1 Installing", "3"), ("2 Using it", "4")];
+    let text = |size: f32, x: f32, y: f32, s: &str| format!("BT /F1 {size} Tf {x:.2} {y:.2} Td ({s}) Tj ET\n");
+    let mut pages: Vec<String> = vec![text(24.0, 72.0, 700.0, "A Small Book")];
+    let mut contents = text(18.0, 72.0, 760.0, "Contents");
+    for (i, (title, n)) in entries.iter().enumerate() {
+        let y = 720.0 - 20.0 * i as f32;
+        let indent = if title.starts_with("1.1") { 90.0 } else { 72.0 };
+        let dots = ((400.0 - indent - 6.0 * title.len() as f32) / 5.56).max(3.0) as usize;
+        contents.push_str(&text(10.0, indent, y, &format!("{title} {}", ". ".repeat(dots).trim_end())));
+        // Helvetica's digits are 0.556 em wide.
+        contents.push_str(&text(10.0, 500.0 - 5.56 * n.len() as f32, y, n));
+    }
+    pages.push(contents);
+    for (title, n) in entries {
+        let mut page = text(14.0, 72.0, 760.0, title);
+        page.push_str(&text(10.0, 72.0, 730.0, "Some text about it."));
+        page.push_str(&text(10.0, 295.0, 40.0, n));
+        pages.push(page);
+    }
+    let n = pages.len();
+    let mut objs: Vec<Vec<u8>> = vec![b"<< /Type /Catalog /Pages 2 0 R >>".to_vec()];
+    let kids: Vec<String> = (0..n).map(|i| format!("{} 0 R", 4 + 2 * i)).collect();
+    objs.push(format!("<< /Type /Pages /Kids [{}] /Count {n} /MediaBox [0 0 595 842] >>", kids.join(" ")).into_bytes());
+    objs.push(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_vec());
+    for (i, body) in pages.iter().enumerate() {
+        objs.push(format!("<< /Type /Page /Parent 2 0 R /Contents {} 0 R /Resources << /Font << /F1 3 0 R >> >> >>", 5 + 2 * i).into_bytes());
+        objs.push(format!("<< /Length {} >>\nstream\n{body}endstream", body.len()).into_bytes());
+    }
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, o) in objs.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend_from_slice(format!("{} 0 obj\n", i + 1).as_bytes());
+        out.extend_from_slice(o);
+        out.extend_from_slice(b"\nendobj\n");
+    }
+    let xref = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+    for o in offsets {
+        out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
+    out
+}
+
+#[test]
+fn pages_link_the_table_of_contents_shows_where_entries_lead_then_links_them() {
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
+        let mut app = CleonPdfApp::new();
+        app.set_option("language", "en").unwrap();
+        app.open_bytes("book.pdf", None, toc_book()).unwrap();
+        app
+    });
+    h.run_steps(4);
+    assert!(h.state_mut().execute("page.link_toc"));
+    h.run_steps(3);
+    assert_eq!(h.state().dialog, Some(Dialog::LinkToc));
+    h.get_by_label("Entries found: 4. In this file: 4.");
+    h.get_by_label("1.1 Installing");
+    h.get_by_label("Printed page");
+    // Printed page 1 corrected to PDF page 4: the last entry now leads past the end.
+    let draft = h.state_mut().toc_draft.as_mut().unwrap();
+    draft.first_page = 4;
+    draft.toc.retarget(2);
+    h.run_steps(2);
+    h.get_by_label("Entries found: 4. In this file: 3.");
+    assert_eq!(h.query_all_by_label("not in this file").count(), 1);
+    h.get_by_label("Apply").click();
+    h.run_steps(3);
+    let app = h.state();
+    assert_eq!(app.dialog, None);
+    let doc = app.session.get(app.views[0].id).unwrap();
+    assert_eq!(doc.links.len(), 3);
+    assert_eq!(doc.info.outline.iter().map(|o| o.title.as_str()).collect::<Vec<_>>(), ["Introduction", "1 Getting started"]);
+    assert!(app.toast.as_ref().is_some_and(|(m, _)| m == "The table of contents is linked and in the bookmarks"));
+    h.state_mut().execute("edit.undo");
+    let app = h.state();
+    let doc = app.session.get(app.views[0].id).unwrap();
+    assert!(doc.links.is_empty() && doc.info.outline.is_empty(), "one undo");
+}
+
+#[test]
+fn a_document_without_a_table_of_contents_says_so() {
+    let mut h = harness();
+    assert!(h.state_mut().execute("page.link_toc"));
+    h.run_steps(2);
+    let app = h.state();
+    assert_eq!(app.dialog, None);
+    assert!(app.toast.as_ref().is_some_and(|(m, _)| m.starts_with("No table of contents was found")));
+}

@@ -2385,3 +2385,24 @@ window	Zoom	Змінити масштаб
 	Bring all to front	Усі вікна на передній план
 	Paste	Вставити
 	Select all	Вибрати все
+
+# Link the table of contents
+	Link the table of contents…	Зв'язати зміст…
+	Link the table of contents	Зв'язати зміст
+	Entries found: {count}. In this file: {linked}.	Знайдено пунктів: {count}. У цьому файлі: {linked}.
+	Printed page 1 is PDF page	Друкована сторінка 1 — це сторінка PDF
+	Matched through the document's page labels.	Зіставлено за позначками сторінок документа.
+	Matched through the page numbers printed on the pages.	Зіставлено за номерами, надрукованими на сторінках.
+	Matched through the headings the entries name.	Зіставлено за заголовками, які називають пункти.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	На сторінках не знайдено номерів сторінок: перевірте, куди ведуть перші пункти, і за потреби виправте число вище.
+	Entry	Пункт
+	Printed page	Друкована сторінка
+	PDF page	Сторінка PDF
+	not in this file	немає в цьому файлі
+	Make the entries clickable	Зробити пункти клікабельними
+	Add them as bookmarks	Додати їх як закладки
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	У тексті цього документа зміст не знайдено. Якщо це скан, спершу розпізнайте його текст.
+	The table of contents is already linked	Зміст уже зв'язано
+	The table of contents is linked and in the bookmarks	Зміст зв'язано й додано до закладок
+	The table of contents is linked	Зміст зв'язано
+	The table of contents is in the bookmarks	Зміст додано до закладок

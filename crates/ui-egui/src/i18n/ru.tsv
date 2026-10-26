@@ -2274,3 +2274,24 @@ window	Zoom	Изменить масштаб
 	Bring all to front	Все окна — на передний план
 	Paste	Вставить
 	Select all	Выделить все
+
+# Link the table of contents
+	Link the table of contents…	Связать оглавление…
+	Link the table of contents	Связать оглавление
+	Entries found: {count}. In this file: {linked}.	Найдено пунктов: {count}. В этом файле: {linked}.
+	Printed page 1 is PDF page	Печатная страница 1 — это страница PDF
+	Matched through the document's page labels.	Сопоставлено по меткам страниц документа.
+	Matched through the page numbers printed on the pages.	Сопоставлено по номерам, напечатанным на страницах.
+	Matched through the headings the entries name.	Сопоставлено по заголовкам, которые называют пункты.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	На страницах не найдены номера страниц: проверьте, куда ведут первые пункты, и при необходимости исправьте число выше.
+	Entry	Пункт
+	Printed page	Печатная страница
+	PDF page	Страница PDF
+	not in this file	нет в этом файле
+	Make the entries clickable	Сделать пункты кликабельными
+	Add them as bookmarks	Добавить их как закладки
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	В тексте этого документа оглавление не найдено. Если это скан, сначала распознайте его текст.
+	The table of contents is already linked	Оглавление уже связано
+	The table of contents is linked and in the bookmarks	Оглавление связано и добавлено в закладки
+	The table of contents is linked	Оглавление связано
+	The table of contents is in the bookmarks	Оглавление добавлено в закладки

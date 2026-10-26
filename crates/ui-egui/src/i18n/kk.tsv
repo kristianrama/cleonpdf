@@ -2359,3 +2359,24 @@ window	Zoom	Өлшемін өзгерту
 	Bring all to front	Барлығын алдыңғы жоспарға шығару
 	Paste	Қою
 	Select all	Барлығын таңдау
+
+# Link the table of contents
+	Link the table of contents…	Мазмұнды байланыстыру…
+	Link the table of contents	Мазмұнды байланыстыру
+	Entries found: {count}. In this file: {linked}.	Табылған жазбалар: {count}. Осы файлда: {linked}.
+	Printed page 1 is PDF page	Басылған 1-бет — PDF беті
+	Matched through the document's page labels.	Құжаттың бет белгілері арқылы сәйкестендірілді.
+	Matched through the page numbers printed on the pages.	Беттерге басылған нөмірлер арқылы сәйкестендірілді.
+	Matched through the headings the entries name.	Жазбалар атайтын тақырыптар арқылы сәйкестендірілді.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Беттерден бет нөмірлері табылмады: алғашқы жазбалар қайда апаратынын тексеріп, қажет болса жоғарыдағы санды түзетіңіз.
+	Entry	Жазба
+	Printed page	Басылған бет
+	PDF page	PDF беті
+	not in this file	бұл файлда жоқ
+	Make the entries clickable	Жазбаларды басылатын ету
+	Add them as bookmarks	Оларды бетбелгі ретінде қосу
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	Бұл құжаттың мәтінінен мазмұн табылмады. Егер ол сканерленген болса, алдымен мәтінін таныңыз.
+	The table of contents is already linked	Мазмұн бұрыннан байланыстырылған
+	The table of contents is linked and in the bookmarks	Мазмұн байланыстырылды және бетбелгілерде
+	The table of contents is linked	Мазмұн байланыстырылды
+	The table of contents is in the bookmarks	Мазмұн бетбелгілерде

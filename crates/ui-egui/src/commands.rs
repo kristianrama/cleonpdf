@@ -205,6 +205,7 @@ impl CleonPdfApp {
             }
             "bookmark.add" => self.bookmark_action(crate::panels::BmAction::New),
             "bookmark.from_structure" => self.bookmark_action(crate::panels::BmAction::FromStructure),
+            "page.link_toc" => self.open_link_toc(),
             "edit.undo" => self.undo(),
             "edit.redo" => self.redo(),
             "edit.find" => {

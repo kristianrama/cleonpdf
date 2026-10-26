@@ -49,6 +49,7 @@ fn dialogs(app: &mut CleonPdfApp, ctx: &egui::Context) {
     let mut apply_number = false;
     let mut link_command: Option<&'static str> = None;
     let mut protect_now = false;
+    let mut toc_now = false;
     let mut boxes_now = false;
     let mut marks_now = false;
     let mut export_now = false;
@@ -75,7 +76,7 @@ fn dialogs(app: &mut CleonPdfApp, ctx: &egui::Context) {
     let mut next = dialog;
     let modal = widgets::show_modal(ctx, "dialog", |ui| {
         ui.set_width(match dialog {
-            Dialog::Properties(_) => 640.0,
+            Dialog::Properties(_) | Dialog::LinkToc => 640.0,
             Dialog::Print => 820.0,
             Dialog::FieldProps | Dialog::BulkFieldProps => 600.0,
             Dialog::About => 780.0,
@@ -940,6 +941,12 @@ fn dialogs(app: &mut CleonPdfApp, ctx: &egui::Context) {
                 close = apply || cancel;
                 return;
             }
+            Dialog::LinkToc => {
+                let (apply, cancel) = crate::toc_ui::body(ui, app, &t);
+                toc_now = apply;
+                close = apply || cancel;
+                return;
+            }
             Dialog::Protect => {
                 let (apply, cancel) = crate::protect::body(ui, app, &t);
                 protect_now = apply;
@@ -1281,6 +1288,9 @@ fn dialogs(app: &mut CleonPdfApp, ctx: &egui::Context) {
         let edit = app.boxes_draft.edit(app.views[i].current, count);
         app.apply_edit(edit);
         app.boxes_draft.seeded = None;
+    }
+    if toc_now {
+        app.apply_link_toc();
     }
     if protect_now && app.apply_edit(app.protect_draft.edit()) {
         app.protect_draft = Default::default();

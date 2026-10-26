@@ -218,11 +218,34 @@ fn checked_rect(rect: [f64; 4]) -> Result<[f64; 4], AnnotError> {
 
 /// Add a link over `rect` (user space). Returns its index in the page's `/Annots`.
 pub fn add(doc: &mut Document, page: usize, rect: [f64; 4], action: &LinkAction, style: &LinkStyle) -> Result<usize, AnnotError> {
-    let p = page_ref(doc, page)?;
-    let r = checked_rect(rect)?;
     if matches!(action, LinkAction::Other(_)) {
         return Err(AnnotError::Invalid("choose a page or a web address".into()));
     }
+    insert(doc, page, rect, style, |doc, d| write_action(doc, d, action))
+}
+
+/// A link over `rect` on `page` to the place `top` (user space; `None`: the top) of page
+/// `target`, keeping the reader's zoom (`/XYZ null top null`): where a table of contents entry
+/// leads. Read back as [`LinkAction::Page`].
+pub fn add_go_to(doc: &mut Document, page: usize, rect: [f64; 4], target: usize, top: Option<f64>, style: &LinkStyle) -> Result<usize, AnnotError> {
+    insert(doc, page, rect, style, |doc, d| {
+        let target = page_ref(doc, target)?;
+        let top = top.filter(|t| t.is_finite()).map_or(Object::Null, Object::Real);
+        d.set(b"Dest".to_vec(), Object::Array(vec![Object::Ref(target), Object::name("XYZ"), Object::Null, top, Object::Null]));
+        Ok(())
+    })
+}
+
+/// Add a link annotation to `page`, its destination or action written by `target`.
+fn insert(
+    doc: &mut Document,
+    page: usize,
+    rect: [f64; 4],
+    style: &LinkStyle,
+    target: impl FnOnce(&Document, &mut Dict) -> Result<(), AnnotError>,
+) -> Result<usize, AnnotError> {
+    let p = page_ref(doc, page)?;
+    let r = checked_rect(rect)?;
     let mut d = Dict::new();
     d.set(b"Type".to_vec(), Object::name("Annot"));
     d.set(b"Subtype".to_vec(), Object::name("Link"));
@@ -230,7 +253,7 @@ pub fn add(doc: &mut Document, page: usize, rect: [f64; 4], action: &LinkAction,
     d.set(b"P".to_vec(), Object::Ref(p));
     d.set(b"F".to_vec(), Object::Int(4));
     write_style(&mut d, style);
-    write_action(doc, &mut d, action)?;
+    target(doc, &mut d)?;
     let obj = doc.add(Object::Dict(d));
     let mut list = annots(doc, p);
     list.push(Object::Ref(obj));

@@ -2435,3 +2435,24 @@ window	Zoom	Změnit velikost
 	Bring all to front	Přenést vše do popředí
 	Paste	Vložit
 	Select all	Vybrat vše
+
+# Link the table of contents
+	Link the table of contents…	Propojit obsah…
+	Link the table of contents	Propojit obsah
+	Entries found: {count}. In this file: {linked}.	Nalezené položky: {count}. V tomto souboru: {linked}.
+	Printed page 1 is PDF page	Tištěná strana 1 je strana PDF
+	Matched through the document's page labels.	Přiřazeno podle označení stránek dokumentu.
+	Matched through the page numbers printed on the pages.	Přiřazeno podle čísel stran vytištěných na stránkách.
+	Matched through the headings the entries name.	Přiřazeno podle nadpisů, které položky uvádějí.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Na stránkách nebyla nalezena čísla stran: zkontrolujte, kam vedou první položky, a v případě potřeby opravte číslo výše.
+	Entry	Položka
+	Printed page	Tištěná strana
+	PDF page	Strana PDF
+	not in this file	není v tomto souboru
+	Make the entries clickable	Udělat položky klikací
+	Add them as bookmarks	Přidat je jako záložky
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	V textu tohoto dokumentu nebyl nalezen obsah. Pokud jde o sken, nejdřív rozpoznejte jeho text.
+	The table of contents is already linked	Obsah je už propojený
+	The table of contents is linked and in the bookmarks	Obsah je propojený a v záložkách
+	The table of contents is linked	Obsah je propojený
+	The table of contents is in the bookmarks	Obsah je v záložkách

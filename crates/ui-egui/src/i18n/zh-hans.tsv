@@ -2325,3 +2325,24 @@ window	Zoom	缩放
 	Bring all to front	前置全部窗口
 	Paste	粘贴
 	Select all	全选
+
+# Link the table of contents
+	Link the table of contents…	链接目录…
+	Link the table of contents	链接目录
+	Entries found: {count}. In this file: {linked}.	找到的条目：{count}。在此文件中：{linked}。
+	Printed page 1 is PDF page	印刷页 1 是 PDF 第几页
+	Matched through the document's page labels.	已通过文档的页面标签对应。
+	Matched through the page numbers printed on the pages.	已通过页面上印刷的页码对应。
+	Matched through the headings the entries name.	已通过条目所指的标题对应。
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	页面上未找到页码：请检查前几个条目指向何处，必要时修改上面的数字。
+	Entry	条目
+	Printed page	印刷页
+	PDF page	PDF 页
+	not in this file	不在此文件中
+	Make the entries clickable	使条目可点击
+	Add them as bookmarks	将它们添加为书签
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	在此文档的文本中未找到目录。如果它是扫描件，请先识别其文本。
+	The table of contents is already linked	目录已经链接
+	The table of contents is linked and in the bookmarks	目录已链接并已添加到书签
+	The table of contents is linked	目录已链接
+	The table of contents is in the bookmarks	目录已添加到书签

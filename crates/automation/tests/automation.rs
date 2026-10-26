@@ -5717,3 +5717,79 @@ fn absolute_gotor_consent_does_not_bypass_validation_or_passwords() {
     assert_eq!(opened["document"]["encrypted"], true);
     assert_eq!(opened["destination_applied"], true);
 }
+
+/// A six-page A4 book: a cover, a table of contents (leaders, page numbers right-aligned at x =
+/// 500), then printed pages 1–4, each opening with the heading its entry names and numbered at its
+/// foot. Printed page n is PDF page n + 2.
+fn toc_book() -> Vec<u8> {
+    let entries = [("Introduction", "1"), ("1 Getting started", "2"), ("1.1 Installing", "3"), ("2 Using it", "4")];
+    let text = |size: f32, x: f32, y: f32, s: &str| format!("BT /F1 {size} Tf {x:.2} {y:.2} Td ({s}) Tj ET\n");
+    let mut pages: Vec<String> = vec![text(24.0, 72.0, 700.0, "A Small Book")];
+    let mut contents = text(18.0, 72.0, 760.0, "Contents");
+    for (i, (title, n)) in entries.iter().enumerate() {
+        let y = 720.0 - 20.0 * i as f32;
+        let indent = if title.starts_with("1.1") { 90.0 } else { 72.0 };
+        let dots = ((400.0 - indent - 6.0 * title.len() as f32) / 5.56).max(3.0) as usize;
+        contents.push_str(&text(10.0, indent, y, &format!("{title} {}", ". ".repeat(dots).trim_end())));
+        // Helvetica's digits are 0.556 em wide.
+        contents.push_str(&text(10.0, 500.0 - 5.56 * n.len() as f32, y, n));
+    }
+    pages.push(contents);
+    for (title, n) in entries {
+        let mut page = text(14.0, 72.0, 760.0, title);
+        page.push_str(&text(10.0, 72.0, 730.0, "Some text about it."));
+        page.push_str(&text(10.0, 295.0, 40.0, n));
+        pages.push(page);
+    }
+    let n = pages.len();
+    let mut objs: Vec<Vec<u8>> = vec![b"<< /Type /Catalog /Pages 2 0 R >>".to_vec()];
+    let kids: Vec<String> = (0..n).map(|i| format!("{} 0 R", 4 + 2 * i)).collect();
+    objs.push(format!("<< /Type /Pages /Kids [{}] /Count {n} /MediaBox [0 0 595 842] >>", kids.join(" ")).into_bytes());
+    objs.push(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_vec());
+    for (i, body) in pages.iter().enumerate() {
+        objs.push(format!("<< /Type /Page /Parent 2 0 R /Contents {} 0 R /Resources << /Font << /F1 3 0 R >> >> >>", 5 + 2 * i).into_bytes());
+        objs.push(format!("<< /Length {} >>\nstream\n{body}endstream", body.len()).into_bytes());
+    }
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, o) in objs.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend_from_slice(format!("{} 0 obj\n", i + 1).as_bytes());
+        out.extend_from_slice(o);
+        out.extend_from_slice(b"\nendobj\n");
+    }
+    let xref = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+    for o in offsets {
+        out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
+    out
+}
+
+#[test]
+fn the_table_of_contents_is_found_corrected_and_linked() {
+    let dir = workdir("toc-link");
+    std::fs::write(dir.join("book.pdf"), toc_book()).unwrap();
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "doc_open", json!({ "path": "book.pdf" }))["doc"].as_u64().unwrap();
+    let found = ok(&mut a, "toc_find", json!({ "doc": doc }));
+    assert_eq!((found["mapping"].as_str(), found["first_page"].as_i64(), found["count"].as_u64()), (Some("printed_numbers"), Some(3), Some(4)));
+    assert_eq!(found["entries"][2], json!({ "page": 2, "title": "1.1 Installing", "level": 2, "printed": "3", "to_page": 5 }));
+    // A correction moves every entry; past the end they lead nowhere.
+    let moved = ok(&mut a, "toc_find", json!({ "doc": doc, "first_page": 4 }));
+    assert_eq!((moved["entries"][0]["to_page"].as_u64(), moved["entries"][3]["to_page"].as_u64()), (Some(4), None));
+    assert!(matches!(a.call("toc_find", &json!({ "doc": doc, "first_page": 1_000_000 })), Err(ToolError::InvalidArgs(_))));
+    assert!(matches!(a.call("toc_link", &json!({ "doc": doc, "links": false, "bookmarks": false })), Err(ToolError::InvalidArgs(_))));
+    let linked = ok(&mut a, "toc_link", json!({ "doc": doc }));
+    assert_eq!(linked["toc"]["in_file"], 4);
+    let links = ok(&mut a, "link_list", json!({ "doc": doc }));
+    let mut to: Vec<u64> = links["links"].as_array().unwrap().iter().map(|l| l["to_page"].as_u64().unwrap()).collect();
+    to.sort_unstable();
+    assert_eq!(to, [3, 4, 5, 6]);
+    assert!(links["links"].as_array().unwrap().iter().all(|l| l["page"] == 2), "on the contents page");
+    // Twice is refused: nothing left to link.
+    assert!(a.call("toc_link", &json!({ "doc": doc })).is_err());
+    let plain = ok(&mut a, "doc_create", json!({ "from": "blank" }))["doc"].as_u64().unwrap();
+    assert!(a.call("toc_find", &json!({ "doc": plain })).is_err());
+}

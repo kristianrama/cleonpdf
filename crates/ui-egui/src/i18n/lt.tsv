@@ -2603,3 +2603,24 @@ app menu	Show all	Rodyti visas
 	Window	Langas
 window	Zoom	Keisti dydį
 	Bring all to front	Iškelti visus į priekį
+
+# Link the table of contents
+	Link the table of contents…	Susieti turinį…
+	Link the table of contents	Susieti turinį
+	Entries found: {count}. In this file: {linked}.	Rasta įrašų: {count}. Šiame faile: {linked}.
+	Printed page 1 is PDF page	Spausdintas 1 puslapis yra PDF puslapis
+	Matched through the document's page labels.	Susieta pagal dokumento puslapių žymas.
+	Matched through the page numbers printed on the pages.	Susieta pagal puslapiuose išspausdintus numerius.
+	Matched through the headings the entries name.	Susieta pagal antraštes, kurias nurodo įrašai.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Puslapiuose nerasta puslapių numerių: patikrinkite, kur veda pirmieji įrašai, ir, jei reikia, pataisykite skaičių aukščiau.
+	Entry	Įrašas
+	Printed page	Spausdintas puslapis
+	PDF page	PDF puslapis
+	not in this file	šiame faile nėra
+	Make the entries clickable	Padaryti įrašus spustelimus
+	Add them as bookmarks	Pridėti juos kaip žymeles
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	Šio dokumento tekste turinio nerasta. Jei tai nuskaitytas dokumentas, pirmiausia atpažinkite jo tekstą.
+	The table of contents is already linked	Turinys jau susietas
+	The table of contents is linked and in the bookmarks	Turinys susietas ir įtrauktas į žymeles
+	The table of contents is linked	Turinys susietas
+	The table of contents is in the bookmarks	Turinys įtrauktas į žymeles
