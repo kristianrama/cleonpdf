@@ -2372,3 +2372,24 @@ window	Zoom	Ridimensiona
 	Bring all to front	Porta tutto in primo piano
 	Paste	Incolla
 	Select all	Seleziona tutto
+
+# Link the table of contents
+	Link the table of contents…	Collega l'indice…
+	Link the table of contents	Collega l'indice
+	Entries found: {count}. In this file: {linked}.	Voci trovate: {count}. In questo file: {linked}.
+	Printed page 1 is PDF page	La pagina stampata 1 è la pagina del PDF
+	Matched through the document's page labels.	Abbinate tramite le etichette di pagina del documento.
+	Matched through the page numbers printed on the pages.	Abbinate tramite i numeri di pagina stampati sulle pagine.
+	Matched through the headings the entries name.	Abbinate tramite i titoli indicati dalle voci.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Sulle pagine non sono stati trovati numeri di pagina: controlla dove portano le prime voci e, se serve, correggi il numero qui sopra.
+	Entry	Voce
+	Printed page	Pagina stampata
+	PDF page	Pagina del PDF
+	not in this file	non in questo file
+	Make the entries clickable	Rendi cliccabili le voci
+	Add them as bookmarks	Aggiungile come segnalibri
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	Nel testo di questo documento non è stato trovato un indice. Se è una scansione, riconoscine prima il testo.
+	The table of contents is already linked	L'indice è già collegato
+	The table of contents is linked and in the bookmarks	L'indice è collegato ed è nei segnalibri
+	The table of contents is linked	L'indice è collegato
+	The table of contents is in the bookmarks	L'indice è nei segnalibri

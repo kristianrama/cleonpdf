@@ -593,14 +593,36 @@ fn check_one(args: &[String]) -> Result<(), CliError> {
         }
     };
     // `--edit` (fuzzing): also run our own object layer end to end, with no panic safety net,
-    // so a panic in cos shows up as a crash of this process.
+    // so a panic in cos shows up as a crash of this process; then link the table of contents.
     if args.iter().any(|a| a == "--edit") {
-        edit_round_trip(&std::fs::read(path).map_err(|e| e.to_string())?);
+        let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
+        edit_round_trip(&bytes);
+        toc_round_trip(bytes);
     }
     let line = serde_json::json!({ "file": path, "status": status, "pages": pages, "failed_pages": failed, "warnings": warnings,
         "ms": start.elapsed().as_millis() as u64, "detail": detail.chars().take(400).collect::<String>() });
     stdout_line(format_args!("{line}"))?;
     Ok(())
+}
+
+/// Find the table of contents printed in the document and link it as Pages ▸ Link the table of
+/// contents does (links and bookmarks), save the result both ways and undo it. The finder's
+/// correction is tried at extreme offsets too. Errors are fine; panics, hangs and aborts are bugs.
+fn toc_round_trip(bytes: Vec<u8>) {
+    let mut s = cleonpdf_engine::Session::new();
+    let Ok(id) = s.open("fuzz.pdf", None, Arc::new(bytes), None) else { return };
+    let Some(toc) = s.find_toc(id) else { return };
+    for offset in [i64::MIN, -100_001, -1, i64::MAX] {
+        let mut moved = toc.clone();
+        moved.retarget(offset);
+        let _ = s.toc_edit(id, &moved, true, true);
+    }
+    let Some(edit) = s.toc_edit(id, &toc, true, true) else { return };
+    if s.apply(id, edit).is_ok() {
+        let _ = s.save_bytes(id);
+        let _ = s.save_full_bytes(id);
+        let _ = s.undo(id);
+    }
 }
 
 /// Open with cos, touch every object, edit the catalog, save incrementally and in full (both

@@ -1217,6 +1217,31 @@ fn a_bookmark_tree_nests_entries_by_level_under_a_new_first_bookmark() {
 }
 
 #[test]
+fn bookmarks_added_at_the_top_level_follow_the_existing_ones_nested_by_level() {
+    let mut d = doc_a();
+    crate::add_bookmark(&mut d, &[], 0, "Existing", 0).unwrap();
+    let e = |level, title: &str, page| crate::OutlineEntry { level, title: title.into(), page, element: None };
+    let entries =
+        [e(1, "Introduction", 0), e(1, "1 Basics", 1), e(2, "1.1 Words", 1), e(3, "1.1.1 Letters", 2), e(2, "1.2 Lines", 2), e(1, "2 More", 2)];
+    assert_eq!(crate::add_bookmarks(&mut d, &entries).unwrap(), 1, "after the one already there");
+    assert_eq!(titles(&crate::bookmarks(&d)), ["Existing", "Introduction", "1 Basics[1.1 Words[1.1.1 Letters],1.2 Lines]", "2 More"]);
+    let root = d.get(d.root().unwrap()).as_dict().unwrap().reference(b"Outlines").unwrap();
+    assert_eq!(count_of(&d, root), Some(7), "everything starts expanded");
+    let pages = crate::walk(&d).unwrap();
+    let b = crate::bookmarks(&d);
+    let letters = d.get(b[4].obj).as_dict().cloned().unwrap();
+    assert_eq!(letters.get(b"Dest").and_then(|x| x.as_array()).map(|a| a[0].clone()), Some(Object::Ref(pages[2].0)));
+
+    // Into a document with no bookmarks yet, and the errors.
+    let mut fresh = doc_a();
+    assert_eq!(crate::add_bookmarks(&mut fresh, &[e(2, "Starts deep", 1), e(1, "Then top", 2)]).unwrap(), 0);
+    assert_eq!(titles(&crate::bookmarks(&fresh)), ["Starts deep", "Then top"]);
+    assert_eq!(crate::add_bookmarks(&mut fresh, &[]), Err(crate::OutlineError::NoEntries));
+    assert!(crate::add_bookmarks(&mut fresh, &[e(1, "Nowhere", 9)]).is_err());
+    assert_eq!(titles(&crate::bookmarks(&full_roundtrip(&fresh))), ["Starts deep", "Then top"], "a refused add changes nothing");
+}
+
+#[test]
 fn bookmark_edits_keep_unknown_keys_and_touch_few_objects() {
     let mut d = doc_a();
     crate::add_bookmark(&mut d, &[], 0, "One", 0).unwrap();

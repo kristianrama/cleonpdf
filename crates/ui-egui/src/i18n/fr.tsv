@@ -2361,3 +2361,24 @@ window	Zoom	Réduire/agrandir
 	Bring all to front	Tout ramener au premier plan
 	Paste	Coller
 	Select all	Tout sélectionner
+
+# Link the table of contents
+	Link the table of contents…	Lier la table des matières…
+	Link the table of contents	Lier la table des matières
+	Entries found: {count}. In this file: {linked}.	Entrées trouvées : {count}. Dans ce fichier : {linked}.
+	Printed page 1 is PDF page	La page imprimée 1 est la page PDF
+	Matched through the document's page labels.	Associées grâce aux étiquettes de page du document.
+	Matched through the page numbers printed on the pages.	Associées grâce aux numéros de page imprimés sur les pages.
+	Matched through the headings the entries name.	Associées grâce aux titres que les entrées désignent.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Aucun numéro de page n'a été trouvé sur les pages : vérifiez où mènent les premières entrées et corrigez le numéro ci-dessus si nécessaire.
+	Entry	Entrée
+	Printed page	Page imprimée
+	PDF page	Page PDF
+	not in this file	absente de ce fichier
+	Make the entries clickable	Rendre les entrées cliquables
+	Add them as bookmarks	Les ajouter comme signets
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	Aucune table des matières n'a été trouvée dans le texte de ce document. S'il s'agit d'un scan, reconnaissez d'abord son texte.
+	The table of contents is already linked	La table des matières est déjà liée
+	The table of contents is linked and in the bookmarks	La table des matières est liée et dans les signets
+	The table of contents is linked	La table des matières est liée
+	The table of contents is in the bookmarks	La table des matières est dans les signets

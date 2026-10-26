@@ -2235,3 +2235,24 @@ window	Zoom	縮放
 	Bring all to front	將全部移至最前
 	Paste	貼上
 	Select all	全選
+
+# Link the table of contents
+	Link the table of contents…	連結目錄…
+	Link the table of contents	連結目錄
+	Entries found: {count}. In this file: {linked}.	找到的項目：{count}。在此檔案中：{linked}。
+	Printed page 1 is PDF page	印刷頁 1 是 PDF 第幾頁
+	Matched through the document's page labels.	已透過文件的頁面標籤對應。
+	Matched through the page numbers printed on the pages.	已透過頁面上印刷的頁碼對應。
+	Matched through the headings the entries name.	已透過項目所指的標題對應。
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	頁面上找不到頁碼：請檢查前幾個項目連到哪裡，必要時修改上方的數字。
+	Entry	項目
+	Printed page	印刷頁
+	PDF page	PDF 頁
+	not in this file	不在此檔案中
+	Make the entries clickable	讓項目可以點按
+	Add them as bookmarks	將它們加入為書籤
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	在此文件的文字中找不到目錄。如果是掃描文件，請先辨識其文字。
+	The table of contents is already linked	目錄已經連結
+	The table of contents is linked and in the bookmarks	目錄已連結並加入書籤
+	The table of contents is linked	目錄已連結
+	The table of contents is in the bookmarks	目錄已加入書籤

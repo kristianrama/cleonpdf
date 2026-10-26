@@ -57,6 +57,7 @@ mod search_ui;
 mod sign_ui;
 mod stamps_ui;
 mod standards_ui;
+pub mod toc_ui;
 mod zoom_snap;
 /// Header & footer / watermark / background dialog types (tests and automation).
 pub mod marks {
@@ -269,6 +270,8 @@ pub enum Dialog {
     Split,
     /// Pages ▸ Number pages… (page labels).
     NumberPages,
+    /// Pages ▸ Link the table of contents (with `toc_draft`).
+    LinkToc,
     /// Protect Using Password.
     Protect,
     /// Set Page Boxes (crop, trim, bleed, art, media).
@@ -615,6 +618,8 @@ pub struct CleonPdfApp {
     pub system_menu: Option<Box<dyn menu_bar::SystemMenu>>,
     /// Items chosen there with the pointer, run in the next `logic`.
     system_choices: Vec<menu_bar::Action>,
+    /// Pages ▸ Link the table of contents: what was found and the choices.
+    pub toc_draft: Option<toc_ui::TocDraft>,
     /// Save delivers to the embedding page instead of downloading (web, see [`HostSaveFn`]).
     pub host_save: Option<HostSaveFn>,
     /// Reports unsaved work to the embedding page (web, see [`HostDirtyFn`]).
@@ -956,6 +961,7 @@ impl CleonPdfApp {
             os_events: None,
             system_menu: None,
             system_choices: Vec::new(),
+            toc_draft: None,
             host_save: None,
             host_dirty: None,
             close_request: None,
@@ -2448,6 +2454,11 @@ impl CleonPdfApp {
                         // Same path as the menu, so the page range is seeded.
                         self.execute("page.number");
                         Some(Dialog::NumberPages)
+                    }
+                    // Same path as the menu: finds the table of contents first (or says why not).
+                    "link-toc" => {
+                        self.execute("page.link_toc");
+                        self.dialog
                     }
                     "none" => None,
                     _ => Some(Dialog::About),

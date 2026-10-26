@@ -2371,3 +2371,24 @@ window	Zoom	Αλλαγή μεγέθους
 	Bring all to front	Μεταφορά όλων σε πρώτο πλάνο
 	Paste	Επικόλληση
 	Select all	Επιλογή όλων
+
+# Link the table of contents
+	Link the table of contents…	Σύνδεση του πίνακα περιεχομένων…
+	Link the table of contents	Σύνδεση του πίνακα περιεχομένων
+	Entries found: {count}. In this file: {linked}.	Βρέθηκαν καταχωρίσεις: {count}. Σε αυτό το αρχείο: {linked}.
+	Printed page 1 is PDF page	Η τυπωμένη σελίδα 1 είναι η σελίδα PDF
+	Matched through the document's page labels.	Αντιστοίχιση μέσω των ετικετών σελίδων του εγγράφου.
+	Matched through the page numbers printed on the pages.	Αντιστοίχιση μέσω των αριθμών σελίδων που είναι τυπωμένοι στις σελίδες.
+	Matched through the headings the entries name.	Αντιστοίχιση μέσω των επικεφαλίδων που αναφέρουν οι καταχωρίσεις.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Δεν βρέθηκαν αριθμοί σελίδων στις σελίδες: ελέγξτε πού οδηγούν οι πρώτες καταχωρίσεις και διορθώστε τον αριθμό παραπάνω αν χρειάζεται.
+	Entry	Καταχώριση
+	Printed page	Τυπωμένη σελίδα
+	PDF page	Σελίδα PDF
+	not in this file	δεν υπάρχει σε αυτό το αρχείο
+	Make the entries clickable	Να γίνουν οι καταχωρίσεις σύνδεσμοι
+	Add them as bookmarks	Προσθήκη ως σελιδοδείκτες
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	Δεν βρέθηκε πίνακας περιεχομένων στο κείμενο αυτού του εγγράφου. Αν είναι σάρωση, αναγνωρίστε πρώτα το κείμενό του.
+	The table of contents is already linked	Ο πίνακας περιεχομένων είναι ήδη συνδεδεμένος
+	The table of contents is linked and in the bookmarks	Ο πίνακας περιεχομένων είναι συνδεδεμένος και στους σελιδοδείκτες
+	The table of contents is linked	Ο πίνακας περιεχομένων είναι συνδεδεμένος
+	The table of contents is in the bookmarks	Ο πίνακας περιεχομένων είναι στους σελιδοδείκτες

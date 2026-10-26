@@ -4523,3 +4523,120 @@ fn copy_image_finds_a_picture_inside_form_artwork_under_text() {
     assert_eq!(d.page_image_copy_file(0, 0).unwrap(), ("jpg", jpeg));
     assert!(d.page_image_copy_file(0, 1).is_err());
 }
+
+/// A six-page A4 book: a cover, a table of contents (leaders, page numbers right-aligned at x =
+/// 500), then printed pages 1–4, each opening with the heading its entry names and numbered at its
+/// foot. Printed page n is PDF page n + 2.
+pub(crate) fn toc_book() -> Vec<u8> {
+    let entries = [("Introduction", "1"), ("1 Getting started", "2"), ("1.1 Installing", "3"), ("2 Using it", "4")];
+    let text = |size: f32, x: f32, y: f32, s: &str| format!("BT /F1 {size} Tf {x:.2} {y:.2} Td ({s}) Tj ET\n");
+    let mut pages: Vec<String> = vec![text(24.0, 72.0, 700.0, "A Small Book")];
+    let mut contents = text(18.0, 72.0, 760.0, "Contents");
+    for (i, (title, n)) in entries.iter().enumerate() {
+        let y = 720.0 - 20.0 * i as f32;
+        let indent = if title.starts_with("1.1") { 90.0 } else { 72.0 };
+        let dots = ((400.0 - indent - 6.0 * title.len() as f32) / 5.56).max(3.0) as usize;
+        contents.push_str(&text(10.0, indent, y, &format!("{title} {}", ". ".repeat(dots).trim_end())));
+        // Helvetica's digits are 0.556 em wide.
+        contents.push_str(&text(10.0, 500.0 - 5.56 * n.len() as f32, y, n));
+    }
+    pages.push(contents);
+    for (title, n) in entries {
+        let mut page = text(14.0, 72.0, 760.0, title);
+        page.push_str(&text(10.0, 72.0, 730.0, "Some text about it."));
+        page.push_str(&text(10.0, 295.0, 40.0, n));
+        pages.push(page);
+    }
+    let n = pages.len();
+    let mut objs: Vec<Vec<u8>> = vec![b"<< /Type /Catalog /Pages 2 0 R >>".to_vec()];
+    let kids: Vec<String> = (0..n).map(|i| format!("{} 0 R", 4 + 2 * i)).collect();
+    objs.push(format!("<< /Type /Pages /Kids [{}] /Count {n} /MediaBox [0 0 595 842] >>", kids.join(" ")).into_bytes());
+    objs.push(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_vec());
+    for (i, body) in pages.iter().enumerate() {
+        objs.push(format!("<< /Type /Page /Parent 2 0 R /Contents {} 0 R /Resources << /Font << /F1 3 0 R >> >> >>", 5 + 2 * i).into_bytes());
+        objs.push(format!("<< /Length {} >>\nstream\n{body}endstream", body.len()).into_bytes());
+    }
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, o) in objs.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend_from_slice(format!("{} 0 obj\n", i + 1).as_bytes());
+        out.extend_from_slice(o);
+        out.extend_from_slice(b"\nendobj\n");
+    }
+    let xref = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+    for o in offsets {
+        out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
+    out
+}
+
+#[test]
+fn the_table_of_contents_becomes_links_and_bookmarks_in_one_undoable_edit() {
+    let mut s = Session::new();
+    let id = s.open("book.pdf", None, Arc::new(toc_book()), None).expect("opens");
+    let toc = s.find_toc(id).expect("a table of contents");
+    assert_eq!(toc.mapping, toc::Mapping::PrintedNumbers);
+    assert_eq!(toc.first_page(), 3, "printed page 1 is PDF page 3");
+    let found: Vec<(&str, u8, Option<usize>)> = toc.entries.iter().map(|e| (e.title.as_str(), e.level, e.target)).collect();
+    assert_eq!(found, [("Introduction", 1, Some(2)), ("1 Getting started", 1, Some(3)), ("1.1 Installing", 2, Some(4)), ("2 Using it", 1, Some(5))]);
+
+    let edit = s.toc_edit(id, &toc, true, true).expect("something to link");
+    s.apply(id, edit).unwrap();
+    let doc = s.get(id).unwrap();
+    let mut links: Vec<(usize, cleonpdf_annot::links::LinkAction)> = doc.links.iter().map(|l| (l.page, l.action.clone())).collect();
+    links.sort_by_key(|(_, a)| format!("{a:?}"));
+    use cleonpdf_annot::links::LinkAction::Page;
+    assert_eq!(links, [(1, Page(2)), (1, Page(3)), (1, Page(4)), (1, Page(5))], "each row of the contents goes to its page");
+    // Each link covers its row, from the title to the page number.
+    let first = doc.links.iter().find(|l| l.action == Page(2)).unwrap();
+    assert!(first.rect[0] <= 73.0 && first.rect[2] >= 499.0 && first.rect[1] < 720.0 && first.rect[3] > 720.0, "{:?}", first.rect);
+    // They land on the heading (at 760 on its page, 14 pt), keeping the reader's zoom.
+    let views: Vec<cleonpdf_render::DestView> = doc
+        .info
+        .links
+        .iter()
+        .filter_map(|l| match &l.target {
+            cleonpdf_render::LinkTarget::Page(_, view) => Some(*view),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(views.len(), 4);
+    for view in views {
+        let cleonpdf_render::DestView::Xyz { left: None, top: Some(top), zoom: None } = view else { panic!("{view:?}") };
+        assert!((770.0..800.0).contains(&top), "just above the heading: {top}");
+    }
+    let outline: Vec<(String, Option<usize>, Vec<String>)> =
+        doc.info.outline.iter().map(|o| (o.title.clone(), o.page, o.children.iter().map(|c| c.title.clone()).collect())).collect();
+    assert_eq!(
+        outline,
+        [
+            ("Introduction".to_owned(), Some(2), vec![]),
+            ("1 Getting started".to_owned(), Some(3), vec!["1.1 Installing".to_owned()]),
+            ("2 Using it".to_owned(), Some(5), vec![]),
+        ]
+    );
+    assert_eq!(doc.can_undo(), Some("Link the table of contents"));
+    // Done once: the rows are linked and the bookmarks there.
+    let again = s.find_toc(id).expect("still found");
+    assert!(s.toc_edit(id, &again, true, true).is_none());
+    // One undo takes it all back.
+    s.undo(id).unwrap();
+    let doc = s.get(id).unwrap();
+    assert!(doc.links.is_empty() && doc.info.outline.is_empty());
+    // Bookmarks only, and a correction that leads nowhere.
+    let edit = s.toc_edit(id, &toc, false, true).unwrap();
+    assert!(matches!(&edit, Edit::LinkToc { links, bookmarks } if links.is_empty() && bookmarks.len() == 4));
+    let mut nowhere = toc.clone();
+    nowhere.retarget(100);
+    assert!(s.toc_edit(id, &nowhere, true, true).is_none());
+    assert!(s.apply(id, Edit::LinkToc { links: Vec::new(), bookmarks: Vec::new() }).is_err());
+}
+
+#[test]
+fn a_document_without_a_table_of_contents_has_none() {
+    let (s, id) = session_with(3);
+    assert!(s.find_toc(id).is_none());
+}

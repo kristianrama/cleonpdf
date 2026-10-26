@@ -487,16 +487,48 @@ pub fn add_bookmark_tree(doc: &mut Document, parent_title: &str, entries: &[Outl
     if entries.is_empty() {
         return Err(OutlineError::NoEntries);
     }
+    let mut d = Dict::new();
+    d.set(b"Title".to_vec(), Object::String(PdfString::text(parent_title)));
+    let parent = doc.add(Object::Dict(d));
+    nest(doc, parent, Vec::new(), entries)?;
+    let root = container(doc, &[])?;
+    let mut top = children_of(doc, root, &mut HashSet::from([root]));
+    top.insert(0, parent);
+    relink(doc, root, &top)?;
+    put(doc, parent, b"Count", Some(Object::Int(1)))?;
+    recount(doc)?;
+    Ok(vec![0])
+}
+
+/// Add `entries` to the top level of the bookmarks, after those already there, nested by level
+/// (1 = top level); everything starts expanded. Returns the index of the first one added.
+pub fn add_bookmarks(doc: &mut Document, entries: &[OutlineEntry]) -> Result<usize> {
+    if entries.is_empty() {
+        return Err(OutlineError::NoEntries);
+    }
+    // Refused before the outline root is created for them.
+    let count = walk(doc)?.len();
+    if let Some(e) = entries.iter().find(|e| e.page >= count) {
+        return Err(OrganizeError::NoSuchPage(e.page).into());
+    }
+    let root = container(doc, &[])?;
+    let existing = children_of(doc, root, &mut HashSet::from([root]));
+    let first = existing.len();
+    nest(doc, root, existing, entries)?;
+    recount(doc)?;
+    Ok(first)
+}
+
+/// Make `entries` children of `parent` after `existing`, nested by level: an entry goes under
+/// the last one before it with a lower level.
+fn nest(doc: &mut Document, parent: ObjRef, existing: Vec<ObjRef>, entries: &[OutlineEntry]) -> Result<()> {
     let pages = walk(doc)?;
     let targets = entries
         .iter()
         .map(|e| pages.get(e.page).map(|p| p.0).ok_or(OrganizeError::NoSuchPage(e.page)))
         .collect::<std::result::Result<Vec<_>, _>>()?;
-    let mut d = Dict::new();
-    d.set(b"Title".to_vec(), Object::String(PdfString::text(parent_title)));
-    let parent = doc.add(Object::Dict(d));
-    // (level, item, its children so far); the bottom is the new parent.
-    let mut stack: Vec<(u8, ObjRef, Vec<ObjRef>)> = vec![(0, parent, Vec::new())];
+    // (level, item, its children so far); the bottom is the parent.
+    let mut stack: Vec<(u8, ObjRef, Vec<ObjRef>)> = vec![(0, parent, existing)];
     let mut done: Vec<(ObjRef, Vec<ObjRef>)> = Vec::new();
     for (e, page) in entries.iter().zip(targets) {
         let mut d = Dict::new();
@@ -521,13 +553,7 @@ pub fn add_bookmark_tree(doc: &mut Document, parent_title: &str, entries: &[Outl
             put(doc, *r, b"Count", Some(Object::Int(1)))?;
         }
     }
-    let root = container(doc, &[])?;
-    let mut top = children_of(doc, root, &mut HashSet::from([root]));
-    top.insert(0, parent);
-    relink(doc, root, &top)?;
-    put(doc, parent, b"Count", Some(Object::Int(1)))?;
-    recount(doc)?;
-    Ok(vec![0])
+    Ok(())
 }
 
 /// Change a bookmark's title.

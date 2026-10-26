@@ -34,6 +34,7 @@ pub mod signature_image;
 pub mod signature_scan;
 pub mod text_fonts;
 mod text_preview;
+pub mod toc;
 mod upright_image;
 pub mod xfa;
 
@@ -1516,6 +1517,13 @@ pub enum Edit {
         links: Vec<(usize, Vec<[f64; 4]>, String)>,
         style: LinkStyle,
     },
+    /// Link the table of contents: each entry's rows (page, rects in user space) go to its page
+    /// (at `top` in user space, the top without one, keeping the zoom), and `bookmarks` (level,
+    /// title, page) are added after the bookmarks already there.
+    LinkToc {
+        links: Vec<toc::TocLink>,
+        bookmarks: Vec<(u8, String, usize)>,
+    },
     /// Import comments and/or form data (XFDF, FDF, XML, CSV, tab-delimited text).
     ImportData {
         name: String,
@@ -1859,6 +1867,7 @@ impl Edit {
             Edit::DeleteLink { .. } => Label::of("Delete link"),
             Edit::RemoveLinks { .. } => Label::of("Remove all links"),
             Edit::AddLinks { links, .. } => plural("Create link", "Create links", links.len()),
+            Edit::LinkToc { .. } => Label::of("Link the table of contents"),
             Edit::Sanitize => Label::of("Sanitize document"),
             Edit::Flatten { comments: true, fields: false } => Label::of("Flatten comments"),
             Edit::Flatten { comments: false, fields: true } => Label::of("Flatten form fields"),
@@ -1913,6 +1922,19 @@ fn unrestricted(p: &cleonpdf_cos::Permissions) -> bool {
 }
 
 /// Whether the opening password allows an edit (§7.6.4.2, Table 22).
+/// A rectangle in a page's view space (the text layer's) as the rectangle around it in user space.
+fn view_to_user_rect(page: &cleonpdf_render::PageInfo, r: [f32; 4]) -> [f64; 4] {
+    let q = page.view_rect_to_quad(r);
+    let xs = [q[0], q[2], q[4], q[6]];
+    let ys = [q[1], q[3], q[5], q[7]];
+    [
+        xs.iter().copied().fold(f64::MAX, f64::min),
+        ys.iter().copied().fold(f64::MAX, f64::min),
+        xs.iter().copied().fold(f64::MIN, f64::max),
+        ys.iter().copied().fold(f64::MIN, f64::max),
+    ]
+}
+
 fn check_permission(edit: &Edit, p: &cleonpdf_cos::Permissions) -> Result<(), EditError> {
     match edit {
         Edit::RotatePages { .. }
@@ -2021,6 +2043,16 @@ fn check_permission(edit: &Edit, p: &cleonpdf_cos::Permissions) -> Result<(), Ed
                 Ok(())
             } else {
                 Err(EditError::NotPermitted("changes to the document"))
+            }
+        }
+        // Links are changes to the document; bookmarks are assembly (Table 22).
+        Edit::LinkToc { links, bookmarks } => {
+            if !links.is_empty() && !p.modify() {
+                Err(EditError::NotPermitted("changes to the document"))
+            } else if !bookmarks.is_empty() && !p.assemble() {
+                Err(EditError::NotPermitted("page changes"))
+            } else {
+                Ok(())
             }
         }
         Edit::Batch { edits, .. } => edits.iter().try_for_each(|e| check_permission(e, p)),
@@ -2416,6 +2448,24 @@ fn run_edit(doc: &mut cleonpdf_cos::Document, edit: &Edit, cx: &mut EditCtx) -> 
         Edit::AddLinks { links, style } => {
             if cleonpdf_annot::links::add_many(doc, links, style)? == 0 {
                 return Err(EditError::Edit(cleonpdf_edit::EditError::Invalid("no web addresses were found".into())));
+            }
+        }
+        Edit::LinkToc { links, bookmarks } => {
+            if links.is_empty() && bookmarks.is_empty() {
+                return Err(EditError::Edit(cleonpdf_edit::EditError::Invalid("the table of contents has no entry to link".into())));
+            }
+            let style = LinkStyle::default();
+            for link in links {
+                for r in &link.rects {
+                    cleonpdf_annot::links::add_go_to(doc, link.page, *r, link.target, link.top, &style)?;
+                }
+            }
+            if !bookmarks.is_empty() {
+                let entries: Vec<cleonpdf_organize::OutlineEntry> = bookmarks
+                    .iter()
+                    .map(|(level, title, page)| cleonpdf_organize::OutlineEntry { level: *level, title: title.clone(), page: *page, element: None })
+                    .collect();
+                cleonpdf_organize::add_bookmarks(doc, &entries)?;
             }
         }
         Edit::ImportData { bytes, .. } => {
@@ -4178,6 +4228,67 @@ impl Session {
 
     /// Web addresses in the text of every page (Create links from URLs): (page, one rectangle
     /// per line in user space, URI). Text that already has a link over it is skipped.
+    /// The table of contents printed in document `id`, with the page each entry points to (see
+    /// [`toc`]). `None` when its text has none (a scan needs Recognize text first).
+    pub fn find_toc(&self, id: DocId) -> Option<toc::Toc> {
+        let doc = self.get(id)?;
+        let count = doc.info.pages.len();
+        let config = RenderConfig { password: doc.password.as_deref().map(Arc::from), ..Default::default() };
+        let mut r = cleonpdf_render::PageRenderer::new(doc.bytes.clone(), config);
+        let texts: Vec<(usize, Arc<cleonpdf_render::PageText>)> = toc::pages_to_read(count)
+            .into_iter()
+            .filter_map(|page| {
+                let res =
+                    r.render(cleonpdf_render::RenderRequest { page, kind: cleonpdf_render::RequestKind::Text, scale: 1.0, ..Default::default() });
+                Some((page, res.text?))
+            })
+            .collect();
+        let inputs: Vec<toc::PageInput> = texts
+            .iter()
+            .map(|(page, text)| toc::PageInput { index: *page, text, height: doc.info.pages.get(*page).map_or(0.0, |p| p.height) })
+            .collect();
+        // Labels say something only when they aren't the page numbers.
+        let custom = doc.info.pages.iter().enumerate().any(|(i, p)| p.label != i.saturating_add(1).to_string());
+        let labels: Vec<String> = if custom { doc.info.pages.iter().map(|p| p.label.clone()).collect() } else { Vec::new() };
+        toc::find(&inputs, &labels, count)
+    }
+
+    /// The edit that makes the entries of `toc` that point into document `id` links (`links`)
+    /// and/or bookmarks (`bookmarks`). Rows already under a link aren't linked again. `None` when
+    /// that leaves nothing to do.
+    pub fn toc_edit(&self, id: DocId, toc: &toc::Toc, links: bool, bookmarks: bool) -> Option<Edit> {
+        let doc = self.get(id)?;
+        let mut linked = Vec::new();
+        if links {
+            for e in toc.linked() {
+                let (Some(target), Some(page)) = (e.target, doc.info.pages.get(e.page)) else { continue };
+                // The heading's place on its page, in that page's user space.
+                let top = e.top.and_then(|y| doc.info.pages.get(target).map(|t| f64::from(t.view_to_user(0.0, y)[1])));
+                let rects: Vec<[f64; 4]> = e
+                    .rects
+                    .iter()
+                    .map(|r| view_to_user_rect(page, *r))
+                    .filter(|r| {
+                        !doc.links.iter().any(|l| l.page == e.page && l.rect[0] < r[2] && r[0] < l.rect[2] && l.rect[1] < r[3] && r[1] < l.rect[3])
+                    })
+                    .collect();
+                if !rects.is_empty() {
+                    linked.push(toc::TocLink { page: e.page, rects, target, top });
+                }
+            }
+        }
+        let mut marks: Vec<(u8, String, usize)> = if bookmarks {
+            toc.linked().filter_map(|e| Some((e.level, e.title.clone(), e.target.filter(|t| *t < doc.info.pages.len())?))).collect()
+        } else {
+            Vec::new()
+        };
+        // Added once: a top-level bookmark already made from its first entry means they are in.
+        if marks.first().is_some_and(|(_, title, page)| doc.info.outline.iter().any(|o| &o.title == title && o.page == Some(*page))) {
+            marks.clear();
+        }
+        (!linked.is_empty() || !marks.is_empty()).then_some(Edit::LinkToc { links: linked, bookmarks: marks })
+    }
+
     pub fn find_urls(&self, id: DocId) -> Vec<(usize, Vec<[f64; 4]>, String)> {
         let Some(doc) = self.get(id) else { return Vec::new() };
         let config = RenderConfig { password: doc.password.as_deref().map(Arc::from), ..Default::default() };
@@ -4197,17 +4308,7 @@ impl Session {
                 let rects: Vec<[f64; 4]> = text
                     .line_rects(glyphs)
                     .into_iter()
-                    .map(|v| {
-                        let q = doc.info.pages[page].view_rect_to_quad(v);
-                        let xs = [q[0], q[2], q[4], q[6]];
-                        let ys = [q[1], q[3], q[5], q[7]];
-                        [
-                            xs.iter().copied().fold(f64::MAX, f64::min),
-                            ys.iter().copied().fold(f64::MAX, f64::min),
-                            xs.iter().copied().fold(f64::MIN, f64::max),
-                            ys.iter().copied().fold(f64::MIN, f64::max),
-                        ]
-                    })
+                    .map(|v| view_to_user_rect(&doc.info.pages[page], v))
                     .filter(|r| {
                         !doc.links.iter().any(|l| l.page == page && l.rect[0] < r[2] && r[0] < l.rect[2] && l.rect[1] < r[3] && r[1] < l.rect[3])
                     })

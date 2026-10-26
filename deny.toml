@@ -48,6 +48,14 @@ ignore = [
     # winprint's fmt-derive (craft-print's Windows spooler), so it runs at compile time on Windows
     # and is not in the binary.
     { id = "RUSTSEC-2024-0370", reason = "compile-time proc macro of winprint's fmt-derive (craft-print Windows printing, #1107)" },
+    # zvariant, zvariant_derive and zbus_names are unmaintained (no vulnerability): zbus 6 merged
+    # them into itself. They reach the tree through zbus 5, which egui's Linux accessibility
+    # (accesskit_unix, still on zbus 5 in its latest release, 0.24.1) needs; cleonpdf-platform
+    # pins the same zbus 5 so the app carries one copy. Moving our own zbus to 6 alone would add
+    # a second D-Bus stack and keep these crates. Revisit when accesskit moves to zbus 6.
+    { id = "RUSTSEC-2026-0370", reason = "zvariant via zbus 5, required by egui's accesskit_unix (no zbus 6 release)" },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names via zbus 5, required by egui's accesskit_unix (no zbus 6 release)" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive via zbus 5, required by egui's accesskit_unix (no zbus 6 release)" },
 ]
 
 # egui's default UI fonts (Ubuntu-Light, Hack, emoji-icon-font): font licences on the AGENTS.md

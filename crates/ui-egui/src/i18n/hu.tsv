@@ -2360,3 +2360,24 @@ window	Zoom	Méretezés
 	Bring all to front	Összes előtérbe hozása
 	Paste	Beillesztés
 	Select all	Összes kijelölése
+
+# Link the table of contents
+	Link the table of contents…	Tartalomjegyzék összekapcsolása…
+	Link the table of contents	Tartalomjegyzék összekapcsolása
+	Entries found: {count}. In this file: {linked}.	Talált bejegyzések: {count}. Ebben a fájlban: {linked}.
+	Printed page 1 is PDF page	Az 1. nyomtatott oldal a PDF ennyiedik oldala:
+	Matched through the document's page labels.	A dokumentum oldalcímkéi alapján párosítva.
+	Matched through the page numbers printed on the pages.	Az oldalakra nyomtatott oldalszámok alapján párosítva.
+	Matched through the headings the entries name.	A bejegyzések által megnevezett címsorok alapján párosítva.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Az oldalakon nem található oldalszám: ellenőrizd, hová vezetnek az első bejegyzések, és szükség esetén javítsd a fenti számot.
+	Entry	Bejegyzés
+	Printed page	Nyomtatott oldal
+	PDF page	PDF-oldal
+	not in this file	nincs ebben a fájlban
+	Make the entries clickable	Bejegyzések kattinthatóvá tétele
+	Add them as bookmarks	Hozzáadás könyvjelzőként
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	A dokumentum szövegében nem található tartalomjegyzék. Ha szkennelt dokumentum, előbb ismertesd fel a szövegét.
+	The table of contents is already linked	A tartalomjegyzék már össze van kapcsolva
+	The table of contents is linked and in the bookmarks	A tartalomjegyzék össze van kapcsolva, és a könyvjelzők között van
+	The table of contents is linked	A tartalomjegyzék össze van kapcsolva
+	The table of contents is in the bookmarks	A tartalomjegyzék a könyvjelzők között van

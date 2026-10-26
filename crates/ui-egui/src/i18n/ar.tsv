@@ -2384,3 +2384,24 @@ window	Zoom	تغيير الحجم
 	Bring all to front	إحضار الكل إلى المقدمة
 	Paste	لصق
 	Select all	تحديد الكل
+
+# Link the table of contents
+	Link the table of contents…	ربط جدول المحتويات…
+	Link the table of contents	ربط جدول المحتويات
+	Entries found: {count}. In this file: {linked}.	المدخلات التي وُجدت: {count}. في هذا الملف: {linked}.
+	Printed page 1 is PDF page	الصفحة المطبوعة 1 هي صفحة PDF رقم
+	Matched through the document's page labels.	طوبقت عبر تسميات صفحات المستند.
+	Matched through the page numbers printed on the pages.	طوبقت عبر أرقام الصفحات المطبوعة على الصفحات.
+	Matched through the headings the entries name.	طوبقت عبر العناوين التي تذكرها المدخلات.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	لم يُعثر على أرقام صفحات في الصفحات: تحقق من المكان الذي تقود إليه المدخلات الأولى وصحّح الرقم أعلاه عند الحاجة.
+	Entry	مدخل
+	Printed page	الصفحة المطبوعة
+	PDF page	صفحة PDF
+	not in this file	ليست في هذا الملف
+	Make the entries clickable	اجعل المدخلات قابلة للنقر
+	Add them as bookmarks	أضفها كإشارات مرجعية
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	لم يُعثر على جدول محتويات في نص هذا المستند. إن كان ممسوحًا ضوئيًا، فتعرّف على نصه أولًا.
+	The table of contents is already linked	جدول المحتويات مرتبط بالفعل
+	The table of contents is linked and in the bookmarks	جدول المحتويات مرتبط وموجود في الإشارات المرجعية
+	The table of contents is linked	جدول المحتويات مرتبط
+	The table of contents is in the bookmarks	جدول المحتويات موجود في الإشارات المرجعية

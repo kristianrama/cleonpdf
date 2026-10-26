@@ -2375,3 +2375,24 @@ window	Zoom	Zoom
 	Bring all to front	Trazer tudo para a frente
 	Paste	Colar
 	Select all	Selecionar tudo
+
+# Link the table of contents
+	Link the table of contents…	Vincular o sumário…
+	Link the table of contents	Vincular o sumário
+	Entries found: {count}. In this file: {linked}.	Entradas encontradas: {count}. Neste arquivo: {linked}.
+	Printed page 1 is PDF page	A página impressa 1 é a página do PDF
+	Matched through the document's page labels.	Associadas pelos rótulos de página do documento.
+	Matched through the page numbers printed on the pages.	Associadas pelos números de página impressos nas páginas.
+	Matched through the headings the entries name.	Associadas pelos títulos que as entradas indicam.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Nenhum número de página foi encontrado nas páginas: verifique aonde as primeiras entradas levam e corrija o número acima, se necessário.
+	Entry	Entrada
+	Printed page	Página impressa
+	PDF page	Página do PDF
+	not in this file	fora deste arquivo
+	Make the entries clickable	Tornar as entradas clicáveis
+	Add them as bookmarks	Adicioná-las como marcadores
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	Nenhum sumário foi encontrado no texto deste documento. Se for uma digitalização, reconheça o texto primeiro.
+	The table of contents is already linked	O sumário já está vinculado
+	The table of contents is linked and in the bookmarks	O sumário está vinculado e nos marcadores
+	The table of contents is linked	O sumário está vinculado
+	The table of contents is in the bookmarks	O sumário está nos marcadores

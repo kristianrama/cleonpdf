@@ -2357,3 +2357,24 @@ window	Zoom	Boyutlandır
 	Bring all to front	Tümünü öne getir
 	Paste	Yapıştır
 	Select all	Tümünü seç
+
+# Link the table of contents
+	Link the table of contents…	İçindekileri bağla…
+	Link the table of contents	İçindekileri bağla
+	Entries found: {count}. In this file: {linked}.	Bulunan girişler: {count}. Bu dosyada: {linked}.
+	Printed page 1 is PDF page	Basılı sayfa 1, PDF sayfası
+	Matched through the document's page labels.	Belgenin sayfa etiketleriyle eşleştirildi.
+	Matched through the page numbers printed on the pages.	Sayfalara basılı sayfa numaralarıyla eşleştirildi.
+	Matched through the headings the entries name.	Girişlerin adını verdiği başlıklarla eşleştirildi.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Sayfalarda sayfa numarası bulunamadı: ilk girişlerin nereye gittiğini kontrol edin ve gerekirse yukarıdaki sayıyı düzeltin.
+	Entry	Giriş
+	Printed page	Basılı sayfa
+	PDF page	PDF sayfası
+	not in this file	bu dosyada yok
+	Make the entries clickable	Girişleri tıklanabilir yap
+	Add them as bookmarks	Yer işareti olarak ekle
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	Bu belgenin metninde içindekiler bulunamadı. Taranmış bir belgeyse önce metnini tanıyın.
+	The table of contents is already linked	İçindekiler zaten bağlı
+	The table of contents is linked and in the bookmarks	İçindekiler bağlandı ve yer işaretlerinde
+	The table of contents is linked	İçindekiler bağlandı
+	The table of contents is in the bookmarks	İçindekiler yer işaretlerinde

@@ -2362,3 +2362,24 @@ window	Zoom	Zoomen
 	Bring all to front	Alle nach vorne bringen
 	Paste	Einfügen
 	Select all	Alles auswählen
+
+# Link the table of contents
+	Link the table of contents…	Inhaltsverzeichnis verlinken…
+	Link the table of contents	Inhaltsverzeichnis verlinken
+	Entries found: {count}. In this file: {linked}.	Gefundene Einträge: {count}. In dieser Datei: {linked}.
+	Printed page 1 is PDF page	Gedruckte Seite 1 ist PDF-Seite
+	Matched through the document's page labels.	Zugeordnet über die Seitenbeschriftungen des Dokuments.
+	Matched through the page numbers printed on the pages.	Zugeordnet über die auf den Seiten gedruckten Seitenzahlen.
+	Matched through the headings the entries name.	Zugeordnet über die Überschriften, die die Einträge nennen.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Auf den Seiten wurden keine Seitenzahlen gefunden: Prüfe, wohin die ersten Einträge führen, und korrigiere bei Bedarf die Zahl oben.
+	Entry	Eintrag
+	Printed page	Gedruckte Seite
+	PDF page	PDF-Seite
+	not in this file	nicht in dieser Datei
+	Make the entries clickable	Einträge anklickbar machen
+	Add them as bookmarks	Als Lesezeichen hinzufügen
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	Im Text dieses Dokuments wurde kein Inhaltsverzeichnis gefunden. Ist es ein Scan, lass zuerst seinen Text erkennen.
+	The table of contents is already linked	Das Inhaltsverzeichnis ist bereits verlinkt
+	The table of contents is linked and in the bookmarks	Das Inhaltsverzeichnis ist verlinkt und in den Lesezeichen
+	The table of contents is linked	Das Inhaltsverzeichnis ist verlinkt
+	The table of contents is in the bookmarks	Das Inhaltsverzeichnis ist in den Lesezeichen

@@ -2218,6 +2218,18 @@ evidence = ["crates/engine/src/tests.rs::links_from_urls_and_link_edits", "crate
 notes = "http(s):// and www. addresses; already-linked text skipped"
 
 [[feature]]
+id = "edit.links-from-toc"
+title = "Link the table of contents (and bookmark it)"
+area = "C"
+tier = "P2"
+milestone = "M7"
+status = "shipped"
+commands = ["page.link_toc"]
+tools = ["toc_find", "toc_link"]
+evidence = ["crates/engine/src/toc.rs::an_italian_table_of_contents_with_leaders_chapters_and_wrapped_titles", "crates/engine/src/toc.rs::page_labels_place_roman_and_arabic_entries", "crates/engine/src/toc.rs::headings_place_the_entries_when_pages_print_no_numbers", "crates/engine/src/toc.rs::ordinary_pages_and_tables_of_numbers_are_not_tables_of_contents", "crates/engine/src/tests.rs::the_table_of_contents_becomes_links_and_bookmarks_in_one_undoable_edit", "crates/organize/src/tests.rs::bookmarks_added_at_the_top_level_follow_the_existing_ones_nested_by_level", "crates/automation/tests/automation.rs::the_table_of_contents_is_found_corrected_and_linked", "crates/ui-egui/tests/commands.rs::pages_link_the_table_of_contents_shows_where_entries_lead_then_links_them"]
+notes = "Beyond Acrobat, which has no such command (its Create links from URLs only does web addresses). Pages ▸ Link the table of contents finds the table of contents printed in the text by its layout (page numbers in an aligned column, most after leader dots; chapter rows without leaders; titles wrapped onto two rows; numbers run into the title), in any language. Printed numbers go to PDF pages through page labels, else the page numbers printed at the top or foot of the pages, else the headings the entries name, else page 1 = printed 1; the dialog shows where each entry leads and corrects where printed page 1 is. Links land on the heading keeping the zoom; bookmarks nest by section number. One undoable edit; rows already linked are skipped. The mutation fuzzer finds and links tables of contents too. Tuned on a TeX handout (dot leaders, TeX accents put back). Not yet: back-of-book (analytic) indexes with several page numbers per entry, numbers printed on the left, right-to-left and vertical text, links to other files of a split book, and scans (recognize their text first)"
+
+[[feature]]
 id = "edit.remove-all-links"
 title = "Remove all links"
 area = "C"

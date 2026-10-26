@@ -2491,3 +2491,24 @@ window	Zoom	Zoom
 	Bring all to front	Traer todo al frente
 	Paste	Pegar
 	Select all	Seleccionar todo
+
+# Link the table of contents
+	Link the table of contents…	Enlazar el índice…
+	Link the table of contents	Enlazar el índice
+	Entries found: {count}. In this file: {linked}.	Entradas encontradas: {count}. En este archivo: {linked}.
+	Printed page 1 is PDF page	La página impresa 1 es la página del PDF
+	Matched through the document's page labels.	Emparejadas mediante las etiquetas de página del documento.
+	Matched through the page numbers printed on the pages.	Emparejadas mediante los números de página impresos en las páginas.
+	Matched through the headings the entries name.	Emparejadas mediante los títulos que nombran las entradas.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	No se han encontrado números de página en las páginas: comprueba adónde llevan las primeras entradas y corrige el número de arriba si hace falta.
+	Entry	Entrada
+	Printed page	Página impresa
+	PDF page	Página del PDF
+	not in this file	no está en este archivo
+	Make the entries clickable	Hacer clicables las entradas
+	Add them as bookmarks	Añadirlas como marcadores
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	No se ha encontrado un índice en el texto de este documento. Si es un escaneo, reconoce primero su texto.
+	The table of contents is already linked	El índice ya está enlazado
+	The table of contents is linked and in the bookmarks	El índice está enlazado y en los marcadores
+	The table of contents is linked	El índice está enlazado
+	The table of contents is in the bookmarks	El índice está en los marcadores

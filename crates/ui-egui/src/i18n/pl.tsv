@@ -2343,3 +2343,24 @@ window	Zoom	Zmień rozmiar
 	Bring all to front	Przenieś wszystko na wierzch
 	Paste	Wklej
 	Select all	Zaznacz wszystko
+
+# Link the table of contents
+	Link the table of contents…	Połącz spis treści…
+	Link the table of contents	Połącz spis treści
+	Entries found: {count}. In this file: {linked}.	Znalezione pozycje: {count}. W tym pliku: {linked}.
+	Printed page 1 is PDF page	Wydrukowana strona 1 to strona PDF
+	Matched through the document's page labels.	Dopasowano według etykiet stron dokumentu.
+	Matched through the page numbers printed on the pages.	Dopasowano według numerów wydrukowanych na stronach.
+	Matched through the headings the entries name.	Dopasowano według nagłówków wskazanych przez pozycje.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Na stronach nie znaleziono numerów stron: sprawdź, dokąd prowadzą pierwsze pozycje, i w razie potrzeby popraw liczbę powyżej.
+	Entry	Pozycja
+	Printed page	Wydrukowana strona
+	PDF page	Strona PDF
+	not in this file	nie ma w tym pliku
+	Make the entries clickable	Uczyń pozycje klikalnymi
+	Add them as bookmarks	Dodaj je jako zakładki
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	W tekście tego dokumentu nie znaleziono spisu treści. Jeśli to skan, najpierw rozpoznaj jego tekst.
+	The table of contents is already linked	Spis treści jest już połączony
+	The table of contents is linked and in the bookmarks	Spis treści jest połączony i w zakładkach
+	The table of contents is linked	Spis treści jest połączony
+	The table of contents is in the bookmarks	Spis treści jest w zakładkach

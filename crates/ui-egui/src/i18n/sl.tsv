@@ -2366,3 +2366,24 @@ window	Zoom	Spremeni velikost
 	Bring all to front	Postavi vse v ospredje
 	Paste	Prilepi
 	Select all	Izberi vse
+
+# Link the table of contents
+	Link the table of contents…	Poveži kazalo vsebine…
+	Link the table of contents	Poveži kazalo vsebine
+	Entries found: {count}. In this file: {linked}.	Najdeni vnosi: {count}. V tej datoteki: {linked}.
+	Printed page 1 is PDF page	Natisnjena stran 1 je stran PDF
+	Matched through the document's page labels.	Ujemanje po oznakah strani dokumenta.
+	Matched through the page numbers printed on the pages.	Ujemanje po številkah, natisnjenih na straneh.
+	Matched through the headings the entries name.	Ujemanje po naslovih, ki jih navajajo vnosi.
+	No page numbers were found on the pages: check where the first entries lead and correct the number above if needed.	Na straneh ni bilo najdenih številk strani: preverite, kam vodijo prvi vnosi, in po potrebi popravite številko zgoraj.
+	Entry	Vnos
+	Printed page	Natisnjena stran
+	PDF page	Stran PDF
+	not in this file	ni v tej datoteki
+	Make the entries clickable	Naredi vnose klikljive
+	Add them as bookmarks	Dodaj jih kot zaznamke
+	No table of contents was found in this document's text. If it is a scan, recognize its text first.	V besedilu tega dokumenta ni bilo najdenega kazala vsebine. Če gre za skeniran dokument, najprej prepoznajte besedilo.
+	The table of contents is already linked	Kazalo vsebine je že povezano
+	The table of contents is linked and in the bookmarks	Kazalo vsebine je povezano in v zaznamkih
+	The table of contents is linked	Kazalo vsebine je povezano
+	The table of contents is in the bookmarks	Kazalo vsebine je v zaznamkih
