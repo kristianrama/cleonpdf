@@ -22,7 +22,7 @@ features total).
 |---|---|---|---|---|
 | PDF 1.0–1.7, ISO 32000-1 | R W | R W | high for reading and unencrypted writing | 958-file pdf.js corpus open/edit/save; `qpdf --check` on saved outputs; `xtask check` baselines |
 | PDF 2.0 (ISO 32000-2) | R W | R W (2.0-only features ignored but preserved) | good | No UTF-8 strings, `/AF`, DPart, namespaces ([pdf-spec-parity.md](pdf-spec-parity.md)) |
-| Encrypted PDF (standard security R2–R6) | R W | R W | reading high; writing opens in Acrobat DC since #836 (#774; AES-256 and RC4-128 checked by hand, no automated interop suite) | `crates/crypt`, `crates/cos` tests (`the_catalog_of_an_encrypted_document_stays_outside_object_streams`); all 7 corpus encrypted files open |
+| Encrypted PDF (standard security R2–R6) | R W | R W | reading high; writing opens in Acrobat DC since #836 (#774, checked by hand); AES-256, AES-128, RC4-128 and RC4-40 output, and incremental updates to AES-256 and RC4-128 files another tool encrypted, open in qpdf, Poppler, MuPDF and Ghostscript with the password and not without it (`cargo xtask interop`, in CI) | `crates/crypt`, `crates/cos` tests (`the_catalog_of_an_encrypted_document_stays_outside_object_streams`); all 7 corpus encrypted files open |
 | Certificate-encrypted PDF (public-key handler) | R W | none (clear message) | none | `core.unsupported-handlers` |
 | Linearized PDF (Fast Web View) | R W | R (as normal PDF); no W | none for W | `core.linearization` planned |
 | Damaged PDF | R (repair) | R (repair, logged) | high | `core.repair-broken-files`, nightly fuzzing |
@@ -110,6 +110,7 @@ features total).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | Encrypted PDF: output and incremental updates checked in qpdf, Poppler, MuPDF and Ghostscript by `cargo xtask interop` in CI |
 | 2026-10-12 | minor | XDP split into data (read and write for XFA forms, already shipped under `form.xfa-data`) and opening `.xdp` as a document (none). Create PDF reads BigTIFF; malformed GIF headers are no longer detected as images. |
 | 2026-10-11 | minor | #773: inferred tables have no invented borders; rotated or overlapping invoice pages use floating shapes and page sections. Full Office layout fidelity remains partial. |
 | 2026-10-11 | minor | Encrypted PDF row: written files open in Acrobat DC (#774, fixed by #836). FDF row: #807, #809 and #819 fixed |

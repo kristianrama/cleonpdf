@@ -25,7 +25,7 @@ Approved Trust List) are out of scope: 23 such features are tracked as `na` in
 | **Ready for real work**, mainstream practitioner | **≈ 55%** (range 50–60%) | estimated ([split below](#mainstream-practitioner-vs-full-acrobat-pro)) |
 | **Ready for real work**, essentials user | **≈ 66%** (range 60–70%) | estimated ([below](#essentials-user)) |
 | **Stage** | **alpha** (passes the core-workflow gate) | see [Stage](#stage) |
-| Remaining to beta | ≈ 400–700 Opus 5.5 agent-hours | estimated |
+| Remaining to beta | ≈ 390–690 Opus 5.5 agent-hours | estimated |
 | Remaining to full parity | ≈ 780–1,400 Opus 5.5 agent-hours | estimated |
 
 ### Readiness by audience
@@ -242,11 +242,11 @@ stage set to pre-alpha; see the revision history.)
 | Convert and share (Office ↔ PDF, password protection) | partial, not blocking (Office→PDF and Word layout #773 are beta items; encryption interop #774 fixed) |
 
 **To reach beta** (≈ 75% ready, no blocking gap in PDF interchange), ≈ 26 points and
-**≈ 400–700 agent-hours**:
+**≈ 390–690 agent-hours**:
 
 | Beta requirement | Hours |
 |---|---|
-| An interop suite that opens our outputs in other readers (encrypted output already opens in Acrobat, #774, #836; hours not re-estimated) | 8–15 |
+| ~~An interop suite that opens our outputs in other readers~~ **done 2026-10-26**: `cargo xtask interop`, in CI on every pull request, opens 50 kinds of output (saves, encryption, page edits, comments, forms, redaction, optimizing, PDF/A, signing; inputs with object streams, linearized and encrypted by another tool) in qpdf, Poppler, MuPDF and Ghostscript; checks opening, passwords, page counts, text, field values, bookmarks and signatures. Not automated: Acrobat, pdf.js, real-world inputs | 0 (was 8–15) |
 | Rendering: a fidelity harness against Acrobat captures (local, clean-room) and fixing what it finds; settle the renderer (own M2 devices, or #841's proposal); Chinese UI faces in releases | 80–140 |
 | Editing existing text robust on real files: subset fonts, CJK, RTL, rotated text | 70–120 |
 | Printing on Windows and the web | 15–30 |
@@ -256,7 +256,7 @@ stage set to pre-alpha; see the revision history.)
 | PDF/A (all parts and levels), PDF/UA validation, a first Preflight | 45–80 |
 | Accessibility tagging: autotag, Tags panel, Reading Order | 35–60 |
 | Open-issue backlog, stability and performance budgets | 40–70 |
-| **Total** | **≈ 400–700** |
+| **Total** | **≈ 390–690** |
 
 ## Effort and calibration
 
@@ -292,6 +292,7 @@ licensed OCR or AI model.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | First beta requirement done: the interop suite (`cargo xtask interop`, 50 cases, qpdf, Poppler, MuPDF and Ghostscript, in CI). It found no output another reader rejects or shows differently. Beta ≈ 400–700 → 390–690 h; readiness and the full-parity hours unchanged (within their rounding) |
 | 2026-10-12 | minor | Exclusive image crops resize with their pixels across nested states, intervening operators and content streams; shared clips remain fixed. Synthetic engine/tool regressions and private image save/reopen checks; estimates unchanged. |
 | 2026-10-11 | minor | Web printing shipped (gap 4): Hardware, Platforms and L Print text updated. Text only: scores, readiness and hours not re-judged |
 | 2026-10-11 | minor | Contributor fork: document-font selection and subset completion, CFF, style ranges, contextual/bidi save/reopen and all-page Chinese keyboard acceptance; curve/hole hit testing (shared clips stay fixed, as on main). Scope remains bounded; percentages unchanged |

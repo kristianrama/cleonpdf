@@ -151,8 +151,9 @@ M2 (renderer), M7 (content editing), M10 (OCR and Office), M11 (Preflight and st
 - Real-world signature chains, revocation and tokens.
 - The rendering long tail: Type 3 fonts, broken fonts, shadings, blend modes.
 - Correctness of PDF/A, PDF/X and PDF/UA conversion.
-- Interoperability: files other readers (above all Acrobat) reject, as in #774 (fixed by #836; no
-  automated interop suite yet).
+- Interoperability: files other readers (above all Acrobat) reject, as in #774 (fixed by #836).
+  `cargo xtask interop` opens 50 kinds of output in qpdf, Poppler, MuPDF and Ghostscript on every
+  pull request; Acrobat and pdf.js are not automated, and its inputs are synthetic.
 - OCR and AI quality limited by what openly licensed models exist.
 - CPU rendering performance on the web.
 - Hostile input: every fuzz run so far has found new crashes or hangs.
@@ -162,6 +163,7 @@ M2 (renderer), M7 (content editing), M10 (OCR and Office), M11 (Preflight and st
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | Risks: interoperability now has an automated suite (`cargo xtask interop`); Acrobat and pdf.js not automated |
 | 2026-10-12 | minor | M13: CLI check directory identity, with overlap and symlink regressions; estimates unchanged |
 | 2026-10-12 | minor | M4: shared Type 3 glyph resources survive extraction, with save/reopen and independent raster regressions; estimates unchanged |
 | 2026-10-12 | minor | M2: packed TIFF-predictor RGB row boundaries, with decoding and page-render regressions; estimates unchanged |

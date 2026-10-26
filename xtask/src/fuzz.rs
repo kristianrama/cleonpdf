@@ -145,56 +145,70 @@ fn find(hay: &[u8], needle: &[u8]) -> Option<usize> {
     hay.windows(needle.len()).position(|w| w == needle)
 }
 
+/// A classic PDF file (header, objects numbered from 1, cross-reference table, trailer) written by
+/// hand, so test inputs don't come from the writer under test.
+pub(crate) fn build_pdf(objs: &[&str], trailer: &str) -> Vec<u8> {
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offs = Vec::new();
+    for (i, o) in objs.iter().enumerate() {
+        offs.push(out.len());
+        out.extend_from_slice(format!("{} 0 obj\n{o}\nendobj\n", i + 1).as_bytes());
+    }
+    let x = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+    for o in offs {
+        out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(format!("trailer\n<< /Size {} {trailer} >>\nstartxref\n{x}\n%%EOF\n", objs.len() + 1).as_bytes());
+    out
+}
+
+/// An A4 document whose pages draw `pages` (content streams using Helvetica as `/F1`), with
+/// `catalog` added to its catalog dictionary.
+pub(crate) fn helvetica_pdf(pages: &[String], catalog: &str) -> Vec<u8> {
+    let mut objs = vec![
+        format!("<< /Type /Catalog /Pages 2 0 R{catalog} >>"),
+        format!(
+            "<< /Type /Pages /Kids [{}] /Count {} /MediaBox [0 0 595 842] >>",
+            (0..pages.len()).map(|i| format!("{} 0 R", 4 + 2 * i)).collect::<Vec<_>>().join(" "),
+            pages.len()
+        ),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_string(),
+    ];
+    for (i, body) in pages.iter().enumerate() {
+        objs.push(format!("<< /Type /Page /Parent 2 0 R /Contents {} 0 R /Resources << /Font << /F1 3 0 R >> >> >>", 5 + 2 * i));
+        objs.push(format!("<< /Length {} >>\nstream\n{body}endstream", body.len()));
+    }
+    build_pdf(&objs.iter().map(String::as_str).collect::<Vec<_>>(), "/Root 1 0 R")
+}
+
+/// One line of Helvetica text at (`x`, `y`) for [`helvetica_pdf`].
+pub(crate) fn text_line(size: u32, x: u32, y: u32, s: &str) -> String {
+    format!("BT /F1 {size} Tf {x} {y} Td ({s}) Tj ET\n")
+}
+
+/// A printed table of contents (Pages ▸ Link the table of contents): rows with leader dots, a
+/// chapter row without them, page numbers right-aligned in a column, and the pages they name with
+/// their headings and printed page numbers. `labels`: numbered by page labels instead.
+pub(crate) fn toc_book(labels: bool) -> Vec<u8> {
+    let entries = [("Introduction", "1", true), ("1 Getting started", "2", true), ("1.1 Installing", "3", true), ("2 Using it", "4", false)];
+    let mut contents = text_line(18, 72, 760, "Contents");
+    for (i, (title, n, dots)) in (0u32..).zip(entries) {
+        let y = 720 - 20 * i;
+        contents.push_str(&text_line(10, 72, y, &if dots { format!("{title} . . . . . . . . . . . .") } else { title.to_string() }));
+        contents.push_str(&text_line(10, 494, y, n));
+    }
+    let mut pages = vec![contents];
+    pages.extend(entries.iter().map(|(title, n, _)| format!("{}{}", text_line(14, 72, 760, title), text_line(10, 295, 40, n))));
+    helvetica_pdf(&pages, if labels { " /PageLabels << /Nums [0 << /S /r >> 1 << /S /D >>] >>" } else { "" })
+}
+
 /// Synthetic seeds, so fuzzing works without the corpus: plain, object-stream and encrypted
 /// shapes, nested page trees, annotations, forms, inline images and printed tables of contents.
 fn synthetic_seeds() -> Vec<Vec<u8>> {
-    let build = |objs: &[&str], trailer: &str| {
-        let mut out = b"%PDF-1.7\n".to_vec();
-        let mut offs = Vec::new();
-        for (i, o) in objs.iter().enumerate() {
-            offs.push(out.len());
-            out.extend_from_slice(format!("{} 0 obj\n{o}\nendobj\n", i + 1).as_bytes());
-        }
-        let x = out.len();
-        out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
-        for o in offs {
-            out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
-        }
-        out.extend_from_slice(format!("trailer\n<< /Size {} {trailer} >>\nstartxref\n{x}\n%%EOF\n", objs.len() + 1).as_bytes());
-        out
-    };
+    let build = build_pdf;
     let content = "BT /F1 24 Tf 20 150 Td (Hello) Tj ET 0 0 1 rg 10 10 50 50 re f q 20 0 0 20 100 100 cm BI /W 2 /H 2 /BPC 8 /CS /G ID \u{0}\u{ff}\u{ff}\u{0} EI Q";
     let stream = format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len());
-    // A printed table of contents (Pages ▸ Link the table of contents): rows with leader dots, a
-    // chapter row without them, page numbers right-aligned in a column, and the pages they name
-    // with their headings and printed page numbers. `labels`: numbered by page labels instead.
-    let toc_book = |labels: bool| {
-        let text = |size: u32, x: u32, y: u32, s: &str| format!("BT /F1 {size} Tf {x} {y} Td ({s}) Tj ET\n");
-        let entries = [("Introduction", "1", true), ("1 Getting started", "2", true), ("1.1 Installing", "3", true), ("2 Using it", "4", false)];
-        let mut contents = text(18, 72, 760, "Contents");
-        for (i, (title, n, dots)) in (0u32..).zip(entries) {
-            let y = 720 - 20 * i;
-            contents.push_str(&text(10, 72, y, &if dots { format!("{title} . . . . . . . . . . . .") } else { title.to_string() }));
-            contents.push_str(&text(10, 494, y, n));
-        }
-        let mut pages = vec![contents];
-        pages.extend(entries.iter().map(|(title, n, _)| format!("{}{}", text(14, 72, 760, title), text(10, 295, 40, n))));
-        let page_labels = if labels { " /PageLabels << /Nums [0 << /S /r >> 1 << /S /D >>] >>" } else { "" };
-        let mut objs = vec![
-            format!("<< /Type /Catalog /Pages 2 0 R{page_labels} >>"),
-            format!(
-                "<< /Type /Pages /Kids [{}] /Count {} /MediaBox [0 0 595 842] >>",
-                (0..pages.len()).map(|i| format!("{} 0 R", 4 + 2 * i)).collect::<Vec<_>>().join(" "),
-                pages.len()
-            ),
-            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_string(),
-        ];
-        for (i, body) in pages.iter().enumerate() {
-            objs.push(format!("<< /Type /Page /Parent 2 0 R /Contents {} 0 R /Resources << /Font << /F1 3 0 R >> >> >>", 5 + 2 * i));
-            objs.push(format!("<< /Length {} >>\nstream\n{body}endstream", body.len()));
-        }
-        build(&objs.iter().map(String::as_str).collect::<Vec<_>>(), "/Root 1 0 R")
-    };
     vec![
         build(
             &[

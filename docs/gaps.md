@@ -209,10 +209,16 @@ update the numbers.
 ### 12. No measured fidelity harness against Acrobat
 
 - **Missing:** side-by-side comparison of rendering, text extraction, form calculation and
-  signature validation against Acrobat on synthetic fixtures; an interop suite that opens every
-  kind of output we write (encrypted ones above all, after #774) in pdf.js, MuPDF and Poppler as
-  oracle processes.
-- **Evidence:** none exists; only text extraction has an oracle (word-F1 0.98 against `pdftotext`).
+  signature validation against Acrobat on synthetic fixtures; pdf.js as an interop oracle (driving
+  it needs handwritten JavaScript, which the build does not allow); outputs of real-world inputs
+  (embedded subset fonts, CJK, other tools' forms).
+- **Evidence:** text extraction has an oracle (word-F1 0.98 against `pdftotext`). Since
+  2026-10-26 `cargo xtask interop` (in CI) opens 50 kinds of output in qpdf, Poppler, MuPDF and
+  Ghostscript and checks opening, passwords, page counts, text, field values, bookmarks and
+  signatures; it found nothing another reader rejects. A by-hand look at page 1 of 18 of them in
+  all four renderers found no difference beyond font substitution, and one of our renderer's
+  (gap 2): an image filling a page that isn't a whole number of pixels wide gets a light, partly
+  covered last column, where Poppler and MuPDF snap the image to the pixel grid.
   Acrobat captures must stay local in `plan/acrobat/` (clean-room, `AGENTS.md` §1.1).
 - **Impact:** until it exists, every quality number here is a judgement.
 - **Estimate:** counted in gap 2 (≈ 20–30 h of it). **Doc:** [target-app-parity.md](target-app-parity.md).
@@ -324,6 +330,7 @@ update the numbers.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | Gap 12: the interop suite exists (`cargo xtask interop`, 50 cases, four readers, in CI); pdf.js, Acrobat and real-world inputs remain |
 | 2026-10-12 | minor | Gap 6: rubber stamps, explicit image rectangles and PDF-page stamps read upright on rotated pages (#1398). Estimates unchanged. |
 | 2026-10-12 | minor | #1316: replacing a line or paragraph keeps a neighbouring line whose glyph box overlaps. Gap 3 remains. Estimates unchanged. |
 | 2026-10-12 | minor | Exclusive image crops resize with their pixels across nested states, intervening operators and content streams; shared clips remain fixed. Synthetic engine/tool regressions and private image save/reopen checks; estimates unchanged. |
