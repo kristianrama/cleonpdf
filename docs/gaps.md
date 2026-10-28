@@ -29,7 +29,7 @@ update the numbers.
 |---|---|---|---|---|
 | 2 | Rendering is borrowed and its fidelity unmeasured | feature, spec | 110–190 | [pdf-spec-parity.md](pdf-spec-parity.md) |
 | 3 | Editing existing text is fragile on real files | feature | 100–180 | [target-app-parity.md](target-app-parity.md) |
-| 5 | Chinese UI shows missing-glyph boxes in releases | localization | 6–12 | [localization-parity.md](localization-parity.md) |
+| 5 | Chinese UI: no Chinese face on the web, a Kai face on desktop | localization | 3–6 | [localization-parity.md](localization-parity.md) |
 | 6 | Open-issue backlog of wrong results in shipped features | stability | 45–80 | this file |
 | 7 | OCR reads only unaccented Latin | feature | 40–75 | [file-format-parity.md](file-format-parity.md) |
 | 8 | Office export weak, Office import absent | file format | 55–100 | [file-format-parity.md](file-format-parity.md) |
@@ -109,18 +109,30 @@ update the numbers.
   how a document looks.
 - **Estimate:** 100–180 h (the longest feature pole, M7). **Doc:** [target-app-parity.md](target-app-parity.md).
 
-### 5. Chinese UI shows missing-glyph boxes in releases
+### 5. Chinese UI: no Chinese face on the web, a Kai face on desktop
 
-- **Missing:** a Simplified Chinese (`Hans`) UI face in release builds and a working fallback.
+- **Done (2026-10-28, ships in the next release):** native builds embed LXGW WenKai Lite (OFL-1.1,
+  from craft-fonts' opt-in `simplified-chinese-manifest.txt`; `AGENTS.md` §1.1 still bars Noto CJK).
+  With it the embedded fonts alone draw every Han character of the Simplified catalog in every
+  interface family (a test asserts it) and every one of the 788 in the Traditional catalog (reported,
+  not asserted). An installed Chinese system face (YaHei, PingFang, …) still goes first, so the
+  interface keeps a sans design where one exists. The release and CI pin of craft-fonts moved to a
+  revision that holds the face; the old pin had neither it nor the Hebrew and Devanagari faces.
+- **Missing:**
+  - the web build has no Chinese face (the face is 13 MiB, over the web budget; a subset would need
+    a look at the font's reserved-name terms);
+  - on a machine with no Chinese system font, the UI draws Chinese in a Kai (handwriting) design,
+    for Traditional too, where shared characters take Simplified forms;
+  - a sans Hans face in craft-fonts would replace it;
+  - not yet seen in a built release, only in tests.
 - **Evidence:** [#826](https://github.com/storytold/pdfcraft/issues/826),
   [#688](https://github.com/storytold/pdfcraft/issues/688),
   [#728](https://github.com/storytold/pdfcraft/issues/728),
   [#758](https://github.com/storytold/pdfcraft/issues/758),
-  [#689](https://github.com/storytold/pdfcraft/issues/689) (Flatpak). `AGENTS.md` §1.1 bars Noto
-  CJK (Source Han rebranded), so craft-fonts needs another openly licensed Hans face.
-- **Impact:** the second-largest language group sees a broken interface although the catalog is 97%
-  translated.
-- **Estimate:** 6–12 h (font sourcing in craft-fonts plus the fallback chain). **Doc:**
+  [#689](https://github.com/storytold/pdfcraft/issues/689) (Flatpak).
+- **Impact:** the second-largest language group sees a broken interface on the web build only,
+  although the catalog is 97% translated.
+- **Estimate:** 3–6 h (web subset and a sans Hans face). **Doc:**
   [localization-parity.md](localization-parity.md).
 
 ### 6. Open-issue backlog of wrong results in shipped features
@@ -330,6 +342,7 @@ update the numbers.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-28 | minor | Gap 5: native builds embed a Simplified Chinese face (LXGW WenKai Lite) and draw the whole Simplified catalog; the web build and a sans face remain; 6–12 → 3–6 h |
 | 2026-10-26 | minor | Gap 12: the interop suite exists (`cargo xtask interop`, 50 cases, four readers, in CI); pdf.js, Acrobat and real-world inputs remain |
 | 2026-10-12 | minor | Gap 6: rubber stamps, explicit image rectangles and PDF-page stamps read upright on rotated pages (#1398). Estimates unchanged. |
 | 2026-10-12 | minor | #1316: replacing a line or paragraph keeps a neighbouring line whose glyph box overlaps. Gap 3 remains. Estimates unchanged. |

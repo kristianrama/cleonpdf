@@ -207,15 +207,35 @@ fn catalog_han(catalog: &str) -> String {
     han.into_iter().collect()
 }
 
-/// In a Chinese interface built without a `Hans` face (every release so far, #826), a Chinese
-/// face installed on this machine goes before the Japanese faces, which lack hundreds of the
-/// catalog's characters, and draws every Han character of both Chinese catalogs.
+/// Built with craft-fonts' Simplified Chinese face, the embedded fonts alone draw every Han
+/// character of the Simplified Chinese catalog in every interface family, with no installed
+/// font (#826: releases showed boxes). The Traditional catalog is reported, not asserted: the
+/// face is Simplified, and a Traditional-only character it lacks is a known gap (docs/gaps.md).
 #[test]
-fn chinese_ui_uses_an_installed_chinese_face() {
-    if !cleonpdf_fonts::ui_chinese_fonts().is_empty() {
-        eprintln!("skipping chinese_ui_uses_an_installed_chinese_face: a Hans face is bundled");
+fn the_embedded_chinese_face_draws_the_simplified_catalog() {
+    if cleonpdf_fonts::ui_chinese_fonts().is_empty() {
+        eprintln!("skipping the_embedded_chinese_face_draws_the_simplified_catalog: no Hans face bundled (set CRAFT_FONTS_DIR to run it)");
         return;
     }
+    let han = catalog_han(include_str!("../src/i18n/zh-hans.tsv"));
+    assert!(han.contains('欢') && han.chars().count() > 500, "{} Han characters", han.chars().count());
+    let mut fonts = Fonts::new(TextOptions::default(), theme::font_definitions_for(true));
+    for id in families() {
+        let missing: String = han.chars().filter(|c| !fonts.has_glyphs(&id, &c.to_string())).collect();
+        assert!(missing.is_empty(), "{id:?} lacks {missing}");
+    }
+    let hant = catalog_han(include_str!("../src/i18n/zh-hant.tsv"));
+    let mut fonts = Fonts::new(TextOptions::default(), theme::font_definitions_for(false));
+    let id = FontId::proportional(13.0);
+    let missing: String = hant.chars().filter(|c| !fonts.has_glyphs(&id, &c.to_string())).collect();
+    eprintln!("Traditional catalog: {} of {} Han characters have no embedded glyph: {missing}", missing.chars().count(), hant.chars().count());
+}
+
+/// In a Chinese interface a Chinese face installed on this machine goes before every embedded
+/// CJK face, the Japanese ones (which lack hundreds of the catalog's characters) and the
+/// embedded `Hans` Kai face (#826) alike, and draws every Han character of both Chinese catalogs.
+#[test]
+fn chinese_ui_uses_an_installed_chinese_face() {
     for (cjk, catalog) in [
         (theme::CjkPreference::SimplifiedChinese, include_str!("../src/i18n/zh-hans.tsv")),
         (theme::CjkPreference::TraditionalChinese, include_str!("../src/i18n/zh-hant.tsv")),
@@ -230,8 +250,9 @@ fn chinese_ui_uses_an_installed_chinese_face() {
             assert_eq!(stack.iter().filter(|n| *n == theme::SYSTEM_FALLBACK).count(), 1, "{family:?}");
             let own = stack.iter().position(|n| n.starts_with("Inter") || n == "JetBrainsMono").expect("the app's own font");
             assert!(own < system, "{family:?}: {stack:?}");
-            if let Some(first_ja) = stack.iter().position(|n| n.starts_with("BIZ UDPGothic")) {
-                assert!(system < first_ja, "{family:?}: {stack:?}");
+            let embedded: Vec<String> = cleonpdf_fonts::ui_cjk_fonts(true).iter().map(|f| f.name()).collect();
+            if let Some(first_embedded) = stack.iter().position(|n| embedded.contains(n)) {
+                assert!(system < first_embedded, "{family:?}: {stack:?}");
             }
         }
         let han = catalog_han(catalog);

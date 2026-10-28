@@ -181,7 +181,7 @@ features total and are shown for orientation; the others add to it.
 | File formats and conversion | ≈ 40% | 12% | 120–220 | within features | PDF read/write strong, encrypted output included (#774 fixed); export Word is layout-poor (#773); no Excel/PowerPoint export, no Office/HTML/PostScript import | [file-format-parity.md](file-format-parity.md) |
 | PDF specification and standards | ≈ 60% | 8% | 150–260 | within features | ISO 32000 syntax, encryption, annotations and AcroForm strong; rendering and fonts borrowed from `hayro`; PDF 2.0 extras, linearization, public-key security absent; PDF/A partial, PDF/X/UA none | [pdf-spec-parity.md](pdf-spec-parity.md) |
 | Hardware | ≈ 35% | 4% | 25–50 | additional | Page raster is CPU only (Acrobat has GPU rendering); Windows CNG and macOS Keychain keys sign, no PKCS #11; no scanners; web printing goes through the browser's print dialog as pictures, not vectors | [hardware-parity.md](hardware-parity.md) |
-| Localization | ≈ 59% over the 12 key languages | 5% | 35–60 | additional | 15 catalogs, 13 at 94–100%; Chinese UI shows tofu in releases (#826, #688); Arabic not mirrored; no Hindi, Indonesian, Korean, Vietnamese | [localization-parity.md](localization-parity.md) |
+| Localization | ≈ 59% over the 12 key languages | 5% | 35–60 | additional | 15 catalogs, 13 at 94–100%; Chinese UI: desktop embeds a face from the next release, the web has none (#826, #688); Arabic not mirrored; no Hindi, Indonesian, Korean, Vietnamese | [localization-parity.md](localization-parity.md) |
 | Performance | ≈ 40% | 6% | 25–45 | additional | 500-page smooth scrolling and large-file memory work (#307) done; no performance budgets (`misc.performance-budgets`), no lazy loading of GB files; blurry text at 1080p/1440p (#730) | [gaps.md](gaps.md) |
 | Stability | ≈ 50% | 8% | 45–80 | additional | Never-crash rules and nightly fuzzing; 245 open issues on 2026-10-10, many of them `fix(...)` reports of wrong results in shipped features (the #799–#821 batch is fixed) | [gaps.md](gaps.md) |
 | Platforms | ≈ 70% | 5% | 15–30 | additional | macOS (signed, notarized), Windows x64/x86/ARM64 (signed), Linux (AppImage, deb, rpm, Flatpak), FreeBSD, web (WASM). Acrobat has no Linux, FreeBSD or full web editor; we lack web OCR and web recovery | [hardware-parity.md](hardware-parity.md) |
@@ -247,7 +247,7 @@ stage set to pre-alpha; see the revision history.)
 | Beta requirement | Hours |
 |---|---|
 | ~~An interop suite that opens our outputs in other readers~~ **done 2026-10-26**: `cargo xtask interop`, in CI on every pull request, opens 50 kinds of output (saves, encryption, page edits, comments, forms, redaction, optimizing, PDF/A, signing; inputs with object streams, linearized and encrypted by another tool) in qpdf, Poppler, MuPDF and Ghostscript; checks opening, passwords, page counts, text, field values, bookmarks and signatures. Not automated: Acrobat, pdf.js, real-world inputs | 0 (was 8–15) |
-| Rendering: a fidelity harness against Acrobat captures (local, clean-room) and fixing what it finds; settle the renderer (own M2 devices, or #841's proposal); Chinese UI faces in releases | 80–140 |
+| Rendering: a fidelity harness against Acrobat captures (local, clean-room) and fixing what it finds; settle the renderer (own M2 devices, or #841's proposal); ~~Chinese UI faces in releases~~ **desktop done 2026-10-28** (web face remains) | 80–140 |
 | Editing existing text robust on real files: subset fonts, CJK, RTL, rotated text | 70–120 |
 | Printing on Windows and the web | 15–30 |
 | OCR in the major languages (accents, Cyrillic, CJK), deskew and rotation | 35–60 |
@@ -292,6 +292,7 @@ licensed OCR or AI model.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-28 | minor | Chinese UI face on desktop builds (gap 5, part of beta requirement 2): LXGW WenKai Lite embedded, the whole Simplified catalog drawn. Hours, readiness and totals unchanged (within their rounding: the web face remains) |
 | 2026-10-26 | minor | First beta requirement done: the interop suite (`cargo xtask interop`, 50 cases, qpdf, Poppler, MuPDF and Ghostscript, in CI). It found no output another reader rejects or shows differently. Beta ≈ 400–700 → 390–690 h; readiness and the full-parity hours unchanged (within their rounding) |
 | 2026-10-12 | minor | Exclusive image crops resize with their pixels across nested states, intervening operators and content streams; shared clips remain fixed. Synthetic engine/tool regressions and private image save/reopen checks; estimates unchanged. |
 | 2026-10-11 | minor | Web printing shipped (gap 4): Hardware, Platforms and L Print text updated. Text only: scores, readiness and hours not re-judged |

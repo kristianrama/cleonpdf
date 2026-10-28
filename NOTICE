@@ -35,7 +35,12 @@ list (author, source, license) is in ATTRIBUTION.md.
   packages carry each font's licence as OFL-<family>.txt. Builds made with the craft-fonts revision
   pinned in .github/workflows/ also include Noto Sans Thai (in the web build too), Copyright 2022
   The Noto Project Authors (https://github.com/notofonts/thai), under SIL OFL 1.1; its licence is
-  fonts/noto-sans-thai/OFL.txt in the craft-fonts build input.
+  fonts/noto-sans-thai/OFL.txt in the craft-fonts build input. Desktop builds (not the web build)
+  with that revision also embed LXGW WenKai Lite v1.530 (https://github.com/lxgw/LxgwWenKai-Lite),
+  Copyright 2021-2026 LXGW, with Reserved Font Names '霞鹜', '霞鶩', '落霞孤鹜', '落霞孤鶩' and 'LXGW',
+  derived from Klee One, Copyright 2020 The Klee Project Authors
+  (https://github.com/fontworks-fonts/Klee), under SIL OFL 1.1; the file is used unmodified as the
+  Simplified Chinese interface fallback, and its licence ships as OFL-lxgw-wenkai-lite.txt.
 - hayro (rendering, via crates.io) — Apache-2.0 OR MIT. Its `embed-fonts` feature bundles the Foxit
   standard-14 Type 1 fonts under BSD-3-Clause ("Copyright 2014 PDFium Authors"), and hayro-cmap bundles
   Adobe CMap resources under BSD-3-Clause.

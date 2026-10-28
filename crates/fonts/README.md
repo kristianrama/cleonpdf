@@ -23,8 +23,12 @@ build input. `build.rs` embeds them as `CRAFT_FONTS` when the build sets
 set). Without that variable `CRAFT_FONTS` is empty and everything below copes:
 
 - `ui_japanese_fonts`: the `Jpan` faces for the interface, BIZ UDPGothic first.
-- `ui_chinese_fonts`: the `Hans` faces for the interface, in manifest order (without one,
-  Chinese characters the Japanese faces lack show the replacement glyph).
+- `ui_chinese_fonts`: the `Hans` faces for the interface, in manifest order. Native builds get
+  them from craft-fonts' opt-in `fonts/simplified-chinese-manifest.txt` (LXGW WenKai Lite, a
+  13 MiB Kai face): `build.rs` reads it after the default manifest and never on wasm32, and a
+  missing file is a warning, or an error under `CRAFT_FONTS_REQUIRED`. Without one (a web build,
+  or no craft-fonts) Chinese characters the Japanese faces lack show the replacement glyph; the
+  desktop app then falls back to an installed Chinese face, which it also puts before this one.
 - `ui_cjk_fonts(prefer_hans)`: both in fallback order for the UI language (Chinese group first
   in Chinese mode, so one line never mixes faces with different vertical metrics).
 - `ui_arabic_fonts`: the `Arab` faces for Arabic-script interface text (file names, document

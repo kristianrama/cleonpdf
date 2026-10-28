@@ -27,9 +27,10 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  # Japanese fonts for the UI fallback and edited PDFs (an OFL font repository; see NOTICE).
-  # Releases fail rather than ship without them.
-  CRAFT_FONTS_REF: 3d9ab3a132ed0eff457e424226a435a901da30d3
+  # Japanese and Simplified Chinese fonts for the UI fallback and edited PDFs, and the other
+  # script faces (an OFL font repository; see NOTICE). Releases fail rather than ship without
+  # them. The pin must hold fonts/simplified-chinese-manifest.txt (#826).
+  CRAFT_FONTS_REF: aced4137c022f1f587624d48e81ec77e1914a9cc
   CRAFT_FONTS_REQUIRED: "1"
 
 jobs:
