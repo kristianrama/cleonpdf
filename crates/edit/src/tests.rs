@@ -3443,3 +3443,102 @@ fn an_items_measured_face_is_the_face_it_is_written_as() {
     let courier = |italic| Family::Courier.width("Anna", 12.0, false, italic);
     assert_eq!(courier(false), courier(true));
 }
+
+/// Three tagged paragraphs (MCIDs 0, 1, 2) with a structure tree whose elements point at them.
+fn tagged_page() -> Document {
+    let mut doc = text_page(
+        "/P << /MCID 0 >> BDC BT /F1 12 Tf 40 500 Td (One) Tj ET EMC /P << /MCID 1 >> BDC BT /F1 12 Tf 40 482 Td (Two) Tj ET EMC \
+         /P << /MCID 2 >> BDC BT /F1 12 Tf 40 464 Td (Three) Tj ET EMC",
+    );
+    let page = cleonpdf_model::pages(&doc)[0].obj;
+    let root = doc.add(Object::Dict(Dict::new()));
+    let elems: Vec<Object> = (0..3)
+        .map(|mcid| {
+            let mut e = Dict::new();
+            e.set(b"Type".to_vec(), Object::name("StructElem"));
+            e.set(b"S".to_vec(), Object::name("P"));
+            e.set(b"P".to_vec(), Object::Ref(root));
+            e.set(b"Pg".to_vec(), Object::Ref(page));
+            e.set(b"K".to_vec(), Object::Int(mcid));
+            Object::Ref(doc.add(Object::Dict(e)))
+        })
+        .collect();
+    let mut parent_tree = Dict::new();
+    parent_tree.set(b"Nums".to_vec(), Object::Array(vec![Object::Int(0), Object::Array(elems.clone())]));
+    let mut tree = Dict::new();
+    tree.set(b"Type".to_vec(), Object::name("StructTreeRoot"));
+    tree.set(b"K".to_vec(), Object::Array(elems));
+    tree.set(b"ParentTree".to_vec(), Object::Dict(parent_tree));
+    doc.set(root, Object::Dict(tree));
+    doc.update_dict(page, |d| d.set(b"StructParents".to_vec(), Object::Int(0))).unwrap();
+    let catalog = doc.root().unwrap();
+    doc.update_dict(catalog, |d| {
+        d.set(b"StructTreeRoot".to_vec(), Object::Ref(root));
+        let mut mark = Dict::new();
+        mark.set(b"Marked".to_vec(), Object::Bool(true));
+        d.set(b"MarkInfo".to_vec(), Object::Dict(mark));
+    })
+    .unwrap();
+    doc
+}
+
+/// The marked-content ids the structure tree's elements point at, in tree order.
+fn tree_mcids(doc: &Document) -> Vec<i64> {
+    let catalog = doc.resolve(&Object::Ref(doc.root().unwrap()));
+    let root = doc.resolve(catalog.as_dict().unwrap().get(b"StructTreeRoot").unwrap());
+    let kids = doc.resolve(root.as_dict().unwrap().get(b"K").unwrap());
+    kids.as_array()
+        .unwrap()
+        .iter()
+        .map(|k| match doc.resolve(doc.resolve(k).as_dict().unwrap().get(b"K").unwrap()).as_ref() {
+            Object::Int(n) => *n,
+            other => panic!("not an MCID: {other:?}"),
+        })
+        .collect()
+}
+
+/// The MCIDs of the page's marked-content scopes, in drawing order, and whether every `BDC`
+/// has its `EMC`.
+fn page_mcids(doc: &Document) -> (Vec<i64>, bool) {
+    let (joined, ops) = joined_ops(doc);
+    let ids = joined.split("/MCID ").skip(1).filter_map(|rest| rest.split(|c: char| !c.is_ascii_digit()).next()?.parse().ok()).collect();
+    let (open, close) = (ops.iter().filter(|o| o.is("BDC") || o.is("BMC")).count(), ops.iter().filter(|o| o.is("EMC")).count());
+    (ids, open == close)
+}
+
+/// Editing a tagged page's text keeps every marked-content scope the structure tree points at:
+/// the same MCIDs in the same order, each scope still closed, and the tree itself untouched.
+/// (The edit rewrites only the page's content; this pins that for each way of editing.)
+#[test]
+fn editing_text_keeps_the_marked_content_the_structure_tree_points_at() {
+    type Edit = (&'static str, fn(&mut Document));
+    let edits: [Edit; 5] = [
+        ("a shorter line", |d| drop(text::replace_line(d, 0, 1, "Changed").unwrap())),
+        ("a line too long for its place", |d| {
+            drop(text::replace_line(d, 0, 1, "A much longer replacement line that cannot fit where Two used to be on the page at all").unwrap())
+        }),
+        ("an emptied line", |d| drop(text::replace_line(d, 0, 1, "").unwrap())),
+        ("a paragraph of two lines", |d| drop(text::replace_block(d, 0, 1, "First\nSecond").unwrap())),
+        ("a restyled paragraph", |d| {
+            let style = text::BlockStyle { width: Some(200.0), ..Default::default() };
+            drop(text::rewrite_block(d, 0, 1, Some("Restyled"), &style).unwrap())
+        }),
+    ];
+    let before = tagged_page();
+    assert_eq!(tree_mcids(&before), [0, 1, 2]);
+    assert_eq!(page_mcids(&before), (vec![0, 1, 2], true));
+    // The checks can fail: a page that lost the middle scope, or left one open, is not equal.
+    let lost = text_page(
+        "/P << /MCID 0 >> BDC BT /F1 12 Tf 40 500 Td (One) Tj ET EMC BT /F1 12 Tf 40 482 Td (Two) Tj ET /P << /MCID 2 >> BDC BT /F1 12 Tf 40 464 Td (Three) Tj ET EMC",
+    );
+    assert_eq!(page_mcids(&lost), (vec![0, 2], true));
+    let open = text_page("/P << /MCID 0 >> BDC BT /F1 12 Tf 40 500 Td (One) Tj ET");
+    assert_eq!(page_mcids(&open), (vec![0], false));
+    for (what, edit) in edits {
+        let mut doc = tagged_page();
+        edit(&mut doc);
+        let doc = reopen(&doc);
+        assert_eq!(tree_mcids(&doc), [0, 1, 2], "{what}: the structure tree changed");
+        assert_eq!(page_mcids(&doc), (vec![0, 1, 2], true), "{what}: {}", streams(&doc, 0).join("\n"));
+    }
+}

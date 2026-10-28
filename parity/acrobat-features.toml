@@ -2031,11 +2031,11 @@ title = "Keep structure tags when editing"
 area = "C"
 tier = "P1"
 milestone = "M7"
-status = "planned"
+status = "partial"
 commands = []
 tools = []
-evidence = []
-notes = ""
+evidence = ["crates/edit/src/tests.rs::editing_text_keeps_the_marked_content_the_structure_tree_points_at", "crates/edit/src/tests.rs::editing_text_keeps_the_tokens_a_stream_shares_with_its_neighbours"]
+notes = "Measured on a synthetic tagged page (three /P scopes with MCIDs 0-2 and a structure tree pointing at them): replacing a line (shorter, too long for its place, emptied), replacing or restyling a paragraph all keep every marked-content scope, in order and closed, and leave the structure tree untouched, because an edit rewrites only the page's content. Not checked, so not claimed: real tagged files (nested scopes, Form XObjects, MCIDs in several streams), the Arabic/Thai shaped-run path, text added with Add text (whether it gets a tag), and a deleted paragraph: an emptied line leaves its scope in place with an empty string, and the tree element still points at it, nothing prunes it. No tool exposes this."
 
 [[feature]]
 id = "edit.image-add"
