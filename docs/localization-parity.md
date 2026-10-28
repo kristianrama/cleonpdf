@@ -28,7 +28,7 @@ add a language: [localization.md](localization.md). Summary in [ROADMAP.md](../R
 | Language | Code | UI strings translated | Dialogs / tooltips / help | Script support | Native review | Status | Acrobat ships it | To `full` (h) |
 |---|---|---|---|---|---|---|---|---|
 | English | `en` | built in (100%) | all; README and docs | Latin | yes | **full** | yes | 0 |
-| Simplified Chinese | `zh-hans` | 2,088 (97.4%) | dialogs and tooltips through `tl!`; no help | CJK text and IME work, but **release builds have no Hans face**: many characters show as boxes (#826, #688, #728, #758; Flatpak #689) | no | partial | yes | 6–12 |
+| Simplified Chinese | `zh-hans` | 2,088 (97.4%) | dialogs and tooltips through `tl!`; no help | CJK text and IME work; desktop builds from the next release embed a Hans face (LXGW WenKai Lite, Kai design, behind an installed Chinese face) that draws the whole catalog; **the web build has none** (#826, #688, #728, #758; Flatpak #689) | no | partial | yes | 3–6 |
 | Spanish | `es` | 2,046 (95.5%) | dialogs and tooltips; no help | Latin | no | partial | yes | 2–4 |
 | Hindi | `hi` | 0 | none | Devanagari not tested (egui shapes Telugu conjuncts, so shaping is likely workable); no Devanagari face in craft-fonts | no | none | no | 10–18 |
 | Arabic | `ar` | 2,143 (100%) | dialogs and tooltips; no help | Letters joined and lines reordered at load, but **layout not mirrored**, wrapped lines break at the wrong end, typed text runs left to right (`localization.md` §Arabic) | no | partial | yes (Middle East edition) | 25–45 |
@@ -52,7 +52,7 @@ none has translated help.
 
 | Language | Code | UI strings translated | Status | Acrobat ships it |
 |---|---|---|---|---|
-| Traditional Chinese | `zh-hant` | 2,016 (94.1%) | partial (same Hans/Hant face caveat) | yes |
+| Traditional Chinese | `zh-hant` | 2,016 (94.1%) | partial (desktop draws all 788 Han characters from the Japanese and Hans faces, shared ones in Simplified forms; none on the web) | yes |
 | Russian | `ru` | 2,043 (95.3%) | partial | yes |
 | Bulgarian | `bg` | 2,094 (97.7%) | partial | no |
 | Czech | `cs` | 135 (6.3%) | menus only | yes |
@@ -75,5 +75,6 @@ Acrobat languages CleonPDF lacks: Danish, Dutch, Finnish, Norwegian, Swedish, He
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-28 | minor | Simplified Chinese: desktop builds embed a Hans face (gap 5), 6–12 → 3–6 h; the dimension score is not re-judged |
 | 2026-10-12 | minor | Added current counts for Kazakh, Polish, Slovenian, Greek, Turkish and Lithuanian; retained existing language assessments and the original percentage snapshot |
 | 2026-10-10 | major | Created. Catalog counts measured from `crates/ui-egui/src/i18n/*.tsv` against the 2,143-key union; Acrobat's localizations from its bundle's `.lproj` and Sequences folder names |

@@ -36,14 +36,14 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The optional craft-fonts build input (Japanese fonts), so the Japanese font tests run on
-      # Linux; Windows tests the build without it.
+      # The optional craft-fonts build input (Japanese, Chinese and other script fonts), so the
+      # font tests run on Linux; Windows tests the build without it. The same pin as release.yml.
       - name: Check out craft-fonts (Linux)
         if: runner.os == 'Linux'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: storytold/craft-fonts
-          ref: 3d9ab3a132ed0eff457e424226a435a901da30d3
+          ref: aced4137c022f1f587624d48e81ec77e1914a9cc
           path: craft-fonts
 
       - name: Configure craft-fonts (Linux)

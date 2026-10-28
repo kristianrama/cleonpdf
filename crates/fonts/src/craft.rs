@@ -279,6 +279,34 @@ mod tests {
         assert!(!BARRED_FAMILIES.iter().any(|barred| "Noto Sans Arabic".starts_with(barred)));
     }
 
+    /// A checkout with craft-fonts' Simplified Chinese manifest gives a native build a `Hans`
+    /// face (#826: releases showed boxes for Chinese because `build.rs` read only the default
+    /// manifest), and it is never one of the barred Adobe designs. The face is native-only, so a
+    /// wasm build has none.
+    #[test]
+    fn the_simplified_chinese_manifest_gives_native_builds_a_hans_face() {
+        let manifest = option_env!("CRAFT_FONTS_DIR")
+            .map(|dir| std::path::Path::new(dir).join("fonts/simplified-chinese-manifest.txt"))
+            .filter(|path| path.is_file());
+        let Some(manifest) = manifest else {
+            eprintln!("skipping: the craft-fonts checkout (CRAFT_FONTS_DIR) has no Simplified Chinese manifest");
+            return;
+        };
+        let embedded = ui_chinese_fonts();
+        if cfg!(target_arch = "wasm32") {
+            assert!(embedded.is_empty(), "a Hans face is on the web build");
+            return;
+        }
+        let listed =
+            std::fs::read_to_string(&manifest).expect("the manifest was just found").lines().filter(|l| l.contains(" | Hani,Hans | ")).count();
+        assert!(listed > 0, "{} lists no Hans face", manifest.display());
+        assert_eq!(embedded.len(), listed, "{embedded:?}", embedded = embedded.iter().map(|f| f.name()).collect::<Vec<_>>());
+        for face in embedded {
+            assert!(face.covers("Hani") && face.bytes.len() > 1_000_000, "{}", face.name());
+            assert!(!BARRED_FAMILIES.iter().any(|barred| face.family.starts_with(barred)), "{}", face.name());
+        }
+    }
+
     #[test]
     fn hebrew_document_faces_follow_the_weight() {
         static HEBR_LATN: &[&str] = &["Hebr", "Latn"];

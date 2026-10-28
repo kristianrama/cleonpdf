@@ -2,7 +2,9 @@
 //! The recipe is craft-fonts' `docs/integration.md`; unset, `CRAFT_FONTS` is empty. It only reads
 //! the local checkout (no network). On wasm32 it embeds only the UI faces (BIZ UDPGothic Regular
 //! and any `Arab`, `Telu`, `Hebr` or `Thai` face), to keep the web build within hosting limits (Cloudflare Pages:
-//! 25 MiB per file).
+//! 25 MiB per file). Native builds also embed craft-fonts' opt-in Simplified Chinese manifest
+//! (`fonts/simplified-chinese-manifest.txt`, LXGW WenKai Lite), which craft-fonts keeps out of
+//! its default manifest and says must never reach a wasm build.
 
 use std::fmt::Write as _;
 use std::path::PathBuf;
@@ -31,12 +33,41 @@ fn main() {
 /// CJK, which is Source Han under another name. The test in `src/craft.rs` has the same list.
 const BARRED_FAMILIES: [&str; 5] = ["Source Han", "Source Serif", "Source Sans", "Noto Sans CJK", "Noto Serif CJK"];
 
-/// One `CraftFont { .. }` initialiser per manifest line.
+/// craft-fonts' opt-in, native-only Simplified Chinese manifest, same format as the default one.
+const CHINESE_MANIFEST: &str = "fonts/simplified-chinese-manifest.txt";
+
+/// One `CraftFont { .. }` initialiser per manifest line: the default manifest, then (native
+/// builds only) the Simplified Chinese one.
 fn craft_fonts(dir: &std::path::Path) -> Result<String, String> {
-    let manifest = dir.join("fonts/manifest.txt");
+    let wasm = std::env::var("CARGO_CFG_TARGET_ARCH").is_ok_and(|a| a == "wasm32");
+    let has = |scripts: &str, script: &str| scripts.split(',').any(|s| s.trim() == script);
+    let mut out = manifest_fonts(dir, "fonts/manifest.txt", &|family, style, scripts| {
+        // Arabic, Telugu, Hebrew and Thai interface faces are small, so the web build keeps them too.
+        let web_face =
+            (family == "BIZ UDPGothic" && style == "Regular") || ["Arab", "Telu", "Hebr", "Thai"].iter().any(|script| has(scripts, script));
+        !wasm || web_face
+    })?;
+    // Never on wasm: the face is 13 MiB, over the web build's budget (craft-fonts' own rule).
+    if !wasm {
+        let manifest = dir.join(CHINESE_MANIFEST);
+        println!("cargo::rerun-if-changed={}", manifest.display());
+        if manifest.is_file() {
+            out.push_str(&manifest_fonts(dir, CHINESE_MANIFEST, &|_, _, _| true)?);
+        } else if std::env::var_os("CRAFT_FONTS_REQUIRED").is_some() {
+            return Err(format!("{}: missing, so the interface has no Simplified Chinese face", manifest.display()));
+        } else {
+            println!("cargo::warning=craft-fonts has no {CHINESE_MANIFEST}: Chinese interface text may show missing-glyph boxes");
+        }
+    }
+    Ok(out)
+}
+
+/// The initialisers for the faces of the manifest `rel` (relative to `dir`) that `keep` accepts
+/// (it is given family, style and the comma-separated scripts).
+fn manifest_fonts(dir: &std::path::Path, rel: &str, keep: &dyn Fn(&str, &str, &str) -> bool) -> Result<String, String> {
+    let manifest = dir.join(rel);
     println!("cargo::rerun-if-changed={}", manifest.display());
     let text = std::fs::read_to_string(&manifest).map_err(|e| format!("{}: {e}", manifest.display()))?;
-    let wasm = std::env::var("CARGO_CFG_TARGET_ARCH").is_ok_and(|a| a == "wasm32");
     let mut out = String::new();
     for line in text.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#')) {
         let f: Vec<&str> = line.split(" | ").map(str::trim).collect();
@@ -49,15 +80,7 @@ fn craft_fonts(dir: &std::path::Path) -> Result<String, String> {
             println!("cargo::warning=craft-fonts: not embedding {family} {style} (AGENTS.md §1.1)");
             continue;
         }
-        // Arabic interface faces are small, so the web build keeps them too.
-        let arabic = scripts.split(',').any(|s| s.trim() == "Arab");
-        // Telugu faces too, for the Telugu interface.
-        let telugu = scripts.split(',').any(|s| s.trim() == "Telu");
-        // And the Hebrew ones (small), for Hebrew text and Edit text on the web.
-        let hebrew = scripts.split(',').any(|s| s.trim() == "Hebr");
-        let web_face =
-            (*family == "BIZ UDPGothic" && *style == "Regular") || arabic || telugu || hebrew || scripts.split(',').any(|s| s.trim() == "Thai");
-        if wasm && !web_face {
+        if !keep(family, style, scripts) {
             continue;
         }
         let path = dir.join(file).canonicalize().map_err(|e| format!("{file}: {e}"))?;

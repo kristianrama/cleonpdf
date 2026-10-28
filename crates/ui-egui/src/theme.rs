@@ -244,11 +244,12 @@ pub const SYSTEM_TELUGU_FALLBACK: &str = "system-telugu-fallback";
 /// What [`install_fonts_for`] installs: [`font_definitions_for`], then, on desktop, one face
 /// already installed on this machine. It only draws characters no embedded face has.
 ///
-/// - In a Chinese interface built without a `Hans` craft-fonts face (every release so far,
-///   #826), it is a Chinese system face (Microsoft YaHei, PingFang, …), placed before the
-///   Japanese craft-fonts faces: they lack hundreds of the catalog's characters (欢, 导, 签, …),
-///   and one line drawn from two faces with different vertical metrics would not sit on one
-///   baseline.
+/// - In a Chinese interface it is a Chinese system face (Microsoft YaHei, PingFang, …), placed
+///   before every embedded CJK face. The Japanese craft-fonts faces lack hundreds of the
+///   catalog's characters (欢, 导, 签, …), and one line drawn from two faces with different
+///   vertical metrics would not sit on one baseline. It also goes before the embedded `Hans`
+///   face (LXGW WenKai Lite, #826), a Kai (handwriting) design that is there so a machine with
+///   no Chinese font still draws every character, not to replace a sans system face.
 /// - Otherwise it is the last fallback of every family (an Arabic file name in a build without
 ///   craft-fonts).
 ///
@@ -274,24 +275,31 @@ pub fn installed_font_definitions(cjk: CjkPreference) -> FontDefinitions {
             }
         }
         let need = match cjk {
-            _ if !cleonpdf_fonts::ui_chinese_fonts().is_empty() => Need::Other,
             CjkPreference::SimplifiedChinese => Need::Hans,
             CjkPreference::TraditionalChinese => Need::Hant,
             CjkPreference::Default => Need::Other,
         };
         if let Some(data) = fallback(need) {
-            fonts.font_data.insert(SYSTEM_FALLBACK.to_owned(), data);
-            let japanese: Vec<String> = cleonpdf_fonts::ui_japanese_fonts().iter().map(|f| f.name()).collect();
-            for stack in fonts.families.values_mut() {
-                let at = match need {
-                    Need::Other => None,
-                    Need::Hans | Need::Hant => stack.iter().position(|n| japanese.contains(n)),
-                };
-                stack.insert(at.unwrap_or(stack.len()), SYSTEM_FALLBACK.to_owned());
-            }
+            // Every embedded CJK face (Japanese and Chinese), whichever the language puts first.
+            let embedded_cjk: Vec<String> = match need {
+                Need::Other => Vec::new(),
+                Need::Hans | Need::Hant => cleonpdf_fonts::ui_cjk_fonts(cjk == CjkPreference::SimplifiedChinese).iter().map(|f| f.name()).collect(),
+            };
+            insert_system_fallback(&mut fonts, data, &embedded_cjk);
         }
     }
     fonts
+}
+
+/// Adds `data` as [`SYSTEM_FALLBACK`] to every family: before the first of the faces named in
+/// `before` that the family has, else last.
+#[cfg(not(target_arch = "wasm32"))]
+fn insert_system_fallback(fonts: &mut FontDefinitions, data: Arc<FontData>, before: &[String]) {
+    fonts.font_data.insert(SYSTEM_FALLBACK.to_owned(), data);
+    for stack in fonts.families.values_mut() {
+        let at = stack.iter().position(|n| before.contains(n)).unwrap_or(stack.len());
+        stack.insert(at, SYSTEM_FALLBACK.to_owned());
+    }
 }
 
 /// The interface fonts: Inter (and JetBrains Mono for code) first, then egui's defaults, then
@@ -471,6 +479,42 @@ pub fn apply_glass(ctx: &egui::Context, kind: ThemeKind, glass: bool) {
 mod tests {
     use super::*;
     use egui::epaint::text::{Fonts, TextOptions};
+
+    /// An installed face goes before every embedded CJK face in a Chinese interface (a sans
+    /// system face must not lose to the embedded Kai face, #826) and last everywhere else. Fake
+    /// stacks, so this holds on a machine with no Chinese font and with or without craft-fonts.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn the_installed_face_goes_before_the_embedded_cjk_faces_only_when_asked() {
+        let stack = |names: &[&str]| names.iter().map(|n| (*n).to_owned()).collect::<Vec<_>>();
+        let data = || Arc::new(FontData::from_static(cleonpdf_fonts::INTER_REGULAR));
+        let mut fonts = FontDefinitions::empty();
+        fonts
+            .families
+            .insert(FontFamily::Proportional, stack(&["Inter", "BIZ UDPGothic Regular", "LXGW WenKai Lite Regular", "Noto Sans Arabic Regular"]));
+        fonts.families.insert(FontFamily::Monospace, stack(&["JetBrainsMono", "LXGW WenKai Lite Regular"]));
+        fonts.families.insert(FontFamily::Name("bare".into()), stack(&["Inter"]));
+        let before = stack(&["LXGW WenKai Lite Regular", "BIZ UDPGothic Regular"]);
+
+        let mut chinese = fonts.clone();
+        insert_system_fallback(&mut chinese, data(), &before);
+        let sys = SYSTEM_FALLBACK;
+        assert_eq!(
+            chinese.families[&FontFamily::Proportional],
+            stack(&["Inter", sys, "BIZ UDPGothic Regular", "LXGW WenKai Lite Regular", "Noto Sans Arabic Regular"])
+        );
+        assert_eq!(chinese.families[&FontFamily::Monospace], stack(&["JetBrainsMono", sys, "LXGW WenKai Lite Regular"]));
+        // A family with no embedded CJK face gets it last, and the data is registered once.
+        assert_eq!(chinese.families[&FontFamily::Name("bare".into())], stack(&["Inter", sys]));
+        assert!(chinese.font_data.contains_key(sys));
+
+        let mut other = fonts.clone();
+        insert_system_fallback(&mut other, data(), &[]);
+        for stack in other.families.values() {
+            assert_eq!(stack.last().map(String::as_str), Some(sys), "{stack:?}");
+            assert_eq!(stack.iter().filter(|n| *n == sys).count(), 1, "{stack:?}");
+        }
+    }
 
     const HINTING_CORPUS: [&str; 4] = ["Il1MWmw", "Hamburgefonts", "0123456789 .,;:!?()[]{}+-=/\\", "Café Ångström déjà-vu Ωμέγα Ελληνικά Журнал"];
     const HINTING_SIZES: [f32; 6] = [10.0, 11.0, 12.0, 13.0, 14.0, 16.0];

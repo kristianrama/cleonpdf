@@ -65,7 +65,7 @@ In order. Each item names its entry in [gaps.md](gaps.md).
    Encrypted output that Acrobat opens shipped with #836 (#774).
 2. **Fix the crash and wrong-result reports** filed against shipped features (gap 6). The first
    batch (#799–#821, including the panic in #816) is fixed.
-3. **A Chinese UI face in releases** (gap 5, #826).
+3. **A Chinese UI face on the web** (gap 5, #826). Desktop builds embed one from the next release.
 4. **A fidelity harness against Acrobat, then the renderer decision** (gaps 12 and 2). Owner
    decision needed: our own M2 devices, or #841's proposal as the bridge.
 5. **Editing existing content** (gap 3, M7): fonts, subsets, reflow, CJK and RTL.
@@ -126,7 +126,7 @@ total matches the parity estimate.
 | Rank | Next milestone | Closes | Estimate (h) |
 |---|---|---|---|
 | 0 | Convert and share: Create PDF from Office, Word export keeps layout | part of gap 8 | 32–55 |
-| 1 | Backlog and platform: crash and wrong-result reports fixed, Chinese UI face (web printing done) | gaps 5, 6 | 50–90 |
+| 1 | Backlog and platform: crash and wrong-result reports fixed, Chinese UI face on the web (desktop done, web printing done) | gaps 5, 6 | 50–90 |
 | 2 | Fidelity harness and renderer decision (M2) | gaps 2, 12 | 110–190 |
 | 3 | Editing existing content (M7) | gap 3 | 100–180 |
 | 4 | Pro conversion: OCR languages and clean-up, Office export/import (M10) | gaps 7, 8 | 95–175 |
