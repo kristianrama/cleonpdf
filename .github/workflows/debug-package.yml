@@ -2,39 +2,36 @@ name: debug-package
 on:
   push:
     branches: [debug/package-0.2.0]
+permissions:
+  contents: write
 jobs:
-  linux:
+  mirror:
     runs-on: ubuntu-22.04
     env:
-      CRAFT_FONTS_REQUIRED: "1"
-      CLEONPDF_VERSION: "0.2.0"
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: storytold/craft-fonts
-          ref: aced4137c022f1f587624d48e81ec77e1914a9cc
-          path: craft-fonts
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libgtk-3-dev desktop-file-utils appstream
-          echo "CRAFT_FONTS_DIR=$GITHUB_WORKSPACE/craft-fonts" >> "$GITHUB_ENV"
-      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          key: release-linux-x86_64
-      - name: Probe model URLs
+      - name: Take the OCR models from the v0.1.4 package and mirror them if they are the pinned ones
         run: |
           set +e
           {
-            for u in https://huggingface.co/robertknight/ocrs/resolve/main/text-detection-ssfbcj81.rten https://huggingface.co/robertknight/ocrs/resolve/main/text-rec-checkpoint-s52qdbqt.rten; do
-              code=$(curl -sSL -o body.bin -w "%{http_code}" "$u")
-              echo "$u -> http $code size $(stat -c %s body.bin) sha256 $(sha256sum body.bin | cut -c1-64)"
-              if [ "$code" != 200 ]; then head -c 300 body.bin | tr '\n' ' '; echo; fi
-            done
-            echo "want detection e484866d.. no: f15cfb56bd02c4bf478a20343986504a1f01e1665c2b3a0ad66340f054b1b5ca / recognition e484866d4cce403175bd8d00b128feb08ab42e208de30e42cd9889d8f1735a6e"
-          } > probe.log 2>&1
-          msg=$(cut -c1-400 probe.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
-          echo "::error title=probe::$msg"
+            mkdir -p dl && cd dl
+            gh release download v0.1.4 --repo "$GITHUB_REPOSITORY" -p 'cleonpdf-0.1.4-linux-x86_64.tar.gz'
+            tar -xzf cleonpdf-0.1.4-linux-x86_64.tar.gz --wildcards '*/share/cleonpdf/models/*' 2>&1 | tail -2
+            ls -la */share/cleonpdf/models/
+            det=$(ls */share/cleonpdf/models/text-detection.rten)
+            rec=$(ls */share/cleonpdf/models/text-recognition.rten)
+            sd=$(sha256sum "$det" | cut -c1-64); sr=$(sha256sum "$rec" | cut -c1-64)
+            echo "detection $sd"; echo "recognition $sr"
+            if [ "$sd" = f15cfb56bd02c4bf478a20343986504a1f01e1665c2b3a0ad66340f054b1b5ca ] && [ "$sr" = e484866d4cce403175bd8d00b128feb08ab42e208de30e42cd9889d8f1735a6e ]; then
+              echo "hashes match the pins"
+              gh release create ocr-models-1 --repo "$GITHUB_REPOSITORY" --target 1b05394b6517f4bae4e4400b0e7eceaadb22407f --prerelease --latest=false \
+                --title "OCR models mirror (not a CleonPDF release)" \
+                --notes "The two unmodified Scan & OCR models CleonPDF packages (text-detection.rten, text-recognition.rten) by Robert Knight, from https://github.com/robertknight/ocrs-models, licence CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Mirrored here because the original download host (ocrs-models.s3-accelerate.amazonaws.com) now answers AccessDenied. `cargo xtask models` downloads them from here and checks their SHA-256 against ATTRIBUTION.toml. This is not a CleonPDF release." \
+                "$det" "$rec"
+              echo "release create exit=$?"
+            else
+              echo "hashes DO NOT match the pins; nothing mirrored"
+            fi
+          } > mirror.log 2>&1
+          msg=$(cut -c1-400 mirror.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+          echo "::error title=mirror::$msg"
