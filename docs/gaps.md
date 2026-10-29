@@ -109,9 +109,25 @@ update the numbers.
     two files. **Still open:** the last word of a justified line, whose `Tc` is a word-space-sized
     0.38 em against 0 for the rest of the line, stays its own line, since a rewrite of the joined
     line would use one `Tc` for both.
-  - **Open:** a heading (17 pt bold) and the paragraph after it come out as one paragraph.
-  - **Open:** an accent drawn as its own glyph (TeX builds è from a grave accent and an e) reads
-    as a grave accent then `e` in the editor and in search, so "perché" is not found (41 and 39 times in the two files); Poppler composes it.
+  - **By design, not a defect:** a heading (17 pt bold) and the paragraph after it come out as one
+    paragraph. That is the mixed-style region a contributor added on 2026-10-11 (rows keep their own
+    style on a rewrite; `mixed_styles_and_matrix_sizes_form_visual_regions_without_merging_columns`
+    and four more tests fix it). Acrobat boxes them apart. Splitting them was tried on 2026-10-29
+    (a lone line over 15% larger than the next, with a line of room below) and broke those five
+    tests, so it is a product decision: either regions stay, or a heading becomes its own paragraph.
+  - **Fixed for reading and search:** an accent drawn as its own glyph (TeX builds è from a grave
+    accent and an e laid over it) read as a grave accent then `e` in the editor and in search, so
+    "perché" was not found (41 and 39 times in the two files). A spacing accent whose advance
+    overlaps the next letter is now one accented letter in the editor's line text
+    (`cleonpdf_fonts::compose_accent`, 1043 and 1081 bare accents fell to 7 and 5) and in the
+    search glyphs (`perché` now finds 41 and 39). **Still open:** the few accents whose letter
+    falls on the next line, and writing one back: an edited paragraph shows each accented letter
+    as a single glyph from the fallback face (heavier than the subset's), because the subset has
+    no `è`; it could be drawn as accent, kern and letter in the source font instead.
+  - **Open:** editing a paragraph that holds ligatures (`ﬀ`, `ﬁ`) and an italic run breaks its
+    second row: after changing "Un" to "Ogni" in one such paragraph, the next row came out in a
+    small, widely spaced face and one word wrapped onto a line of its own. Not isolated yet; the
+    missing ligature glyphs and the italic run are the suspects.
   - **Open:** a replacement that needs a letter missing from the subset (è, an unused capital)
     redraws the whole line in Helvetica, including letters the subset has.
 

@@ -652,6 +652,54 @@ impl<'a> Device<'a> for TextDevice {
     }
 }
 
+/// Merge each spacing accent with the letter drawn over it (content order: the accent first, as
+/// TeX and the PDFs made from it draw `è`) into the one accented letter, so it is found and copied
+/// as such. A merged glyph keeps the letter's box and writing direction.
+fn compose_accents(glyphs: Vec<Drawn>) -> Vec<Drawn> {
+    let mut out = Vec::with_capacity(glyphs.len());
+    let mut rest = glyphs.into_iter().peekable();
+    while let Some(glyph) = rest.next() {
+        let merged = rest.peek().filter(|next| next.0 == glyph.0).and_then(|next| accent_over(&glyph.2, &next.2));
+        match merged {
+            Some(composed) => {
+                let direction = rest.next().map_or(glyph.1, |base| base.1);
+                out.push((glyph.0, direction, composed));
+            }
+            None => out.push(glyph),
+        }
+    }
+    out
+}
+
+/// `base` with the spacing accent `accent` drawn over it, if `accent` is one and sits on `base`:
+/// the same writing direction and line, and their advance boxes overlap along it (a quote mark
+/// beside a letter does not).
+fn accent_over(accent: &TextGlyph, base: &TextGlyph) -> Option<TextGlyph> {
+    let (mut a, mut b) = (accent.text.chars(), base.text.chars());
+    let (accent_char, base_char) = (a.next()?, b.next()?);
+    if a.next().is_some() || b.next().is_some() {
+        return None;
+    }
+    let composed = cleonpdf_fonts::compose_accent(accent_char, base_char)?;
+    let u = base.direction;
+    if accent.direction[0] * u[0] + accent.direction[1] * u[1] < 0.99 {
+        return None;
+    }
+    let along = |q: [f32; 2]| q[0] * u[0] + q[1] * u[1];
+    let across = |q: [f32; 2]| q[1].mul_add(u[0], -q[0] * u[1]);
+    let span = |g: &TextGlyph| {
+        let (s, e) = (along(g.quad[0]), along(g.quad[1]));
+        (s.min(e), s.max(e))
+    };
+    let ((a0, a1), (b0, b1)) = (span(accent), span(base));
+    let overlap = a1.min(b1) - a0.max(b0);
+    let em = (base.quad[0][0] - base.quad[3][0]).hypot(base.quad[0][1] - base.quad[3][1]);
+    // Both comparisons are false for a NaN, so a glyph with a broken box never merges.
+    let on_the_letter = a1 > a0 && b1 > b0 && overlap >= 0.3 * (a1 - a0).min(b1 - b0);
+    let on_its_line = em > 0.0 && (across(accent.quad[0]) - across(base.quad[0])).abs() < em * 0.5;
+    (on_the_letter && on_its_line).then(|| TextGlyph { text: composed.to_string(), rect: base.rect, quad: base.quad, direction: base.direction })
+}
+
 /// Extract the text of one page. Panics inside the interpreter are the caller's to catch.
 pub(crate) fn extract_page(pdf: &Pdf, page: usize, settings: &InterpreterSettings) -> Option<PageText> {
     let pages = pdf.pages();
@@ -667,7 +715,7 @@ pub(crate) fn extract_page(pdf: &Pdf, page: usize, settings: &InterpreterSetting
     interpret_page(p, &mut ctx, &mut dev);
     // A replacement the content never closed ends with the page.
     dev.finish();
-    let glyphs = dev.glyphs;
+    let glyphs = compose_accents(dev.glyphs);
     // Text on a curved path: glyphs that each continue the previous one's line while the
     // direction turns. Each such run is one line.
     let turned = |u: [f64; 2]| u[0].abs().min(u[1].abs()) > DIRECTION_TOLERANCE;
@@ -2069,6 +2117,18 @@ mod tests {
 
     fn page_text(ops: &str) -> String {
         extract_page(&text_page(ops), 0, &InterpreterSettings::default()).unwrap().plain_text()
+    }
+
+    #[test]
+    fn an_accent_drawn_over_its_letter_is_searchable_as_the_accented_letter() {
+        // TeX: the acute accent, a kern back over the letter, then "e" (accent 0.333 em, "e" 0.556).
+        let over = page_glyphs("BT /F1 12 Tf 1 0 0 1 100 700 Tm [(perch) (\\302) 444 (e)] TJ ET");
+        assert_eq!(over.plain_text(), "perché");
+        assert_eq!(over.find("perché").len(), 1);
+        assert_eq!(over.glyphs.len(), 6, "the accent and its letter are one glyph, so a highlight covers one box");
+        // An accent character beside a letter, with no overlap, is two characters.
+        let beside = page_glyphs("BT /F1 12 Tf 1 0 0 1 100 700 Tm [(use \\302) (e)] TJ ET");
+        assert_eq!(beside.plain_text(), "use \u{b4}e");
     }
 
     #[test]

@@ -3570,6 +3570,26 @@ fn a_word_gap_made_of_char_spacing_reads_as_a_space() {
 }
 
 #[test]
+fn an_accent_drawn_over_its_letter_reads_as_the_accented_letter() {
+    // TeX output: the acute accent (WinAnsi 0xB4), then a kern back over the letter, then "e".
+    // The accent is 0.333 em wide and "e" 0.556: backing up 0.444 em centres the letter under it.
+    let inline = text_page("BT 12 0 0 12 100 700 Tm /F1 1 Tf [(perch) (\\264) 444 (e)] TJ ET");
+    assert_eq!(text::text_lines(&inline, 0).unwrap().iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["perché"]);
+
+    // Quartz may put the accent and the letter in separate text objects; they overlap all the same.
+    let apart = text_page(
+        "BT 12 0 0 12 100 700 Tm /F1 1 Tf (perch) Tj ET BT 12 0 0 12 131.3 700 Tm /F1 1 Tf (\\264) Tj ET BT 12 0 0 12 130 700 Tm /F1 1 Tf (e) Tj ET",
+    );
+    assert_eq!(text::text_lines(&apart, 0).unwrap().iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["perché"]);
+
+    // An accent character that only sits beside a letter (a quote mark, code) stays what it is.
+    let quote = text_page("BT 12 0 0 12 100 700 Tm /F1 1 Tf [(use \\264) (e)] TJ ET BT 12 0 0 12 100 650 Tm /F1 1 Tf [(\\264) -400 (e)] TJ ET");
+    let lines = text::text_lines(&quote, 0).unwrap();
+    assert_eq!(lines[0].text, "use \u{b4}e");
+    assert!(!lines[1].text.contains('é'), "{:?}", lines[1].text);
+}
+
+#[test]
 fn a_word_split_across_text_objects_with_jittered_char_spacing_stays_one_line() {
     // Justifying producers (Quartz) put the last word of a line in a text object of its own and
     // give every object a slightly different `Tc` (here 0.0028 and -0.0034 em). "Hel" is 1.5 em
