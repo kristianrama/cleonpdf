@@ -97,8 +97,9 @@ update the numbers.
 - **Missing:** robust in-place editing of text CleonPDF didn't write: subset fonts without the
   needed glyphs, CJK and right-to-left text, rotated text, lists, superscript/subscript, keeping
   structure tags, find and replace in edit mode; vector and object editing; arrange and align.
-- **Evidence:** `edit.text-edit` is partial (font reused or Helvetica substituted);
-  `edit.rtl-cjk-editing`, `edit.rotated-text-editing`, `edit.keep-tags-on-edit`,
+- **Evidence:** `edit.text-edit` is partial (font reused or Helvetica substituted); `edit.keep-tags-on-edit` is partial
+  (marked content survives every kind of text edit on a synthetic tagged page, not yet checked on real files);
+  `edit.rtl-cjk-editing`, `edit.rotated-text-editing`,
   `edit.vector-edit`, `edit.edit-object-tool` are planned. Users:
   [#766](https://github.com/storytold/pdfcraft/issues/766) (editing Arabic text),
   [#844](https://github.com/storytold/pdfcraft/issues/844) (several elements now move together on
@@ -342,6 +343,7 @@ update the numbers.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-29 | minor | Gap 3: `edit.keep-tags-on-edit` planned → partial, measured (marked content and the structure tree survive each way of editing text on a synthetic tagged page); estimates unchanged |
 | 2026-10-28 | minor | Gap 5: native builds embed a Simplified Chinese face (LXGW WenKai Lite) and draw the whole Simplified catalog; the web build and a sans face remain; 6–12 → 3–6 h |
 | 2026-10-26 | minor | Gap 12: the interop suite exists (`cargo xtask interop`, 50 cases, four readers, in CI); pdf.js, Acrobat and real-world inputs remain |
 | 2026-10-12 | minor | Gap 6: rubber stamps, explicit image rectangles and PDF-page stamps read upright on rotated pages (#1398). Estimates unchanged. |
