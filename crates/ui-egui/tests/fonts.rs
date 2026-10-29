@@ -207,6 +207,18 @@ fn catalog_han(catalog: &str) -> String {
     han.into_iter().collect()
 }
 
+/// The web build's Chinese face is cut to `WEB_CHINESE_CHARS` (crates/fonts/build.rs), so a
+/// character of a Chinese catalog that is not listed is a missing-glyph box on the web. Needs no
+/// font. To fix a failure, add the characters it names to `crates/fonts/web-chinese-chars.txt`.
+#[test]
+fn the_web_chinese_face_is_cut_to_every_character_of_both_chinese_catalogs() {
+    let listed = cleonpdf_fonts::WEB_CHINESE_CHARS;
+    for (name, catalog) in [("zh-hans", include_str!("../src/i18n/zh-hans.tsv")), ("zh-hant", include_str!("../src/i18n/zh-hant.tsv"))] {
+        let missing: String = catalog.chars().filter(|c| !c.is_ascii() && !listed.contains(*c)).collect();
+        assert!(missing.is_empty(), "{name}: crates/fonts/web-chinese-chars.txt lacks {missing}");
+    }
+}
+
 /// Built with craft-fonts' Simplified Chinese face, the embedded fonts alone draw every Han
 /// character of the Simplified Chinese catalog in every interface family, with no installed
 /// font (#826: releases showed boxes). The Traditional catalog is reported, not asserted: the

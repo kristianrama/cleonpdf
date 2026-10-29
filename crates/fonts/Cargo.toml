@@ -15,3 +15,13 @@ skrifa = "0.44"
 # Arabic shaping for text written into PDFs; already in the tree via egui, on the same read-fonts.
 harfrust = "0.12"
 unicode-bidi = "0.3"
+
+[build-dependencies]
+# Cuts the Simplified Chinese face down for the web build (crates/fonts/src/web_subset.rs); the
+# same skrifa as above reads the cmap. Without variable-font support: LXGW WenKai Lite is static.
+subsetter = { version = "0.2", default-features = false }
+skrifa = "0.44"
+
+[dev-dependencies]
+# The tests of src/web_subset.rs, which build.rs also compiles.
+subsetter = { version = "0.2", default-features = false }
