@@ -187,6 +187,9 @@ struct TextState {
     fill: Vec<Op>,
     /// The text rendering mode (`Tr`); 3 is invisible text, as in an OCR layer over a scan.
     render_mode: i64,
+    /// Set by [`TextState::without_justification`]: `word_spacing` is then the whole gap between
+    /// words (TeX's glue; no space glyph was drawn), not an addition to a space's advance.
+    justified: bool,
 }
 
 impl TextState {
@@ -200,6 +203,7 @@ impl TextState {
             rise: ts.rise,
             fill: ts.fill.clone(),
             render_mode: ts.render_mode,
+            justified: false,
         }
     }
 
@@ -209,8 +213,15 @@ impl TextState {
         if justified {
             self.word_spacing += self.char_spacing;
             self.char_spacing = 0.0;
+            self.justified = true;
         }
         self
+    }
+
+    /// The advance of a space to measure and write with this state: none for a justified run, whose
+    /// `word_spacing` is the whole gap (`space` is the font's space advance otherwise).
+    fn space_advance(&self, space: f64) -> f64 {
+        if self.justified { 0.0 } else { space }
     }
 
     /// Operators that set this state (inside a text object).
@@ -1555,7 +1566,7 @@ pub(crate) fn replace_line_with_limit(doc: &mut Document, page: usize, line: usi
             metrics,
             &shown,
             target.origin.state.font.as_ref().map_or(target.size, |(_, size)| *size),
-            source_space(doc, &fonts_res, metrics),
+            target.origin.state.space_advance(source_space(doc, &fonts_res, metrics)),
             target.origin.state.char_spacing,
             target.origin.state.word_spacing,
         )?),
@@ -1873,7 +1884,7 @@ pub(crate) fn rewrite_block_with_limit(
     let visual_indic = metrics.as_ref().is_some_and(|m| m.visual_order) || first.visual_order;
     let indic_text = if visual_indic { crate::indic::to_visual(&text) } else { text.clone() };
     let reuse = style.family.is_none() && style.bold.is_none() && metrics.as_ref().is_some_and(|m| source_encodes(m, &indic_text));
-    let space = metrics.as_ref().map_or(0.33, |m| source_space(doc, &fonts_res, m));
+    let space = o_state.space_advance(metrics.as_ref().map_or(0.33, |m| source_space(doc, &fonts_res, m)));
     // The chosen style also determines the real Japanese fallback outlines and advances.
     let (family, bold, italic) = style.family.unwrap_or((source_family(&b.base_font), b.bold, b.italic));
     let bold = style.bold.unwrap_or(bold);

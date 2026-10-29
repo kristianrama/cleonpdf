@@ -3570,6 +3570,30 @@ fn a_word_gap_made_of_char_spacing_reads_as_a_space() {
 }
 
 #[test]
+fn rewriting_a_paragraph_keeps_a_justified_row_as_wide_as_it_was() {
+    // F2 is a subset without a space glyph, as in the PDFs Quartz saves. The second row is
+    // justified and made of two runs (the second in red, as an italic run would be its own): `Tc` 0.4 em (4.8 pt)
+    // is the whole gap between its words (the `TJ` numbers cancel it inside them), and the row
+    // sets the width of the paragraph. A rewrite that adds a space's advance to that gap makes the
+    // row wider than the box and wraps its last word onto a row of its own.
+    let mut doc = text_page(
+        "BT /F2 12 Tf 100 700 Td (ab) Tj ET \
+         BT 0.4 Tc 12 0 0 12 100 686 Tm /F2 1 Tf [(a) 400 (b) (b) 400 (a)] TJ ET \
+         BT 1 0 0 rg 0.4 Tc 12 0 0 12 134.08 686 Tm /F2 1 Tf [(a) 400 (b)] TJ ET",
+    );
+    let before = text::text_blocks(&doc, 0).unwrap();
+    assert_eq!(before.len(), 1);
+    assert_eq!(before[0].editor_text, "ab\nab ba ab");
+    let width = before[0].rect[2] - before[0].rect[0];
+    text::replace_block(&mut doc, 0, 0, "abab\nab ba ab").unwrap();
+    let after = text::text_blocks(&reopen(&doc), 0).unwrap();
+    assert_eq!(after.len(), 1);
+    assert_eq!(after[0].editor_text, "abab\nab ba ab", "no word wrapped onto a row of its own");
+    // The box counted the word space left after the last glyph (4.8 pt); the rewrite has no such tail.
+    assert!((after[0].rect[2] - after[0].rect[0] - (width - 4.8)).abs() < 1.0, "was {width} pt wide, now {:?}", after[0].rect);
+}
+
+#[test]
 fn rewriting_a_justified_line_does_not_space_its_letters_by_the_justification() {
     // Quartz puts the word space of a justified line in `Tc` (here a third of an em, four points)
     // and cancels it with `TJ` numbers inside the words. A rewrite that repeated that `Tc` on
