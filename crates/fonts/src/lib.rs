@@ -18,6 +18,8 @@ mod shaping;
 pub mod source_shaping;
 mod std14;
 mod std14_metrics;
+#[cfg(test)]
+mod web_subset;
 pub use accents::{compose_accent, decompose_accent, is_spacing_accent};
 pub use craft::{
     CRAFT_FONTS, CraftFont, SHIPPORI_MINCHO, document_arabic_font, document_hebrew_font, document_japanese_font, document_japanese_font_for_style,
@@ -29,6 +31,10 @@ pub use script::{
 };
 pub use shaping::{ShapedCluster, ShapedScript, arabic_glyph, arabic_has, shape_arabic, shape_thai, shaped_glyph, thai_has};
 pub use std14::Std14;
+
+/// The characters of the Chinese interface catalogs: the web build's Chinese face is cut to them
+/// (`build.rs`), so a character missing here is drawn as a missing-glyph box on the web.
+pub const WEB_CHINESE_CHARS: &str = include_str!("../web-chinese-chars.txt");
 
 /// Advance of `s` in Helvetica at `size` points, using the exact standard-14 metrics.
 ///
