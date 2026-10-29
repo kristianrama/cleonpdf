@@ -3570,6 +3570,37 @@ fn a_word_gap_made_of_char_spacing_reads_as_a_space() {
 }
 
 #[test]
+fn a_letter_the_subset_lacks_is_drawn_as_its_accent_and_letter_in_the_same_font() {
+    // A subset with a grave accent (96), a, b and e but no è, as TeX makes them.
+    let subset = |doc: &mut Document| {
+        let mut f = Dict::new();
+        f.set(b"Type".to_vec(), Object::name("Font"));
+        f.set(b"Subtype".to_vec(), Object::name("TrueType"));
+        f.set(b"BaseFont".to_vec(), Object::name("ABCDEF+Arial"));
+        f.set(b"FirstChar".to_vec(), Object::Int(96));
+        f.set(b"LastChar".to_vec(), Object::Int(101));
+        f.set(b"Widths".to_vec(), Object::Array([333, 500, 520, 0, 0, 556].map(Object::Int).to_vec()));
+        f.set(b"Encoding".to_vec(), Object::name("WinAnsiEncoding"));
+        doc.set(cleonpdf_cos::ObjRef::new(6, 0), Object::Dict(f));
+    };
+    let mut doc = text_page("BT /F2 12 Tf 100 700 Td (ae) Tj ET");
+    subset(&mut doc);
+    let edit = text::replace_line(&mut doc, 0, 0, "a\u{e8}").unwrap();
+    assert_eq!(edit.substituted, None, "no fallback font is needed for a letter the subset can build");
+    let after = reopen(&doc);
+    let lines = text::text_lines(&after, 0).unwrap();
+    assert_eq!(lines.iter().map(|l| (l.text.as_str(), l.font.as_str())).collect::<Vec<_>>(), [("a\u{e8}", "F2")]);
+    // The letter keeps its own advance: "a" 6 pt and "e" 6.67 pt, the accent adds none.
+    let width = lines[0].rect[2] - lines[0].rect[0];
+    assert!((width - (0.5 + 0.556) * 12.0).abs() < 0.2, "{width}");
+
+    // A letter with no accent in the subset still falls back.
+    let mut doc = text_page("BT /F2 12 Tf 100 700 Td (ae) Tj ET");
+    subset(&mut doc);
+    assert!(text::replace_line(&mut doc, 0, 0, "a\u{f9}").unwrap().substituted.is_some());
+}
+
+#[test]
 fn rewriting_a_paragraph_keeps_a_justified_row_as_wide_as_it_was() {
     // F2 is a subset without a space glyph, as in the PDFs Quartz saves. The second row is
     // justified and made of two runs (the second in red, as an italic run would be its own): `Tc` 0.4 em (4.8 pt)

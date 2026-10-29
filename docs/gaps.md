@@ -124,7 +124,7 @@ update the numbers.
     falls on the next line, and writing one back: an edited paragraph shows each accented letter
     as a single glyph from the fallback face (heavier than the subset's), because the subset has
     no `è`; it could be drawn as accent, kern and letter in the source font instead.
-  - **Fixed, one glyph left:** editing a paragraph that holds ligatures and an italic run broke
+  - **Fixed:** editing a paragraph that holds ligatures and an italic run broke
     its second row (after changing "Un" to "Ogni", the row came out letter-spaced and one word
     wrapped onto a line of its own). Four causes found on 2026-10-29, all about justification, which
     Quartz writes as a word-space `Tc` that `TJ` numbers cancel inside the words. (1) A run that
@@ -134,10 +134,12 @@ update the numbers.
     set around a one-line replacement). (3) The rewrite added a space's advance to a gap that was
     already the whole gap (`TextState::space_advance`). (4) The calibration of a run's measured
     width counted the gap after its last glyph, inflating the run by about 16% and wrapping the
-    row. The edited row now matches the original. **Still open:** a letter the subset lacks, here
-    the `è` that TeX builds from a grave accent and an `e`, is drawn from the fallback face (the
-    `ﬀ` ligature already comes from its own subset of the same font, so the fallback was per glyph
-    all along); drawing it as accent, kern and `e` in the source font would match.
+    row. The edited row now matches the original. The `è` the subset lacks is
+    now drawn the way TeX draws it, from the font's own grave accent and `e` laid over each other
+    (`word_pieces`: forward to centre the accent, the accent, back, the letter; the accent adds
+    no advance), so an edited line stays in the document's face. **Still open:** a letter built
+    this way ignores the italic slant of the accent, and a font that has no spacing accent
+    glyph (an accent never used in the file) still falls back to Helvetica.
 
 - **Missing:** robust in-place editing of text CleonPDF didn't write: subset fonts without the
   needed glyphs, CJK and right-to-left text, rotated text, lists, superscript/subscript, keeping

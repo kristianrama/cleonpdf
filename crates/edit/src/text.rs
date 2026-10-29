@@ -1465,7 +1465,46 @@ fn type3_encode(fallback: &Type3Fallback, text: &str) -> Option<Vec<(String, Vec
 /// A subset may contain all the letters but no space glyph: producers use another subset
 /// or a positioning operator for spaces. Do the same instead of substituting the whole font.
 fn source_encodes(metrics: &Metrics, text: &str) -> bool {
-    text.split(' ').all(|word| metrics.encode(word).is_some())
+    text.split(' ').all(|word| metrics.encode(word).is_some() || word_pieces(metrics, word, 1.0, 0.0).is_some())
+}
+
+/// How to show `word` in `metrics`' font when it has no single encoding: the `TJ` pieces and the
+/// advance (text space). A letter the font lacks (`è`) is built the way TeX builds it, from the
+/// font's own spacing accent and letter laid over each other: the accent is drawn first, shifted
+/// so it is centred on the letter, and a number takes the position back so the letter follows
+/// at the start of its box; the accent adds no advance. `None` if a character can't be shown.
+fn word_pieces(metrics: &Metrics, word: &str, size: f64, char_spacing: f64) -> Option<(Vec<Object>, f64)> {
+    if !(size.is_finite() && size > 0.0 && char_spacing.is_finite()) {
+        return None;
+    }
+    let width_of = |bytes: &[u8]| metrics.codes(bytes).iter().map(|(c, _)| metrics.width(*c)).sum::<f64>();
+    let mut pieces = Vec::new();
+    let mut plain: Vec<u8> = Vec::new();
+    let mut advance = 0.0;
+    for c in word.chars() {
+        if let Some(bytes) = metrics.encode(&c.to_string()) {
+            advance += width_of(&bytes) * size + char_spacing;
+            plain.extend(bytes);
+            continue;
+        }
+        let (accent, base) = cleonpdf_fonts::decompose_accent(c)
+            .into_iter()
+            .find_map(|(accent, base)| Some((metrics.encode(&accent.to_string())?, metrics.encode(&base.to_string())?)))?;
+        let (accent_width, base_width) = (width_of(&accent), width_of(&base));
+        if !plain.is_empty() {
+            pieces.push(Object::String(PdfString::literal(std::mem::take(&mut plain))));
+        }
+        // Forward to centre the accent on the letter, then back over both.
+        pieces.push(cleonpdf_content::num(-(base_width - accent_width) / 2.0 * 1000.0));
+        pieces.push(Object::String(PdfString::literal(accent)));
+        pieces.push(cleonpdf_content::num(((accent_width + base_width) / 2.0 + char_spacing / size) * 1000.0));
+        plain = base;
+        advance += base_width * size + char_spacing;
+    }
+    if !plain.is_empty() {
+        pieces.push(Object::String(PdfString::literal(plain)));
+    }
+    advance.is_finite().then_some((pieces, advance))
 }
 
 fn source_space(doc: &Document, fonts: &Dict, metrics: &Metrics) -> f64 {
@@ -1498,8 +1537,10 @@ fn source_width(metrics: &Metrics, text: &str, size: f64, space: f64, char_spaci
     }
     let words: f64 = text
         .split(' ')
-        .filter_map(|w| metrics.encode(w))
-        .map(|b| metrics.codes(&b).iter().map(|(c, _)| metrics.width(*c) * size + char_spacing).sum::<f64>())
+        .filter_map(|w| match metrics.encode(w) {
+            Some(b) => Some(metrics.codes(&b).iter().map(|(c, _)| metrics.width(*c) * size + char_spacing).sum::<f64>()),
+            None => word_pieces(metrics, w, size, char_spacing).map(|(_, width)| width),
+        })
         .sum();
     words + text.matches(' ').count() as f64 * (space * size + char_spacing + word_spacing)
 }
@@ -1517,9 +1558,14 @@ fn source_show(metrics: &Metrics, text: &str, size: f64, space: f64, char_spacin
         if i > 0 {
             out.push(Op::new("TJ", vec![Object::Array(vec![cleonpdf_content::num(adjustment)])]));
         }
-        if !word.is_empty() {
-            let bytes = metrics.encode(word).ok_or_else(|| EditError::Invalid("the source font cannot show the replacement text".into()))?;
-            out.push(Op::new("Tj", vec![Object::String(PdfString::literal(bytes))]));
+        if let Some(bytes) = metrics.encode(word) {
+            if !word.is_empty() {
+                out.push(Op::new("Tj", vec![Object::String(PdfString::literal(bytes))]));
+            }
+        } else {
+            let (pieces, _) = word_pieces(metrics, word, size, char_spacing)
+                .ok_or_else(|| EditError::Invalid("the source font cannot show the replacement text".into()))?;
+            out.push(Op::new("TJ", vec![Object::Array(pieces)]));
         }
     }
     Ok(out)
