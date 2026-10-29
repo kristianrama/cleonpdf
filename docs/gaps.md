@@ -100,10 +100,15 @@ update the numbers.
   (checked in Poppler). Found, in the order they matter:
   - **Fixed:** a word space written as `Tc` (Quartz justification) was lost in the editor's line
     text (`o di questi` read `odiquesti`); the search path already handled it.
-  - **Open:** one printed line is split into several editor lines where Quartz starts a new text
-    object mid-word (`s` + `econda`), because the next object begins 0.04–0.2 pt before the
-    previous one ends; each fragment is then its own paragraph, and rewriting that "paragraph"
-    redraws the text in a 35 pt column over the page.
+  - **Mostly fixed:** one printed line was split into several editor lines where Quartz starts a
+    new text object mid-word (`s` + `econda`); each fragment was its own paragraph, and rewriting
+    that "paragraph" redrew the text in a 35 pt column over the page. The cause was the join test
+    asking for exactly equal `Tc`, while Quartz gives every object of a line its own `Tc` a few
+    thousandths of an em apart; spacing is now compared as a distance on the page (2% of the
+    glyph size). Same-font, same-size splits at a seam fell from 136 to 38 and 187 to 47 in the
+    two files. **Still open:** the last word of a justified line, whose `Tc` is a word-space-sized
+    0.38 em against 0 for the rest of the line, stays its own line, since a rewrite of the joined
+    line would use one `Tc` for both.
   - **Open:** a heading (17 pt bold) and the paragraph after it come out as one paragraph.
   - **Open:** an accent drawn as its own glyph (TeX builds è from a grave accent and an e) reads
     as a grave accent then `e` in the editor and in search, so "perché" is not found (41 and 39 times in the two files); Poppler composes it.
