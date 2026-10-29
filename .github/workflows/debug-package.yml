@@ -25,15 +25,20 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           key: release-linux-x86_64
-      - name: Fetch the OCR models alone and print everything
+      - name: Probe model URLs
         run: |
           set +e
           {
-            cargo xtask models /tmp/models
-            echo "xtask exit=$?"
-            curl -sSIL -o /dev/null -w "model url: http %{http_code} final %{url_effective}\n" https://ocrs-models.s3-accelerate.amazonaws.com/text-detection.rten
-            curl -sSIL -o /dev/null -w "licence url: http %{http_code} final %{url_effective}\n" https://creativecommons.org/licenses/by-sa/4.0/legalcode.txt
-            ls -la /tmp/models
-          } > models.log 2>&1
-          msg=$(sed 's/\x1b\[[0-9;]*m//g' models.log | grep -v "Compiling\|Downloaded\|Downloading" | tail -30 | cut -c1-300 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
-          echo "::error title=models::$msg"
+            for u in \
+              https://ocrs-models.s3-accelerate.amazonaws.com/text-detection.rten \
+              https://ocrs-models.s3.amazonaws.com/text-detection.rten \
+              https://huggingface.co/robertknight/ocrs/resolve/main/text-detection.rten \
+              https://huggingface.co/robertknight/ocrs/resolve/main/text-recognition.rten; do
+              code=$(curl -sSL -o body.bin -w "%{http_code}" "$u")
+              echo "$u -> http $code size $(stat -c %s body.bin) sha256 $(sha256sum body.bin | cut -c1-64)"
+              if [ "$code" != 200 ]; then head -c 300 body.bin | tr '\n' ' '; echo; fi
+            done
+            echo "want detection e484866d.. no: f15cfb56bd02c4bf478a20343986504a1f01e1665c2b3a0ad66340f054b1b5ca / recognition e484866d4cce403175bd8d00b128feb08ab42e208de30e42cd9889d8f1735a6e"
+          } > probe.log 2>&1
+          msg=$(cut -c1-400 probe.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+          echo "::error title=probe::$msg"
