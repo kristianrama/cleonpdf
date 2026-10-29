@@ -65,7 +65,7 @@ In order. Each item names its entry in [gaps.md](gaps.md).
    Encrypted output that Acrobat opens shipped with #836 (#774).
 2. **Fix the crash and wrong-result reports** filed against shipped features (gap 6). The first
    batch (#799–#821, including the panic in #816) is fixed.
-3. **A Chinese UI face on the web** (gap 5, #826). Desktop builds embed one from the next release.
+3. **A Chinese UI face on the web** (gap 5, #826). Desktop builds embed one from 0.2.0.
 4. **A fidelity harness against Acrobat, then the renderer decision** (gaps 12 and 2). Owner
    decision needed: our own M2 devices, or #841's proposal as the bridge.
 5. **Editing existing content** (gap 3, M7): fonts, subsets, reflow, CJK and RTL.
