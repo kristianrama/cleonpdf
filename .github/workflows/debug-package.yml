@@ -25,11 +25,14 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           key: release-linux-x86_64
-      - name: Package, with the error lines as annotations
+      - name: Fetch the OCR models alone and print everything
         run: |
           set +e
-          packaging/linux/package.sh --formats "tar cli" > pkg.log 2>&1
-          code=$?
-          grep -nE "error|Error|failed|FAIL|denied|mismatch" pkg.log | tail -25 | while IFS= read -r l; do echo "::error::${l:0:400}"; done
-          tail -12 pkg.log | while IFS= read -r l; do echo "::warning::${l:0:400}"; done
-          exit $code
+          {
+            cargo xtask models /tmp/models
+            echo "xtask exit=$?"
+            curl -sSIL -o /dev/null -w "model url: http %{http_code} final %{url_effective}\n" https://ocrs-models.s3-accelerate.amazonaws.com/text-detection.rten
+            curl -sSIL -o /dev/null -w "licence url: http %{http_code} final %{url_effective}\n" https://creativecommons.org/licenses/by-sa/4.0/legalcode.txt
+            ls -la /tmp/models
+          } > models.log 2>&1
+          sed 's/\x1b\[[0-9;]*m//g' models.log | tail -30 | while IFS= read -r l; do echo "::warning::${l:0:400}"; done
