@@ -29,11 +29,7 @@ jobs:
         run: |
           set +e
           {
-            for u in \
-              https://ocrs-models.s3-accelerate.amazonaws.com/text-detection.rten \
-              https://ocrs-models.s3.amazonaws.com/text-detection.rten \
-              https://huggingface.co/robertknight/ocrs/resolve/main/text-detection.rten \
-              https://huggingface.co/robertknight/ocrs/resolve/main/text-recognition.rten; do
+            for u in https://huggingface.co/robertknight/ocrs/resolve/main/text-detection-ssfbcj81.rten https://huggingface.co/robertknight/ocrs/resolve/main/text-rec-checkpoint-s52qdbqt.rten; do
               code=$(curl -sSL -o body.bin -w "%{http_code}" "$u")
               echo "$u -> http $code size $(stat -c %s body.bin) sha256 $(sha256sum body.bin | cut -c1-64)"
               if [ "$code" != 200 ]; then head -c 300 body.bin | tr '\n' ' '; echo; fi
