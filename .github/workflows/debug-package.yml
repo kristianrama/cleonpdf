@@ -35,4 +35,5 @@ jobs:
             curl -sSIL -o /dev/null -w "licence url: http %{http_code} final %{url_effective}\n" https://creativecommons.org/licenses/by-sa/4.0/legalcode.txt
             ls -la /tmp/models
           } > models.log 2>&1
-          sed 's/\x1b\[[0-9;]*m//g' models.log | tail -30 | while IFS= read -r l; do echo "::warning::${l:0:400}"; done
+          msg=$(sed 's/\x1b\[[0-9;]*m//g' models.log | grep -v "Compiling\|Downloaded\|Downloading" | tail -30 | cut -c1-300 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+          echo "::error title=models::$msg"
