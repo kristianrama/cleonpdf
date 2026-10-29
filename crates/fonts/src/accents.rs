@@ -49,6 +49,23 @@ pub fn compose_accent(accent: char, base: char) -> Option<char> {
     made.chars().nth(at)
 }
 
+/// The spacing accents and the letter that build `c`, when `c` is an accented letter
+/// ([`compose_accent`] backwards), one pair for each spelling of the accent. Where `c` is an
+/// accented `i` the letter is the dotless `ı`, which is what TeX puts under an accent.
+#[must_use]
+pub fn decompose_accent(c: char) -> Vec<(char, char)> {
+    let mut out = Vec::new();
+    for (accents, letters, made) in ACCENTS {
+        if let Some(at) = made.chars().position(|m| m == c)
+            && let Some(base) = letters.chars().nth(at)
+        {
+            let base = if base == 'i' { '\u{0131}' } else { base };
+            out.extend(accents.chars().map(|accent| (accent, base)));
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -71,6 +88,21 @@ mod tests {
         // TeX puts a dotless i under the accent.
         assert_eq!(compose_accent('`', '\u{0131}'), Some('ì'));
         assert_eq!(compose_accent('´', '\u{0131}'), Some('í'));
+    }
+
+    #[test]
+    fn decomposing_is_composing_backwards() {
+        assert!(decompose_accent('è').contains(&('`', 'e')));
+        assert!(decompose_accent('é').contains(&('´', 'e')));
+        assert!(decompose_accent('ì').contains(&('`', '\u{0131}')));
+        assert!(decompose_accent('x').is_empty());
+        for c in "àèéìòùÀÈÉçñüÿšž".chars() {
+            let parts = decompose_accent(c);
+            assert!(!parts.is_empty(), "{c}");
+            for (accent, base) in parts {
+                assert_eq!(compose_accent(accent, base), Some(c), "{accent}{base}");
+            }
+        }
     }
 
     #[test]
