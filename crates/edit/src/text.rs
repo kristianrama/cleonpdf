@@ -974,11 +974,15 @@ fn compatible_word(line: &TextLine, shown: &Shown) -> bool {
         let page_distance = (a - b).abs() * line.origin.k;
         page_distance.is_finite() && page_distance <= SPACING_JITTER * shown.size.max(1.0)
     };
+    // A word space written as `Tc` and cancelled inside the words (`justified`) is the line's
+    // justification, whatever size this object's share of it is: Quartz sets the last word of a
+    // line that way beside text whose word spaces are `TJ` numbers (`Tc` 0).
+    let justified_spacing = shown.justified || line.origin.raw_spacing.is_some();
     line.scope == shown.scope
         && same(&line.origin.tm[..4], &shown.tm.0[..4])
         && same(&line.origin.ctm, &shown.state.ctm.0)
         && near(a.char_spacing, b.char_spacing)
-        && near(a.word_spacing, b.word_spacing)
+        && (justified_spacing || near(a.word_spacing, b.word_spacing))
         && same(&[a.scale, a.rise], &[b.scale, b.rise])
         && a.fill.len() == b.fill.len()
         && a.fill.iter().zip(&b.fill).all(|(a, b)| a.op == b.op && a.operands == b.operands)

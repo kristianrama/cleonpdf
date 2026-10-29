@@ -3705,3 +3705,18 @@ fn a_word_split_across_text_objects_with_jittered_char_spacing_stays_one_line() 
     let stretched = text_page("BT 0.0028 Tc 12 0 0 12 100 700 Tm /F1 1 Tf (Hel) Tj ET BT 0.4 Tc 12 0 0 12 118.14 700 Tm /F1 1 Tf (lo) Tj ET");
     assert_eq!(text::text_lines(&stretched, 0).unwrap().len(), 2);
 }
+
+#[test]
+fn the_last_word_of_a_justified_line_joins_the_rest_of_its_line() {
+    // Quartz writes most of a justified line with the word spaces as `TJ` numbers (`Tc` 0) and the
+    // last text object with the word space as `Tc`, cancelled by a `TJ` number inside every word
+    // (here 0.4 em, so `Tc` 0.4 against 400). Both are the same printed line: "Hello" is cut
+    // mid-word between "Hel" and "lo", and "lo" starts where "Hel" ends.
+    let page = text_page("BT 12 0 0 12 100 700 Tm /F1 1 Tf [(Hel)] TJ ET BT 0.4 Tc 12 0 0 12 118 700 Tm /F1 1 Tf [(l) 400 (o)] TJ ET");
+    let lines = text::text_lines(&page, 0).unwrap();
+    assert_eq!(lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["Hello"]);
+
+    // A stretched word that is not cancelled inside its letters is a different run, as before.
+    let stretched = text_page("BT 12 0 0 12 100 700 Tm /F1 1 Tf (Hel) Tj ET BT 0.4 Tc 12 0 0 12 118 700 Tm /F1 1 Tf (lo) Tj ET");
+    assert_eq!(text::text_lines(&stretched, 0).unwrap().len(), 2);
+}

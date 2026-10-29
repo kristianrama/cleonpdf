@@ -106,9 +106,12 @@ update the numbers.
     asking for exactly equal `Tc`, while Quartz gives every object of a line its own `Tc` a few
     thousandths of an em apart; spacing is now compared as a distance on the page (2% of the
     glyph size). Same-font, same-size splits at a seam fell from 136 to 38 and 187 to 47 in the
-    two files. **Still open:** the last word of a justified line, whose `Tc` is a word-space-sized
-    0.38 em against 0 for the rest of the line, stays its own line, since a rewrite of the joined
-    line would use one `Tc` for both.
+    two files. The last word of a justified line, whose `Tc` is a
+    word-space-sized 0.38 em (cancelled inside its letters) against 0 for the rest of the line, now
+    joins it too, so "ciascun" + "o di questi" is one line (49 and 55 fewer editor lines in the two
+    files). **Still open:** rows a rewrite adds beyond the source's rows (a longer paragraph wraps
+    to one more line) start at the left edge of the whole block, under the "iii)" label, instead of
+    at the hanging indent of the last row, and they are not reflowed into the space below.
   - **By design, not a defect:** a heading (17 pt bold) and the paragraph after it come out as one
     paragraph. That is the mixed-style region a contributor added on 2026-10-11 (rows keep their own
     style on a rewrite; `mixed_styles_and_matrix_sizes_form_visual_regions_without_merging_columns`
