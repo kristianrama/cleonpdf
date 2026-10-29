@@ -60,6 +60,9 @@ pub struct TextLine {
     /// Some of the line's text is `/ActualText`, which is already in logical order: visual-order
     /// Indic recovery would scramble it.
     actual_text: bool,
+    /// The line ends with a word-space-sized advance (the `Tc` or `TJ` number after its last
+    /// glyph) that is not a space character: a justifying producer's gap before the next word.
+    pub(crate) gap_after: bool,
 }
 
 impl TextLine {
@@ -200,6 +203,16 @@ impl TextState {
         }
     }
 
+    /// This state for rewriting a run a justifying producer set: its `Tc` is the word space (the
+    /// `TJ` numbers inside the words cancel it), so it goes to the word gaps and not to every glyph.
+    fn without_justification(mut self, justified: bool) -> Self {
+        if justified {
+            self.word_spacing += self.char_spacing;
+            self.char_spacing = 0.0;
+        }
+        self
+    }
+
     /// Operators that set this state (inside a text object).
     fn ops(&self) -> Vec<Op> {
         let n = cleonpdf_content::num;
@@ -228,6 +241,9 @@ struct Origin {
     ctm: [f64; 6],
     baseline: f64,
     x: f64,
+    /// For a justified run: the `Tc` and `Tw` the content stream sets (its `state` has them moved
+    /// to the word spacing), so a rewrite of just the showing operator can override and restore them.
+    raw_spacing: Option<(f64, f64)>,
     state: TextState,
     bt_op: usize,
     bt_state: TextState,
@@ -485,6 +501,10 @@ struct Shown {
     scope: Option<usize>,
     logical_order: bool,
     actual_text: bool,
+    /// See [`TextLine::gap_after`].
+    gap_after: bool,
+    /// Its `Tc` is a word space that `TJ` numbers cancel inside the words (justified text).
+    justified: bool,
 }
 
 /// The graphics state carried from one of a page's content streams to the next: the streams
@@ -671,6 +691,7 @@ fn interpret(
                 let mut pending = 0.0;
                 // Where in `text` the last glyph, a spacing accent, begins.
                 let mut accent_at: Option<usize> = None;
+                let mut justified = false;
                 for p in &pieces {
                     match p {
                         Object::String(s) => {
@@ -727,10 +748,13 @@ fn interpret(
                                 }
                                 x_text += dx;
                                 pending += dx;
+                                // A `Tc` the numbers take back after a glyph is not tracking.
+                                justified |= glyph_count > 0 && ts.char_spacing > ts.size * 0.2 && pending.abs() < ts.size * 0.05;
                             }
                         }
                     }
                 }
+                let gap_after = pending > ts.size * 0.2;
                 tm = Matrix([1.0, 0.0, 0.0, 1.0, x_text, 0.0]).then(&tm);
                 let end = tm.then(&ts.ctm).apply(0.0, ts.rise);
                 // The box: from descent to ascent along the run.
@@ -776,6 +800,8 @@ fn interpret(
                     scope: marked.last().copied().flatten(),
                     logical_order: false,
                     actual_text: false,
+                    gap_after,
+                    justified,
                 });
             }
             _ => {}
@@ -831,7 +857,8 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
         });
         if joins && let Some(l) = lines.last_mut() {
             let gap = s.start_x - last.map_or(s.start_x, |x| x.3);
-            append_text(&mut l.text, gap, l.size, &s.text);
+            append_text(&mut l.text, word_gap(gap, l.size, l.gap_after), l.size, &s.text);
+            l.gap_after = s.gap_after;
             l.rect = [l.rect[0].min(s.rect[0]), l.rect[1].min(s.rect[1]), l.rect[2].max(s.rect[2]), l.rect[3].max(s.rect[3])];
             l.ops.push(s.op);
             l.ops.extend(s.extra_ops.iter().copied());
@@ -856,6 +883,7 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
                 scope: s.scope,
                 logical_order: s.logical_order,
                 actual_text: s.actual_text,
+                gap_after: s.gap_after,
                 ops: std::iter::once(s.op).chain(s.extra_ops.iter().copied()).collect(),
                 origin: Origin {
                     tm: s.tm.0,
@@ -864,7 +892,8 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
                     ctm: s.state.ctm.0,
                     baseline: s.baseline,
                     x: s.start_x,
-                    state: TextState::of(&s.state),
+                    raw_spacing: s.justified.then_some((s.state.char_spacing, s.state.word_spacing)),
+                    state: TextState::of(&s.state).without_justification(s.justified),
                     bt_op: s.bt_op,
                     bt_state: TextState::of(&s.bt_state),
                 },
@@ -888,6 +917,13 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
 /// How far a letter must start before the end of the spacing accent just drawn (a fraction of
 /// the text size) for the two to be one accented letter and not an accent character and a letter.
 const ACCENT_OVERLAP: f64 = 0.15;
+
+/// The gap between a run and the next to read for a word space: the measured `gap`, or a quarter
+/// of the text size when the run ended with a space-sized advance (`gap_after`, which its own box
+/// already counts, so the measured gap is about zero), unless the next run starts back over it.
+fn word_gap(gap: f64, size: f64, gap_after: bool) -> f64 {
+    if gap_after && gap >= -size * ACCENT_OVERLAP { gap.max(size * 0.25) } else { gap }
+}
 
 /// Add the text of the next run to a line: a space if there is a word gap, or, when the run
 /// starts back over a spacing accent that ends the line, the accented letter in their place.
@@ -919,7 +955,7 @@ const SPACING_JITTER: f64 = 0.02;
 /// transforms and spacing. In particular, a nearby rotated label isn't part of this line.
 fn compatible_word(line: &TextLine, shown: &Shown) -> bool {
     let same = |a: &[f64], b: &[f64]| a.iter().zip(b).all(|(a, b)| (a - b).abs() < 1e-6);
-    let (a, b) = (&line.origin.state, TextState::of(&shown.state));
+    let (a, b) = (&line.origin.state, TextState::of(&shown.state).without_justification(shown.justified));
     // Justifying producers (Quartz) give every text object of a line its own `Tc`, a few
     // thousandths of an em apart, so spacing is compared as the distance it makes on the page
     // (a fraction of the glyph size), not for equality.
@@ -954,7 +990,8 @@ fn add_shown(lines: &mut Vec<TextLine>, last: &mut Option<(usize, f64, f64, f64)
     });
     if joins && let Some(l) = lines.last_mut() {
         let gap = s.start_x - last.map_or(s.start_x, |x| x.2);
-        append_text(&mut l.text, gap, l.size, &s.text);
+        append_text(&mut l.text, word_gap(gap, l.size, l.gap_after), l.size, &s.text);
+        l.gap_after = s.gap_after;
         l.rect = [l.rect[0].min(s.rect[0]), l.rect[1].min(s.rect[1]), l.rect[2].max(s.rect[2]), l.rect[3].max(s.rect[3])];
         l.ops.push(s.op);
         l.ops.extend(s.extra_ops.iter().copied());
@@ -978,6 +1015,7 @@ fn add_shown(lines: &mut Vec<TextLine>, last: &mut Option<(usize, f64, f64, f64)
             scope: s.scope,
             logical_order: s.logical_order,
             actual_text: s.actual_text,
+            gap_after: s.gap_after,
             ops: std::iter::once(s.op).chain(s.extra_ops.iter().copied()).collect(),
             origin: Origin {
                 tm: s.tm.0,
@@ -986,7 +1024,8 @@ fn add_shown(lines: &mut Vec<TextLine>, last: &mut Option<(usize, f64, f64, f64)
                 ctm: s.state.ctm.0,
                 baseline: s.baseline,
                 x: s.start_x,
-                state: TextState::of(&s.state),
+                raw_spacing: s.justified.then_some((s.state.char_spacing, s.state.word_spacing)),
+                state: TextState::of(&s.state).without_justification(s.justified),
                 bt_op: s.bt_op,
                 bt_state: TextState::of(&s.bt_state),
             },
@@ -1557,6 +1596,15 @@ pub(crate) fn replace_line_with_limit(doc: &mut Document, page: usize, line: usi
                 fonts_res.set(substitute_name.into_bytes(), Object::Dict(f));
             }
         }
+    }
+    // A justified line's `Tc` is a word space the `TJ` numbers cancel inside words; the replacement
+    // has no such numbers, so it is drawn with the word space in `Tw` and the stream's values come back after.
+    if let Some((tc, tw)) = target.origin.raw_spacing.filter(|_| !ops[first].is("\"")) {
+        let n = cleonpdf_content::num;
+        replacement.insert(0, Op::new("Tw", vec![n(target.origin.state.word_spacing)]));
+        replacement.insert(0, Op::new("Tc", vec![n(0.0)]));
+        replacement.push(Op::new("Tc", vec![n(tc)]));
+        replacement.push(Op::new("Tw", vec![n(tw)]));
     }
     // Rebuild: the line's first operator becomes the replacement, its others go. Copies of the
     // line drawn on the same baseline go too, so the replacement is all that shows.

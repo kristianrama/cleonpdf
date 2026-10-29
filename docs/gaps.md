@@ -124,12 +124,18 @@ update the numbers.
     falls on the next line, and writing one back: an edited paragraph shows each accented letter
     as a single glyph from the fallback face (heavier than the subset's), because the subset has
     no `è`; it could be drawn as accent, kern and letter in the source font instead.
-  - **Open:** editing a paragraph that holds ligatures (`ﬀ`, `ﬁ`) and an italic run breaks its
-    second row: after changing "Un" to "Ogni" in one such paragraph, the next row came out in a
-    small, widely spaced face and one word wrapped onto a line of its own. Not isolated yet; the
-    missing ligature glyphs and the italic run are the suspects.
-  - **Open:** a replacement that needs a letter missing from the subset (è, an unused capital)
-    redraws the whole line in Helvetica, including letters the subset has.
+  - **Mostly fixed:** editing a paragraph that holds ligatures and an italic run broke its second
+    row (after changing "Un" to "Ogni", the row came out in a small, widely spaced face and one
+    word wrapped onto a line of its own). Two causes found on 2026-10-29. (1) A run ended with a
+    word-space `Tc` after its last glyph, so the next run (italic) started exactly where it ended
+    and the paragraph read "eﬀettolimitato"; a run that ends with such a gap now keeps it as a
+    space (`TextLine::gap_after`; 185 and 124 paragraphs in the two files regain a space, e.g.
+    "=algoritmi" and "eL,R"). (2) The rewrite repeated the justification `Tc` on every glyph, the
+    word space the `TJ` numbers had cancelled inside the words: a justified run now rewrites with
+    that `Tc` as word spacing (`TextState::without_justification`, and `Tc`/`Tw` around a
+    one-line replacement). **Still open:** a run that needs a glyph its subset lacks (here the `ﬀ`
+    ligature) is drawn whole in the fallback face, and the wider text can wrap a word onto the
+    next line (gap 3, "whole-line Helvetica fallback" above).
 
 - **Missing:** robust in-place editing of text CleonPDF didn't write: subset fonts without the
   needed glyphs, CJK and right-to-left text, rotated text, lists, superscript/subscript, keeping
