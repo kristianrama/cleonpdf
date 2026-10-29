@@ -3542,3 +3542,29 @@ fn editing_text_keeps_the_marked_content_the_structure_tree_points_at() {
         assert_eq!(page_mcids(&doc), (vec![0, 1, 2], true), "{what}: {}", streams(&doc, 0).join("\n"));
     }
 }
+
+/// Quartz-style justification: a text object sets `Tc` to a word space and cancels it inside
+/// the line with `TJ` numbers, so a word gap is the `Tc` that nothing cancels (a `Tc` inside a
+/// string, or a `TJ` number that doesn't match it). The text must read with its spaces.
+#[test]
+fn a_word_gap_made_of_char_spacing_reads_as_a_space() {
+    // The font size is 1 and the matrix scales it: Tc 0.334 is a third of an em (a word space)
+    // and the `TJ` numbers 335-339 take it back after every glyph but the word ends.
+    let justified = text_page("BT 0.3341 Tc 12 0 0 12 100 700 Tm /F1 1 Tf [(od) 335 (i) 3 (q) 338 (u) 335 (e) 338 (s) 339 (t) 333 (i)] TJ ET");
+    let lines = text::text_lines(&justified, 0).unwrap();
+    assert_eq!(lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["o di questi"]);
+    // The box already counted every gap; reading the spaces must not move it.
+    let width = lines[0].rect[2] - lines[0].rect[0];
+    assert!(width > 40.0 && width < 120.0, "{width}");
+
+    // Tracking (a small Tc on every glyph) is not word gaps, and ordinary TJ gaps still are.
+    let tracked = text_page("BT 0.05 Tc 12 0 0 12 100 700 Tm /F1 1 Tf (Hello) Tj ET BT 12 0 0 12 100 650 Tm /F1 1 Tf [(two) -400 (words)] TJ ET");
+    let lines = text::text_lines(&tracked, 0).unwrap();
+    assert_eq!(lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["Hello", "two words"]);
+
+    // The `Tc` after the last glyph, and a number before the first, are no space in the line.
+    let edge = text_page("BT 0.3341 Tc 12 0 0 12 100 700 Tm /F1 1 Tf [(a)] TJ ET BT 0.3341 Tc 12 0 0 12 100 650 Tm /F1 1 Tf [-335 (b)] TJ ET");
+    let lines = text::text_lines(&edge, 0).unwrap();
+    assert_eq!(lines[0].text, "a");
+    assert_eq!(lines[1].text.trim(), "b");
+}

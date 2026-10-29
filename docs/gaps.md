@@ -94,6 +94,22 @@ update the numbers.
   removes a distinct neighbour whose glyph box overlaps (#1316); a second drawing on the same
   baseline is still replaced. Estimates are unchanged.
 
+- **Measured on real files (2026-10-29, local only, never committed):** two lecture-note PDFs made
+  by LaTeX and saved through macOS Quartz (74 and 68 pages, Computer Modern CFF subsets, no
+  structure tags). Replacing a line with letters the subset has keeps the font, size and place
+  (checked in Poppler). Found, in the order they matter:
+  - **Fixed:** a word space written as `Tc` (Quartz justification) was lost in the editor's line
+    text (`o di questi` read `odiquesti`); the search path already handled it.
+  - **Open:** one printed line is split into several editor lines where Quartz starts a new text
+    object mid-word (`s` + `econda`), because the next object begins 0.04–0.2 pt before the
+    previous one ends; each fragment is then its own paragraph, and rewriting that "paragraph"
+    redraws the text in a 35 pt column over the page.
+  - **Open:** a heading (17 pt bold) and the paragraph after it come out as one paragraph.
+  - **Open:** an accent drawn as its own glyph (TeX builds è from a grave accent and an e) reads
+    as a grave accent then `e` in the editor and in search, so "perché" is not found (41 and 39 times in the two files); Poppler composes it.
+  - **Open:** a replacement that needs a letter missing from the subset (è, an unused capital)
+    redraws the whole line in Helvetica, including letters the subset has.
+
 - **Missing:** robust in-place editing of text CleonPDF didn't write: subset fonts without the
   needed glyphs, CJK and right-to-left text, rotated text, lists, superscript/subscript, keeping
   structure tags, find and replace in edit mode; vector and object editing; arrange and align.
@@ -343,6 +359,7 @@ update the numbers.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-29 | minor | Gap 3: measured on two real LaTeX/Quartz PDFs; word spaces made of `Tc` fixed in the editor's line text; four findings listed as open; estimates unchanged |
 | 2026-10-29 | minor | Gap 3: `edit.keep-tags-on-edit` planned → partial, measured (marked content and the structure tree survive each way of editing text on a synthetic tagged page); estimates unchanged |
 | 2026-10-28 | minor | Gap 5: native builds embed a Simplified Chinese face (LXGW WenKai Lite) and draw the whole Simplified catalog; the web build and a sans face remain; 6–12 → 3–6 h |
 | 2026-10-26 | minor | Gap 12: the interop suite exists (`cargo xtask interop`, 50 cases, four readers, in CI); pdf.js, Acrobat and real-world inputs remain |

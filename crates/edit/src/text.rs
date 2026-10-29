@@ -665,10 +665,17 @@ fn interpret(
                 let mut decodable = true;
                 let mut x_text = 0.0;
                 let mut glyph_count = 0_usize;
+                // What the last glyph's `Tc` and the `TJ` numbers since then add beyond its width
+                // (§9.3.2). Justifying producers (Quartz) put a word space in `Tc` and cancel it
+                // with `TJ` numbers inside the words, so a word gap is the part nothing cancels.
+                let mut pending = 0.0;
                 for p in &pieces {
                     match p {
                         Object::String(s) => {
                             for (code, len) in m.codes(&s.bytes) {
+                                if pending > ts.size * 0.2 && !text.is_empty() && !text.ends_with(' ') {
+                                    text.push(' ');
+                                }
                                 glyph_count = glyph_count.saturating_add(1);
                                 match m.text_of(code) {
                                     Some(t) => text.push_str(&t),
@@ -676,6 +683,7 @@ fn interpret(
                                 }
                                 let w = m.width(code) * ts.size + ts.char_spacing + if m.is_space(code, len) { ts.word_spacing } else { 0.0 };
                                 x_text += w * ts.scale;
+                                pending = ts.char_spacing * ts.scale;
                             }
                         }
                         other => {
@@ -686,6 +694,7 @@ fn interpret(
                                     text.push(' ');
                                 }
                                 x_text += dx;
+                                pending += dx;
                             }
                         }
                     }
