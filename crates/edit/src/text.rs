@@ -669,17 +669,48 @@ fn interpret(
                 // (§9.3.2). Justifying producers (Quartz) put a word space in `Tc` and cancel it
                 // with `TJ` numbers inside the words, so a word gap is the part nothing cancels.
                 let mut pending = 0.0;
+                // Where in `text` the last glyph, a spacing accent, begins.
+                let mut accent_at: Option<usize> = None;
                 for p in &pieces {
                     match p {
                         Object::String(s) => {
                             for (code, len) in m.codes(&s.bytes) {
                                 if pending > ts.size * 0.2 && !text.is_empty() && !text.ends_with(' ') {
                                     text.push(' ');
+                                    accent_at = None;
                                 }
                                 glyph_count = glyph_count.saturating_add(1);
                                 match m.text_of(code) {
-                                    Some(t) => text.push_str(&t),
-                                    None => decodable = false,
+                                    Some(t) => {
+                                        // A spacing accent the producer backed up over its letter
+                                        // (TeX's `\`e`) reads as that one accented letter.
+                                        let composed = accent_at.filter(|_| pending < -ts.size * ACCENT_OVERLAP).and_then(|at| {
+                                            let accent = text.get(at..)?.chars().next()?;
+                                            let mut letters = t.chars();
+                                            let base = letters.next()?;
+                                            if letters.next().is_some() {
+                                                return None;
+                                            }
+                                            cleonpdf_fonts::compose_accent(accent, base).map(|c| (at, c))
+                                        });
+                                        accent_at = None;
+                                        if let Some((at, c)) = composed {
+                                            text.truncate(at);
+                                            text.push(c);
+                                        } else {
+                                            let mut chars = t.chars();
+                                            if let (Some(c), None) = (chars.next(), chars.next())
+                                                && cleonpdf_fonts::is_spacing_accent(c)
+                                            {
+                                                accent_at = Some(text.len());
+                                            }
+                                            text.push_str(&t);
+                                        }
+                                    }
+                                    None => {
+                                        decodable = false;
+                                        accent_at = None;
+                                    }
                                 }
                                 let w = m.width(code) * ts.size + ts.char_spacing + if m.is_space(code, len) { ts.word_spacing } else { 0.0 };
                                 x_text += w * ts.scale;
@@ -692,6 +723,7 @@ fn interpret(
                                 // A large gap inside TJ reads as a space.
                                 if dx > ts.size * 0.2 && !text.ends_with(' ') {
                                     text.push(' ');
+                                    accent_at = None;
                                 }
                                 x_text += dx;
                                 pending += dx;
@@ -799,10 +831,7 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
         });
         if joins && let Some(l) = lines.last_mut() {
             let gap = s.start_x - last.map_or(s.start_x, |x| x.3);
-            if gap > l.size * 0.2 && !l.text.ends_with(' ') && !s.text.starts_with(' ') {
-                l.text.push(' ');
-            }
-            l.text.push_str(&s.text);
+            append_text(&mut l.text, gap, l.size, &s.text);
             l.rect = [l.rect[0].min(s.rect[0]), l.rect[1].min(s.rect[1]), l.rect[2].max(s.rect[2]), l.rect[3].max(s.rect[3])];
             l.ops.push(s.op);
             l.ops.extend(s.extra_ops.iter().copied());
@@ -856,6 +885,32 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
     Ok(lines)
 }
 
+/// How far a letter must start before the end of the spacing accent just drawn (a fraction of
+/// the text size) for the two to be one accented letter and not an accent character and a letter.
+const ACCENT_OVERLAP: f64 = 0.15;
+
+/// Add the text of the next run to a line: a space if there is a word gap, or, when the run
+/// starts back over a spacing accent that ends the line, the accented letter in their place.
+fn append_text(line: &mut String, gap: f64, size: f64, next: &str) {
+    let composed = (gap < -size * ACCENT_OVERLAP)
+        .then(|| {
+            let accent = line.chars().next_back()?;
+            let base = next.chars().next()?;
+            cleonpdf_fonts::compose_accent(accent, base).map(|c| (c, base.len_utf8()))
+        })
+        .flatten();
+    if let Some((c, skip)) = composed {
+        line.pop();
+        line.push(c);
+        line.push_str(next.get(skip..).unwrap_or_default());
+        return;
+    }
+    if gap > size * 0.2 && !line.ends_with(' ') && !next.starts_with(' ') {
+        line.push(' ');
+    }
+    line.push_str(next);
+}
+
 /// How far apart (as a fraction of the glyph size, on the page) the `Tc`/`Tw` of two text objects
 /// may be and still read as one run of text.
 const SPACING_JITTER: f64 = 0.02;
@@ -899,10 +954,7 @@ fn add_shown(lines: &mut Vec<TextLine>, last: &mut Option<(usize, f64, f64, f64)
     });
     if joins && let Some(l) = lines.last_mut() {
         let gap = s.start_x - last.map_or(s.start_x, |x| x.2);
-        if gap > l.size * 0.2 && !l.text.ends_with(' ') && !s.text.starts_with(' ') {
-            l.text.push(' ');
-        }
-        l.text.push_str(&s.text);
+        append_text(&mut l.text, gap, l.size, &s.text);
         l.rect = [l.rect[0].min(s.rect[0]), l.rect[1].min(s.rect[1]), l.rect[2].max(s.rect[2]), l.rect[3].max(s.rect[3])];
         l.ops.push(s.op);
         l.ops.extend(s.extra_ops.iter().copied());
