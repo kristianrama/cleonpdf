@@ -953,7 +953,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-engine",
  "cleonpdf-ui-egui",
@@ -980,7 +980,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-a11y"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-content",
  "cleonpdf-cos",
@@ -992,7 +992,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-annot"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-cos",
  "cleonpdf-fonts",
@@ -1003,7 +1003,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-audit"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-content",
  "cleonpdf-cos",
@@ -1014,7 +1014,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-automation"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
  "cleonpdf-cos",
@@ -1035,7 +1035,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-cli"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
  "cleonpdf-audit",
@@ -1050,18 +1050,18 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-compare"
-version = "0.1.4"
+version = "0.2.0"
 
 [[package]]
 name = "cleonpdf-content"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-cos",
 ]
 
 [[package]]
 name = "cleonpdf-cos"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-crypt",
  "cleonpdf-filters",
@@ -1073,7 +1073,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-create"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-cos",
  "cleonpdf-fonts",
@@ -1089,7 +1089,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-crypt"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "aes",
  "md-5",
@@ -1101,7 +1101,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-edit"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-annot",
  "cleonpdf-content",
@@ -1116,7 +1116,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-engine"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "cleonpdf-a11y",
@@ -1153,14 +1153,14 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-export"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "flate2",
 ]
 
 [[package]]
 name = "cleonpdf-filters"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "flate2",
  "proptest",
@@ -1170,17 +1170,18 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-fonts"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-cos",
  "harfrust",
  "skrifa 0.44.0",
+ "subsetter",
  "unicode-bidi",
 ]
 
 [[package]]
 name = "cleonpdf-forms"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-content",
  "cleonpdf-cos",
@@ -1192,18 +1193,18 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-geom"
-version = "0.1.4"
+version = "0.2.0"
 
 [[package]]
 name = "cleonpdf-js"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "boa_engine",
 ]
 
 [[package]]
 name = "cleonpdf-measure"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-annot",
  "cleonpdf-content",
@@ -1215,14 +1216,14 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-model"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-cos",
 ]
 
 [[package]]
 name = "cleonpdf-ocr"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-fonts",
  "ocrs",
@@ -1232,7 +1233,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-optimize"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-annot",
  "cleonpdf-content",
@@ -1245,7 +1246,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-organize"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-content",
  "cleonpdf-cos",
@@ -1255,7 +1256,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-platform"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "async-channel",
  "futures-lite",
@@ -1264,7 +1265,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-preflight"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-cos",
  "cleonpdf-model",
@@ -1272,7 +1273,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-print"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-content",
  "cleonpdf-cos",
@@ -1283,7 +1284,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-redact"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-annot",
  "cleonpdf-content",
@@ -1297,7 +1298,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-render"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "bytemuck",
  "cleonpdf-cos",
@@ -1316,7 +1317,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-sign"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "aes",
  "aws-lc-rs",
@@ -1350,7 +1351,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-ui-egui"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "arboard",
  "base64 0.22.1",
@@ -1392,7 +1393,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-web"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-ui-egui",
  "eframe",
@@ -1404,7 +1405,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-xfa"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
  "cleonpdf-cos",
@@ -1418,7 +1419,7 @@ dependencies = [
 
 [[package]]
 name = "cleonpdf-xfdf"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "cleonpdf-annot",
  "cleonpdf-cos",
@@ -6252,6 +6253,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "subsetter"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38803281d1c23166c5ebcb455439a5d2afe711cc909cf88af72448c297756ad6"
+dependencies = [
+ "rustc-hash 2.1.3",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6379,7 +6389,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.5",
  "windows-sys 0.61.2",

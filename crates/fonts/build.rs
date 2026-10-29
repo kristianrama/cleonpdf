@@ -4,10 +4,15 @@
 //! and any `Arab`, `Telu`, `Hebr` or `Thai` face), to keep the web build within hosting limits (Cloudflare Pages:
 //! 25 MiB per file). Native builds also embed craft-fonts' opt-in Simplified Chinese manifest
 //! (`fonts/simplified-chinese-manifest.txt`, LXGW WenKai Lite), which craft-fonts keeps out of
-//! its default manifest and says must never reach a wasm build.
+//! its default manifest. The face is 13 MiB, so wasm builds embed instead a subset of it cut to
+//! the characters of the interface catalogs (`web-chinese-chars.txt`, see `src/web_subset.rs`);
+//! the full face never reaches a wasm build.
 
 use std::fmt::Write as _;
 use std::path::PathBuf;
+
+#[path = "src/web_subset.rs"]
+mod web_subset;
 
 fn main() {
     println!("cargo::rerun-if-env-changed=CRAFT_FONTS_DIR");
@@ -47,8 +52,11 @@ fn craft_fonts(dir: &std::path::Path) -> Result<String, String> {
             (family == "BIZ UDPGothic" && style == "Regular") || ["Arab", "Telu", "Hebr", "Thai"].iter().any(|script| has(scripts, script));
         !wasm || web_face
     })?;
-    // Never on wasm: the face is 13 MiB, over the web build's budget (craft-fonts' own rule).
-    if !wasm {
+    // The whole face never goes into wasm: it is 13 MiB, over the web build's budget (craft-fonts'
+    // own rule). The web build gets a subset of it instead.
+    if wasm {
+        out.push_str(&web_chinese_font(dir)?);
+    } else {
         let manifest = dir.join(CHINESE_MANIFEST);
         println!("cargo::rerun-if-changed={}", manifest.display());
         if manifest.is_file() {
@@ -58,6 +66,55 @@ fn craft_fonts(dir: &std::path::Path) -> Result<String, String> {
         } else {
             println!("cargo::warning=craft-fonts has no {CHINESE_MANIFEST}: Chinese interface text may show missing-glyph boxes");
         }
+    }
+    Ok(out)
+}
+
+/// The initialiser for the web build's Simplified Chinese face: the faces of craft-fonts' opt-in
+/// manifest cut to the characters in `web-chinese-chars.txt`. Empty (with a warning) when this
+/// craft-fonts has no such manifest, so a checkout without the face still builds.
+///
+/// LXGW WenKai Lite's licence reserves its names but lets a Modified Version "subsetted ... solely
+/// for web font delivery" keep them, provided it is not offered as an installable desktop font;
+/// this one exists only as bytes inside the web binary.
+fn web_chinese_font(dir: &std::path::Path) -> Result<String, String> {
+    let manifest = dir.join(CHINESE_MANIFEST);
+    println!("cargo::rerun-if-changed={}", manifest.display());
+    let Ok(text) = std::fs::read_to_string(&manifest) else {
+        if std::env::var_os("CRAFT_FONTS_REQUIRED").is_some() {
+            return Err(format!("{}: missing, so the web interface has no Simplified Chinese face", manifest.display()));
+        }
+        println!("cargo::warning=craft-fonts has no {CHINESE_MANIFEST}: Chinese interface text may show missing-glyph boxes on the web");
+        return Ok(String::new());
+    };
+    let manifest_dir = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default());
+    let chars_path = manifest_dir.join("web-chinese-chars.txt");
+    println!("cargo::rerun-if-changed={}", chars_path.display());
+    let chars = std::fs::read_to_string(&chars_path).map_err(|e| format!("{}: {e}", chars_path.display()))?;
+    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap_or_default());
+    let mut out = String::new();
+    for line in text.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#')) {
+        let f: Vec<&str> = line.split(" | ").map(str::trim).collect();
+        let [family, style, file, ..] = f.as_slice() else {
+            return Err(format!("malformed manifest line: {line}"));
+        };
+        if BARRED_FAMILIES.iter().any(|barred| family.starts_with(barred)) {
+            println!("cargo::warning=craft-fonts: not embedding {family} {style} (AGENTS.md §1.1)");
+            continue;
+        }
+        let path = dir.join(file).canonicalize().map_err(|e| format!("{file}: {e}"))?;
+        println!("cargo::rerun-if-changed={}", path.display());
+        let font = std::fs::read(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let subset = web_subset::subset_with_cmap(&font, &chars).map_err(|e| format!("{family} {style}: {e}"))?;
+        let target = out_dir.join("web-chinese.ttf");
+        std::fs::write(&target, subset).map_err(|e| format!("{}: {e}", target.display()))?;
+        let _ = writeln!(
+            out,
+            "    CraftFont {{ family: {family:?}, style: {style:?}, scripts: &[\"Hani\", \"Hans\"], bytes: include_bytes!({:?}) }},",
+            target.display().to_string(),
+        );
+        // One face is enough for the interface, and a second would overwrite the file.
+        break;
     }
     Ok(out)
 }
