@@ -428,13 +428,19 @@ pub(super) fn rewrite_styled_block(
                 m,
                 &source.text,
                 source.origin.state.font.as_ref().map_or(1.0, |(_, s)| *s),
-                source_space(doc, &fonts, m),
+                source.origin.state.space_advance(source_space(doc, &fonts, m)),
                 source.origin.state.char_spacing,
                 source.origin.state.word_spacing,
             ) * source.origin.state.scale
                 * across(source);
             let changed_face = style.resource.is_some() || overrides.get(&index).is_some_and(|r| r.family.is_some() || r.resource.is_some());
-            let factor = if nominal > 0.0 && !changed_face { ((source.rect[2] - source.rect[0]) / nominal).clamp(0.5, 2.0) } else { 1.0 };
+            // A justified run's box counts the word space left after its last glyph, which its
+            // text does not have, so measure the ink only.
+            let trailing = match source.origin.raw_spacing {
+                Some((tc, _)) if source.gap_after => tc * source.origin.state.scale * across(source),
+                _ => 0.0,
+            };
+            let factor = if nominal > 0.0 && !changed_face { ((source.rect[2] - source.rect[0] - trailing) / nominal).clamp(0.5, 2.0) } else { 1.0 };
             calibration.insert(index, factor);
         }
     }
@@ -445,7 +451,7 @@ pub(super) fn rewrite_styled_block(
             m,
             &item.0.to_string(),
             size_of(source, item.1),
-            source_space(doc, &fonts, m),
+            source.origin.state.space_advance(source_space(doc, &fonts, m)),
             overrides
                 .get(&item.1)
                 .and_then(|r| r.char_spacing)
@@ -665,7 +671,7 @@ pub(super) fn rewrite_styled_block(
                     m,
                     &string,
                     size_of(source, item.1),
-                    source_space(doc, &fonts, m),
+                    state.space_advance(source_space(doc, &fonts, m)),
                     state.char_spacing,
                     state.word_spacing,
                 )?);
