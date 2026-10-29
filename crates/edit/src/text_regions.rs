@@ -135,7 +135,7 @@ fn group_layout(lines: &[TextLine], mixed: bool) -> Vec<TextBlock> {
             if let Some(prev) = block.lines.last().filter(|i| row.contains(i)).and_then(|i| lines.get(*i))
                 && !row_text.ends_with(char::is_whitespace)
                 && !line.text.starts_with(char::is_whitespace)
-                && line.rect[0] - prev.rect[2] > line.size * 0.12
+                && (line.rect[0] - prev.rect[2] > line.size * 0.12 || prev.gap_after)
             {
                 row_text.push(' ');
                 block.editor_text.push(' ');

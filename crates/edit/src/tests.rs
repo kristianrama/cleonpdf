@@ -3570,6 +3570,53 @@ fn a_word_gap_made_of_char_spacing_reads_as_a_space() {
 }
 
 #[test]
+fn rewriting_a_justified_line_does_not_space_its_letters_by_the_justification() {
+    // Quartz puts the word space of a justified line in `Tc` (here a third of an em, four points)
+    // and cancels it with `TJ` numbers inside the words. A rewrite that repeated that `Tc` on
+    // every glyph would push each letter four points from the next.
+    let mut doc = text_page("BT 0.3341 Tc 12 0 0 12 100 700 Tm /F1 1 Tf [(od) 335 (i) 3 (q) 338 (u) 335 (e) 338 (s) 339 (t) 333 (i)] TJ ET");
+    let before = text::text_lines(&doc, 0).unwrap();
+    assert_eq!(before[0].text, "o di questi");
+    let width = before[0].rect[2] - before[0].rect[0];
+    text::replace_line(&mut doc, 0, 0, "o di questi").unwrap();
+    let after = reopen(&doc);
+    let lines = text::text_lines(&after, 0).unwrap();
+    assert_eq!(lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["o di questi"]);
+    let rewritten = lines[0].rect[2] - lines[0].rect[0];
+    assert!((rewritten - width).abs() < 12.0, "was {width} pt wide, now {rewritten}");
+}
+
+#[test]
+fn a_word_space_left_in_the_last_char_spacing_of_a_run_is_not_lost_between_runs() {
+    // Justified text: the word space is `Tc` (0.334 em), cancelled inside words by the `TJ`
+    // numbers and left after the last glyph, so the run ends 4 pt past its ink and the next run
+    // (italic here) starts where it ends: the gap between the two is zero.
+    let first = "[(e) 335 (f) 335 (f) 335 (e) 335 (t) 335 (t) 335 (o)]";
+    let page = |second_font: &str| {
+        text_page(&format!(
+            "BT 0.3341 Tc 12 0 0 12 100 700 Tm /F1 1 Tf {first} TJ ET \
+             BT 0.3341 Tc 12 0 0 12 137.3 700 Tm /{second_font} 1 Tf [(l) 335 (i) 335 (m) 335 (i) 335 (t) 335 (a) 335 (t) 335 (o)] TJ ET"
+        ))
+    };
+    // The same font: one line, with the space.
+    let lines = text::text_lines(&page("F1"), 0).unwrap();
+    assert_eq!(lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["effetto limitato"]);
+
+    // Another font: two lines in one row, and the paragraph still has the space between them.
+    let mut doc = page("F2");
+    let mut italic = Dict::new();
+    italic.set(b"Type".to_vec(), Object::name("Font"));
+    italic.set(b"Subtype".to_vec(), Object::name("Type1"));
+    italic.set(b"BaseFont".to_vec(), Object::name("Helvetica-Oblique"));
+    italic.set(b"Encoding".to_vec(), Object::name("WinAnsiEncoding"));
+    doc.set(cleonpdf_cos::ObjRef::new(6, 0), Object::Dict(italic));
+    assert_eq!(text::text_lines(&doc, 0).unwrap().len(), 2);
+    let blocks = text::text_blocks(&doc, 0).unwrap();
+    assert_eq!(blocks.iter().map(|b| b.text.as_str()).collect::<Vec<_>>(), ["effetto limitato"]);
+    assert_eq!(blocks[0].editor_text, "effetto limitato");
+}
+
+#[test]
 fn an_accent_drawn_over_its_letter_reads_as_the_accented_letter() {
     // TeX output: the acute accent (WinAnsi 0xB4), then a kern back over the letter, then "e".
     // The accent is 0.333 em wide and "e" 0.556: backing up 0.444 em centres the letter under it.
