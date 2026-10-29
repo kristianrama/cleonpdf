@@ -5,7 +5,7 @@ exclude = ["vendor"]
 default-members = ["crates/*", "apps/cleonpdf", "apps/cleonpdf-cli", "xtask"]
 
 [workspace.package]
-version = "0.1.4"
+version = "0.2.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
@@ -17,37 +17,37 @@ craft-ui = { git = "https://github.com/storytold/craft-libs", version = "0.1.0",
 # Shared system spooler; document composition remains in cleonpdf-print.
 craft-print = { git = "https://github.com/storytold/craft-libs", version = "0.1.0", rev = "f03ec27ab2c405969428512178f746183cd55ca0" }
 # internal
-cleonpdf-geom = { path = "crates/geom", version = "0.1.4" }
-cleonpdf-filters = { path = "crates/filters", version = "0.1.4" }
-cleonpdf-cos = { path = "crates/cos", version = "0.1.4" }
-cleonpdf-crypt = { path = "crates/crypt", version = "0.1.4" }
-cleonpdf-organize = { path = "crates/organize", version = "0.1.4" }
-cleonpdf-measure = { path = "crates/measure", version = "0.1.4" }
-cleonpdf-annot = { path = "crates/annot", version = "0.1.4" }
-cleonpdf-audit = { path = "crates/audit", version = "0.1.4" }
-cleonpdf-fonts = { path = "crates/fonts", version = "0.1.4" }
-cleonpdf-model = { path = "crates/model", version = "0.1.4" }
-cleonpdf-content = { path = "crates/content", version = "0.1.4" }
-cleonpdf-redact = { path = "crates/redact", version = "0.1.4" }
-cleonpdf-print = { path = "crates/print", version = "0.1.4" }
-cleonpdf-xfdf = { path = "crates/xfdf", version = "0.1.4" }
-cleonpdf-sign = { path = "crates/sign", version = "0.1.4" }
-cleonpdf-optimize = { path = "crates/optimize", version = "0.1.4" }
-cleonpdf-a11y = { path = "crates/a11y", version = "0.1.4" }
-cleonpdf-ocr = { path = "crates/ocr", version = "0.1.4" }
-cleonpdf-js = { path = "crates/js", version = "0.1.4" }
-cleonpdf-compare = { path = "crates/compare", version = "0.1.4" }
-cleonpdf-preflight = { path = "crates/preflight", version = "0.1.4" }
-cleonpdf-export = { path = "crates/export", version = "0.1.4" }
-cleonpdf-edit = { path = "crates/edit", version = "0.1.4" }
-cleonpdf-create = { path = "crates/create", version = "0.1.4" }
-cleonpdf-forms = { path = "crates/forms", version = "0.1.4" }
-cleonpdf-xfa = { path = "crates/xfa", version = "0.1.4" }
-cleonpdf-render = { path = "crates/render", version = "0.1.4" }
-cleonpdf-engine = { path = "crates/engine", version = "0.1.4" }
-cleonpdf-platform = { path = "crates/platform", version = "0.1.4" }
-cleonpdf-ui-egui = { path = "crates/ui-egui", version = "0.1.4" }
-cleonpdf-automation = { path = "crates/automation", version = "0.1.4", default-features = false }
+cleonpdf-geom = { path = "crates/geom", version = "0.2.0" }
+cleonpdf-filters = { path = "crates/filters", version = "0.2.0" }
+cleonpdf-cos = { path = "crates/cos", version = "0.2.0" }
+cleonpdf-crypt = { path = "crates/crypt", version = "0.2.0" }
+cleonpdf-organize = { path = "crates/organize", version = "0.2.0" }
+cleonpdf-measure = { path = "crates/measure", version = "0.2.0" }
+cleonpdf-annot = { path = "crates/annot", version = "0.2.0" }
+cleonpdf-audit = { path = "crates/audit", version = "0.2.0" }
+cleonpdf-fonts = { path = "crates/fonts", version = "0.2.0" }
+cleonpdf-model = { path = "crates/model", version = "0.2.0" }
+cleonpdf-content = { path = "crates/content", version = "0.2.0" }
+cleonpdf-redact = { path = "crates/redact", version = "0.2.0" }
+cleonpdf-print = { path = "crates/print", version = "0.2.0" }
+cleonpdf-xfdf = { path = "crates/xfdf", version = "0.2.0" }
+cleonpdf-sign = { path = "crates/sign", version = "0.2.0" }
+cleonpdf-optimize = { path = "crates/optimize", version = "0.2.0" }
+cleonpdf-a11y = { path = "crates/a11y", version = "0.2.0" }
+cleonpdf-ocr = { path = "crates/ocr", version = "0.2.0" }
+cleonpdf-js = { path = "crates/js", version = "0.2.0" }
+cleonpdf-compare = { path = "crates/compare", version = "0.2.0" }
+cleonpdf-preflight = { path = "crates/preflight", version = "0.2.0" }
+cleonpdf-export = { path = "crates/export", version = "0.2.0" }
+cleonpdf-edit = { path = "crates/edit", version = "0.2.0" }
+cleonpdf-create = { path = "crates/create", version = "0.2.0" }
+cleonpdf-forms = { path = "crates/forms", version = "0.2.0" }
+cleonpdf-xfa = { path = "crates/xfa", version = "0.2.0" }
+cleonpdf-render = { path = "crates/render", version = "0.2.0" }
+cleonpdf-engine = { path = "crates/engine", version = "0.2.0" }
+cleonpdf-platform = { path = "crates/platform", version = "0.2.0" }
+cleonpdf-ui-egui = { path = "crates/ui-egui", version = "0.2.0" }
+cleonpdf-automation = { path = "crates/automation", version = "0.2.0", default-features = false }
 
 # pdf
 hayro = "0.7.1"
