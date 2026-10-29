@@ -856,15 +856,28 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
     Ok(lines)
 }
 
+/// How far apart (as a fraction of the glyph size, on the page) the `Tc`/`Tw` of two text objects
+/// may be and still read as one run of text.
+const SPACING_JITTER: f64 = 0.02;
+
 /// Joining independent text objects is safe only when they use the same text and graphics
 /// transforms and spacing. In particular, a nearby rotated label isn't part of this line.
 fn compatible_word(line: &TextLine, shown: &Shown) -> bool {
     let same = |a: &[f64], b: &[f64]| a.iter().zip(b).all(|(a, b)| (a - b).abs() < 1e-6);
     let (a, b) = (&line.origin.state, TextState::of(&shown.state));
+    // Justifying producers (Quartz) give every text object of a line its own `Tc`, a few
+    // thousandths of an em apart, so spacing is compared as the distance it makes on the page
+    // (a fraction of the glyph size), not for equality.
+    let near = |a: f64, b: f64| {
+        let page_distance = (a - b).abs() * line.origin.k;
+        page_distance.is_finite() && page_distance <= SPACING_JITTER * shown.size.max(1.0)
+    };
     line.scope == shown.scope
         && same(&line.origin.tm[..4], &shown.tm.0[..4])
         && same(&line.origin.ctm, &shown.state.ctm.0)
-        && same(&[a.char_spacing, a.word_spacing, a.scale, a.rise], &[b.char_spacing, b.word_spacing, b.scale, b.rise])
+        && near(a.char_spacing, b.char_spacing)
+        && near(a.word_spacing, b.word_spacing)
+        && same(&[a.scale, a.rise], &[b.scale, b.rise])
         && a.fill.len() == b.fill.len()
         && a.fill.iter().zip(&b.fill).all(|(a, b)| a.op == b.op && a.operands == b.operands)
 }

@@ -3568,3 +3568,18 @@ fn a_word_gap_made_of_char_spacing_reads_as_a_space() {
     assert_eq!(lines[0].text, "a");
     assert_eq!(lines[1].text.trim(), "b");
 }
+
+#[test]
+fn a_word_split_across_text_objects_with_jittered_char_spacing_stays_one_line() {
+    // Justifying producers (Quartz) put the last word of a line in a text object of its own and
+    // give every object a slightly different `Tc` (here 0.0028 and -0.0034 em). "Hel" is 1.5 em
+    // wide: 18 pt, plus 3 x 0.0028 x 12 pt of spacing, so the next object starts at 118.14.
+    let split = text_page("BT 0.0028 Tc 12 0 0 12 100 700 Tm /F1 1 Tf (Hel) Tj ET BT -0.0034 Tc 12 0 0 12 118.14 700 Tm /F1 1 Tf (lo) Tj ET");
+    let lines = text::text_lines(&split, 0).unwrap();
+    assert_eq!(lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["Hello"]);
+    assert!(lines[0].rect[0] < 101.0 && lines[0].rect[2] > 127.0, "the box covers both objects: {:?}", lines[0].rect);
+
+    // A real difference in spacing (a stretched word beside a normal one) is a different run.
+    let stretched = text_page("BT 0.0028 Tc 12 0 0 12 100 700 Tm /F1 1 Tf (Hel) Tj ET BT 0.4 Tc 12 0 0 12 118.14 700 Tm /F1 1 Tf (lo) Tj ET");
+    assert_eq!(text::text_lines(&stretched, 0).unwrap().len(), 2);
+}
