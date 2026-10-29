@@ -167,8 +167,9 @@ Issue and pull request numbers in `docs/` and in code comments (such as #90) ref
 CleonPDF is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
 Required notices, including PdfCraft's copyright, are in [NOTICE](NOTICE).
 
-CleonPDF is built on the work of the PdfCraft contributors, who are credited in the app's About dialog
-(Contributors tab) and in [contributors/](contributors/).
+CleonPDF is by Kristian Rama. It is built on PdfCraft 0.8.0 by the ArtCraft team and the PdfCraft
+contributors, whose copyright notice is kept in [LICENSE-MIT](LICENSE-MIT) and [NOTICE](NOTICE) and is
+named in the app's About dialog.
 
 Bundled fonts, icons, images and other assets keep their own open licences. Each one is listed with its
 author, source and licence in [ATTRIBUTION.md](ATTRIBUTION.md).

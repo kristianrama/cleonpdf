@@ -51,11 +51,9 @@ fn help_commands_open_each_link() {
 
 /// Runs frames until the node labelled `label` exists and has stopped moving, then returns it.
 ///
-/// The About dialog is a modal centred on its own size, and switching tabs changes that size, so
-/// for a few frames afterwards the modal grows and recentres and every control in it moves. A
-/// fixed number of frames is a guess at how long that takes: it was too few after the 0.5.0
-/// contributors refresh (78 names instead of 5) on some machines, the click on Table landed where
-/// the button had been, and the table never opened (#671).
+/// The About dialog is a modal centred on its own size, so for a few frames after it opens it
+/// recentres and every control in it moves. A fixed number of frames is a guess at how long that
+/// takes (#671).
 fn settled<'a>(h: &'a mut Harness<'static, CleonPdfApp>, label: &'a str) -> egui_kittest::Node<'a> {
     let mut last = None;
     for _ in 0..60 {
@@ -70,16 +68,12 @@ fn settled<'a>(h: &'a mut Harness<'static, CleonPdfApp>, label: &'a str) -> egui
 }
 
 #[test]
-fn about_dialog_has_contributors_and_models_tabs() {
+fn about_dialog_names_its_author_and_credits_pdfcraft() {
     let mut h = harness(|app| app.dialog = Some(Dialog::About));
-    settled(&mut h, "Contributors").click();
-    // The owner is always in the compiled-in credits (contributors/contributors.json), shown by username.
-    settled(&mut h, "@echelon");
-    settled(&mut h, "Table").click();
-    settled(&mut h, "PRs");
-    settled(&mut h, "Display name").click();
-    settled(&mut h, "Brandon Thomas");
-    settled(&mut h, "Models").click();
-    h.run_steps(4);
-    assert!(h.query_all_by_label("Anthropic").count() >= 1);
+    settled(&mut h, "By Kristian Rama");
+    // The inherited copyright notice (LICENSE-MIT) is shown, not only kept in the files.
+    settled(&mut h, "Based on PdfCraft 0.8.0 by the ArtCraft Team and the PdfCraft contributors (MIT OR Apache-2.0).");
+    // No Contributors or Models tabs any more.
+    assert!(h.query_by_label("Contributors").is_none());
+    assert!(h.query_by_label("Models").is_none());
 }

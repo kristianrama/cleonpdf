@@ -15,7 +15,10 @@ fn main() {
     let mut res = winresource::WindowsResource::new();
     res.set("ProductName", "CleonPDF")
         .set("FileDescription", "CleonPDF command-line tool")
-        .set("LegalCopyright", "Copyright (c) the CleonPDF contributors. MIT OR Apache-2.0.")
+        .set(
+            "LegalCopyright",
+            "Copyright (c) 2026 Kristian Rama. Based on PdfCraft, Copyright (c) 2026 ArtCraft Team and the PdfCraft contributors. MIT OR Apache-2.0.",
+        )
         .set("OriginalFilename", "cleonpdf-cli.exe")
         .set("InternalName", "cleonpdf-cli");
     if let Err(e) = res.compile() {
