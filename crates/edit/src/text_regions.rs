@@ -194,6 +194,112 @@ fn shape_source(
 
 /// Rewrite visual rows while keeping the source style on each surviving character. Resource
 /// names may differ between Unicode subsets of the same face; encoding searches those subsets.
+/// A row shorter than this is not taken for one a producer wrapped: with so few words, how far it
+/// falls short of the longest row says nothing about whether the next word would have fitted.
+const MIN_WRAPPED_ROW_CHARS: usize = 16;
+
+/// For each boundary between two rows of `block` (index `k` is row `k` to row `k + 1`): whether the
+/// break is only where the words ran out of room, so the next row's first word would not have
+/// fitted after the row. Producers that wrap and justify (LaTeX, Quartz, this editor) make such
+/// breaks; a short row, a row ending in a hyphen or a sentence, or a paragraph that is not upright
+/// is a break someone chose, and stays one. Most of a paragraph's breaks must look wrapped for any to count.
+fn soft_breaks(block: &TextBlock, lines: &[TextLine]) -> Vec<bool> {
+    let upright = block.rotation.abs() < 0.5;
+    let right = block.rect[2];
+    // Centred rows (a title) share a middle, not an edge: their ends say nothing about wrapping.
+    let rects: Vec<[f64; 4]> = block.rows.iter().filter_map(|row| row_rect(row, lines)).collect();
+    let middle = |r: &[f64; 4]| (r[0] + r[2]) / 2.0;
+    let edge = |f: fn(&[f64; 4]) -> f64| rects.iter().map(f).fold(f64::INFINITY, f64::min);
+    let lefts_vary = rects.iter().map(|r| r[0]).fold(f64::NEG_INFINITY, f64::max) - edge(|r| r[0]) > block.size * 0.3;
+    if rects.len() > 1 && lefts_vary && rects.iter().all(|r| (middle(r) - middle(&rects[0])).abs() < block.size * 0.1) {
+        return vec![false; block.rows.len().saturating_sub(1)];
+    }
+    // The baseline distance between consecutive rows: the usual one is the leading; a larger one
+    // is the space between paragraphs, which a rewrap must not move into the middle of a paragraph.
+    let steps: Vec<f64> = block
+        .rows
+        .windows(2)
+        .filter_map(|pair| {
+            let a = pair.first()?.first().and_then(|i| lines.get(*i))?;
+            let b = pair.get(1)?.first().and_then(|i| lines.get(*i))?;
+            Some((a.origin.baseline - b.origin.baseline).abs())
+        })
+        .collect();
+    let mut sorted = steps.clone();
+    sorted.sort_by(f64::total_cmp);
+    let leading = sorted.get(sorted.len() / 2).copied().unwrap_or(0.0);
+    let raw: Vec<bool> = block
+        .rows
+        .windows(2)
+        .enumerate()
+        .map(|(k, pair)| {
+            if steps.get(k).is_none_or(|step| !step.is_finite() || (step - leading).abs() > leading * 0.12) {
+                return false;
+            }
+            let (Some(prev), Some(next)) = (pair.first(), pair.get(1)) else { return false };
+            let (Some(prev_rect), Some(first)) = (row_rect(prev, lines), next.first().and_then(|i| lines.get(*i))) else { return false };
+            let prev_text: String = prev.iter().filter_map(|i| lines.get(*i)).map(|l| l.text.as_str()).collect::<Vec<_>>().join(" ");
+            let text = prev_text.trim_end();
+            let ends_sentence = text.ends_with(['.', '!', '?', ':', ';']);
+            let word = first.text.split_whitespace().next().unwrap_or_default();
+            let chars = first.text.chars().count();
+            let first_width = first.rect[2] - first.rect[0];
+            if !upright
+                || chars == 0
+                || word.is_empty()
+                || !first_width.is_finite()
+                || text.ends_with('-')
+                || text.chars().count() < MIN_WRAPPED_ROW_CHARS
+                || !text.contains(char::is_whitespace)
+            {
+                return false;
+            }
+            let word_width = first_width * word.chars().count() as f64 / chars as f64;
+            let size = first.size.max(1.0);
+            // Rows a producer wrapped share one size; a row in another size is another line of text.
+            if prev.iter().filter_map(|i| lines.get(*i)).any(|l| (l.size - first.size).abs() > size * 0.03) {
+                return false;
+            }
+            let remaining = right - prev_rect[2];
+            // The word and the space before it did not fit (with room for measuring error); a row
+            // that ends a sentence must also end flush, as a justified row does.
+            remaining < word_width + size * 0.28 + size * 0.15 && (!ends_sentence || remaining < size * 0.5)
+        })
+        .collect();
+    // One row that happens to end flush proves nothing (the longest row always does): a paragraph
+    // is taken for wrapped text only when most of its row breaks look wrapped.
+    if raw.iter().filter(|soft| **soft).count() * 2 > raw.len() { raw } else { vec![false; raw.len()] }
+}
+
+/// `draft` with every line break that was a soft one in `block.editor_text` and is still there
+/// turned into a space, so a rewrite wraps the words again to the paragraph's width. The result is
+/// the same length, so every byte range of the draft still applies.
+fn soften_wrapped_breaks(block: &TextBlock, lines: &[TextLine], draft: &str) -> Option<String> {
+    let soft = soft_breaks(block, lines);
+    let old = block.editor_text.as_bytes();
+    let new = draft.as_bytes();
+    let breaks: Vec<usize> = block.editor_text.match_indices('\n').map(|(at, _)| at).collect();
+    if !soft.iter().any(|s| *s) || breaks.len() != soft.len() {
+        return None;
+    }
+    let prefix = old.iter().zip(new).take_while(|(a, b)| a == b).count();
+    let suffix = old.iter().rev().zip(new.iter().rev()).take(old.len().min(new.len()).saturating_sub(prefix)).take_while(|(a, b)| a == b).count();
+    let mut bytes = new.to_vec();
+    for (at, soft) in breaks.into_iter().zip(soft) {
+        let kept = if at < prefix {
+            Some(at)
+        } else if at >= old.len().saturating_sub(suffix) {
+            (at + new.len()).checked_sub(old.len())
+        } else {
+            None
+        };
+        if soft && let Some(byte) = kept.and_then(|k| bytes.get_mut(k)).filter(|b| **b == b'\n') {
+            *byte = b' ';
+        }
+    }
+    String::from_utf8(bytes).ok()
+}
+
 pub(super) fn rewrite_styled_block(
     doc: &mut Document,
     page: usize,
@@ -227,6 +333,8 @@ pub(super) fn rewrite_styled_block(
     {
         return Err(EditError::Invalid("text style ranges must be disjoint UTF-8 boundaries with finite formatting (at most 1024 ranges)".into()));
     }
+    // Wrapped rows the user left alone are only where words ran out of room: wrap them again.
+    let softened = soften_wrapped_breaks(block, lines, draft);
     let mut styled_lines = lines.to_vec();
     let mut styled_spans = Vec::new();
     let mut underlines = HashMap::new();
@@ -345,7 +453,7 @@ pub(super) fn rewrite_styled_block(
     let mut full_faces: HashMap<String, String> = HashMap::new();
     for (range, index) in styled_spans {
         let source = lines.get(index).unwrap_or(first);
-        for ch in draft.get(range).unwrap_or_default().chars() {
+        for ch in softened.as_deref().unwrap_or(draft).get(range).unwrap_or_default().chars() {
             if ch == '\n' {
                 chars.push((ch, index, source.font.clone()));
                 continue;
@@ -493,6 +601,16 @@ pub(super) fn rewrite_styled_block(
         }
         Ok(width)
     };
+    // A row is drawn from its source row's left edge (a paragraph's indented first row starts
+    // further right), so it has that much less of the width to fill; rows added past the source's
+    // follow the last one. With an explicit width or alignment every row starts at the block's edge.
+    let indent_of = |row: usize| {
+        if style.width.is_some() || style.align.is_some() {
+            return 0.0;
+        }
+        let indent = |r: &Vec<usize>| row_rect(r, lines).map_or(0.0, |rect| (rect[0] - block.rect[0]).max(0.0));
+        block.rows.get(row).or_else(|| block.rows.last()).map_or(0.0, indent)
+    };
     let mut rows: Vec<Vec<(char, usize, String)>> = Vec::new();
     let mut row = Vec::new();
     let mut row_width = 0.0;
@@ -514,7 +632,7 @@ pub(super) fn rewrite_styled_block(
         }
         let word = chars.get(at..end).unwrap_or_default();
         let w = measure(word)?;
-        if !row.is_empty() && !item.0.is_whitespace() && row_width + w > width + 0.5 {
+        if !row.is_empty() && !item.0.is_whitespace() && row_width + w > width - indent_of(rows.len()).min(width * 0.5) + 0.5 {
             while row.last().is_some_and(|c: &(char, usize, String)| c.0.is_whitespace()) {
                 row.pop();
             }

@@ -3646,6 +3646,123 @@ fn a_row_a_rewrite_adds_follows_the_hanging_indent_of_the_last_row() {
     assert!((last.rect[0] - 111.0).abs() < 1.0, "the added row starts at {}, not at the hanging indent of 111", last.rect[0]);
 }
 
+/// A paragraph the editor wrapped (or LaTeX justified) reads back as rows, but its row breaks are
+/// only where the words ran out of room. Deleting words from it pulls the next row's words up.
+#[test]
+fn deleting_words_from_a_wrapped_paragraph_pulls_the_next_rows_up() {
+    let mut doc = text_page("BT /F1 10 Tf 12 TL 72 700 Td (The quick brown fox) Tj T* (jumps over the) Tj T* (lazy dog.) Tj ET");
+    text::replace_block(&mut doc, 0, 0, "The quick brown fox jumps over the lazy dog and then some more words here.").unwrap();
+    let wrapped = reopen(&doc);
+    let block = text::text_blocks(&wrapped, 0).unwrap().remove(0);
+    assert!(block.rows.len() >= 4, "the long text wrapped: {:?}", block.editor_text);
+    let width = block.rect[2] - block.rect[0];
+
+    // Delete two words from the first row, as typing in the editor would, and apply.
+    let edited = block.editor_text.replacen("quick brown ", "", 1);
+    let mut doc = wrapped.clone();
+    text::replace_block(&mut doc, 0, 0, &edited).unwrap();
+    let after = text::text_blocks(&reopen(&doc), 0).unwrap().remove(0);
+    assert_eq!(after.editor_text.replace('\n', " "), "The fox jumps over the lazy dog and then some more words here.");
+    let first_row = after.editor_text.split('\n').next().unwrap();
+    assert!(first_row.starts_with("The fox jumps"), "the row filled up again: {:?}", after.editor_text);
+    assert!(after.rect[2] - after.rect[0] <= width + 1.0, "still wrapped to the same width");
+}
+
+#[test]
+fn a_rewrapped_indented_first_row_stays_inside_the_paragraphs_right_edge() {
+    // "mm" is 16.66 pt at 10 pt Helvetica and a space 2.78 pt, so six words are 113.9 pt wide: the
+    // second row (six words from x = 72) sets the right edge at 185.9. The first row is indented
+    // 8 pt and made of two runs (so the rewrite takes the styled path). Wrapping it to the full
+    // 113.9 pt would put its sixth word at 193.9, past the edge.
+    let mut doc = text_page(
+        "BT /F1 10 Tf 80 700 Td (mm mm) Tj ET BT 1 0 0 rg /F1 10 Tf 118.9 700 Td (mm) Tj ET \
+         BT /F1 10 Tf 72 688 Td (mm mm mm mm mm mm) Tj ET \
+         BT /F1 10 Tf 72 676 Td (mm mm) Tj ET",
+    );
+    let before = text::text_blocks(&doc, 0).unwrap();
+    assert_eq!(before.len(), 1);
+    let right = before[0].rect[2];
+    assert!((right - 185.86).abs() < 0.5, "{right}");
+    text::replace_block(&mut doc, 0, 0, &["mm"; 17].join(" ")).unwrap();
+    let after = reopen(&doc);
+    let lines = text::text_lines(&after, 0).unwrap();
+    assert!(lines.len() >= 3, "{:?}", lines.iter().map(|l| &l.text).collect::<Vec<_>>());
+    for line in &lines {
+        assert!(line.rect[2] <= right + 1.0, "{:?} ends at {} past the paragraph's right edge {right}", line.text, line.rect[2]);
+    }
+}
+
+/// Rows of six "mm" words: 113.9 pt wide each, so every row ends flush with the next word unable to
+/// fit, as in justified text. `text` gives each row's words; `gap_before` the rows (by index) that
+/// follow a larger gap than the 12 pt leading.
+fn full_rows_page(rows: &[&str], gap_before: &[usize]) -> Document {
+    let mut y = 700.0;
+    let mut content = String::new();
+    for (i, row) in rows.iter().enumerate() {
+        y -= if gap_before.contains(&i) {
+            24.0
+        } else if i > 0 {
+            12.0
+        } else {
+            0.0
+        };
+        content.push_str(&format!("BT /F1 10 Tf 72 {y} Td ({row}) Tj ET "));
+    }
+    text_page(&content)
+}
+
+/// A row that ends in a hyphen is not a place the editor wrapped: the word goes on across it.
+#[test]
+fn a_hyphenated_row_keeps_ending_its_row_when_a_paragraph_is_edited() {
+    let mut doc = full_rows_page(&["mm mm mm mm mm mm", "mm mm mm mm mm mm", "mm mm mm mm mm mm-", "mm mm mm mm mm mm"], &[]);
+    let block = text::text_blocks(&doc, 0).unwrap().remove(0);
+    assert_eq!(block.rows.len(), 4, "{:?}", block.editor_text);
+    // Two words leave the first row: the next rows' words move up, but not across the hyphen.
+    text::replace_block(&mut doc, 0, 0, &block.editor_text.replacen("mm mm ", "", 1)).unwrap();
+    let after = text::text_blocks(&reopen(&doc), 0).unwrap().remove(0);
+    let rows: Vec<&str> = after.editor_text.split('\n').collect();
+    assert_eq!(rows, ["mm mm mm mm mm mm", "mm mm mm mm mm mm", "mm mm mm mm-", "mm mm mm mm mm mm"]);
+}
+
+/// The larger gap before a new paragraph is not a place the editor wrapped, so its words stay put.
+#[test]
+fn a_paragraph_gap_keeps_the_next_paragraph_apart_when_a_paragraph_is_edited() {
+    let mut doc = full_rows_page(&["mm mm mm mm mm mm", "mm mm mm mm mm mm", "mm mm mm mm mm mm", "mm mm mm"], &[3]);
+    let block = text::text_blocks(&doc, 0).unwrap().remove(0);
+    assert_eq!(block.rows.len(), 4, "{:?}", block.editor_text);
+    text::replace_block(&mut doc, 0, 0, &block.editor_text.replacen("mm mm ", "", 1)).unwrap();
+    let after = text::text_blocks(&reopen(&doc), 0).unwrap().remove(0);
+    let rows: Vec<&str> = after.editor_text.split('\n').collect();
+    assert_eq!(rows, ["mm mm mm mm mm mm", "mm mm mm mm mm mm", "mm mm mm mm", "mm mm mm"]);
+}
+
+/// Rows centred on one middle (a title) end where they do because of the centring, not because
+/// the words ran out of room: they stay two rows.
+#[test]
+fn centred_rows_stay_separate_lines_when_a_paragraph_is_edited() {
+    // The second row is four words (74.4 pt) centred under the first (113.9 pt wide, from x = 72).
+    let mut doc = text_page(
+        "BT /F1 10 Tf 72 700 Td (mm mm mm mm mm mm) Tj ET \
+         BT /F1 10 Tf 91.7 688 Td (mm mm mm mm) Tj ET",
+    );
+    let block = text::text_blocks(&doc, 0).unwrap().remove(0);
+    assert_eq!(block.editor_text, "mm mm mm mm mm mm\nmm mm mm mm");
+    text::replace_block(&mut doc, 0, 0, &block.editor_text.replacen("mm mm ", "", 1)).unwrap();
+    let after = text::text_blocks(&reopen(&doc), 0).unwrap().remove(0);
+    assert_eq!(after.editor_text, "mm mm mm mm\nmm mm mm mm");
+}
+
+/// Rows of unequal length are not wrapped text, however the first one happens to be the longest.
+#[test]
+fn short_rows_stay_separate_lines_when_a_paragraph_is_edited() {
+    let mut doc = text_page("BT /F1 10 Tf 12 TL 72 700 Td (The quick brown fox) Tj T* (jumps) Tj T* (over) Tj T* (the lazy dog) Tj ET");
+    let block = text::text_blocks(&doc, 0).unwrap().remove(0);
+    assert_eq!(block.editor_text, "The quick brown fox\njumps\nover\nthe lazy dog");
+    text::replace_block(&mut doc, 0, 0, &block.editor_text.replacen("quick brown ", "", 1)).unwrap();
+    let after = text::text_blocks(&reopen(&doc), 0).unwrap().remove(0);
+    assert_eq!(after.editor_text, "The fox\njumps\nover\nthe lazy dog");
+}
+
 #[test]
 fn rewriting_a_justified_line_does_not_space_its_letters_by_the_justification() {
     // Quartz puts the word space of a justified line in `Tc` (here a third of an em, four points)

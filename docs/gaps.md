@@ -112,7 +112,16 @@ update the numbers.
     files). A row a rewrite adds beyond the source's rows (a longer paragraph wraps
     to one more line) now takes the left edge and width of the last source row, so it keeps the
     hanging indent instead of starting under the "iii)" label (2026-10-30, seen failing first).
-    **Still open:** the added rows are not reflowed into the space below the paragraph.
+    Rows a wrap produced are now soft: the editor text keeps a real `\n` only where the source
+    breaks a line by choice, so deleting words pulls the following rows up instead of leaving the
+    old line breaks standing (2026-10-30; a row boundary counts as soft when the next row's first
+    word would not have fitted in the space left, and only for upright, same-size, left-aligned
+    paragraphs of at least 16 characters per row where most boundaries agree). Each rule was
+    switched off in turn and its test failed. **Still open:** the added rows are not reflowed into
+    the space below the paragraph; reflow stops at a row ending in a hyphen; centred titles, poems
+    and ragged short rows keep their hard breaks; the heuristic is a guess by nature (a line
+    that happens to end where the wrap would have is read as soft); the live preview in the editor
+    keeps the old rows until the edit is applied.
   - **By design, not a defect:** a heading (17 pt bold) and the paragraph after it come out as one
     paragraph. That is the mixed-style region a contributor added on 2026-10-11 (rows keep their own
     style on a rewrite; `mixed_styles_and_matrix_sizes_form_visual_regions_without_merging_columns`
