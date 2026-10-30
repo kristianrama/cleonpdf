@@ -109,9 +109,10 @@ update the numbers.
     two files. The last word of a justified line, whose `Tc` is a
     word-space-sized 0.38 em (cancelled inside its letters) against 0 for the rest of the line, now
     joins it too, so "ciascun" + "o di questi" is one line (49 and 55 fewer editor lines in the two
-    files). **Still open:** rows a rewrite adds beyond the source's rows (a longer paragraph wraps
-    to one more line) start at the left edge of the whole block, under the "iii)" label, instead of
-    at the hanging indent of the last row, and they are not reflowed into the space below.
+    files). A row a rewrite adds beyond the source's rows (a longer paragraph wraps
+    to one more line) now takes the left edge and width of the last source row, so it keeps the
+    hanging indent instead of starting under the "iii)" label (2026-10-30, seen failing first).
+    **Still open:** the added rows are not reflowed into the space below the paragraph.
   - **By design, not a defect:** a heading (17 pt bold) and the paragraph after it come out as one
     paragraph. That is the mixed-style region a contributor added on 2026-10-11 (rows keep their own
     style on a rewrite; `mixed_styles_and_matrix_sizes_form_visual_regions_without_merging_columns`

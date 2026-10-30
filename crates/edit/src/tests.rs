@@ -3625,6 +3625,28 @@ fn rewriting_a_paragraph_keeps_a_justified_row_as_wide_as_it_was() {
 }
 
 #[test]
+fn a_row_a_rewrite_adds_follows_the_hanging_indent_of_the_last_row() {
+    // A label on the first row and a paragraph hanging at x = 111 under it, the second row in two
+    // runs (the second in red) so the rewrite takes the styled path. A rewrite that adds a fourth
+    // row must start it at 111 like the rows above, not at the block's left edge under the label.
+    let mut doc = text_page(
+        "BT /F2 12 Tf 100 700 Td (a) Tj ET \
+         BT 12 0 0 12 111 700 Tm /F2 1 Tf [(ab)] TJ ET \
+         BT 12 0 0 12 111 686 Tm /F2 1 Tf [(ab)] TJ ET \
+         BT 1 0 0 rg 12 0 0 12 129.2 686 Tm /F2 1 Tf [(ab)] TJ ET \
+         BT 12 0 0 12 111 672 Tm /F2 1 Tf [(ab)] TJ ET",
+    );
+    let before = text::text_blocks(&doc, 0).unwrap();
+    assert_eq!(before.len(), 1);
+    assert_eq!(before[0].editor_text, "a ab\nab ab\nab");
+    text::replace_block(&mut doc, 0, 0, "a ab\nab ab\nab\nab").unwrap();
+    let after = reopen(&doc);
+    let lines = text::text_lines(&after, 0).unwrap();
+    let last = lines.iter().min_by(|a, b| a.rect[1].total_cmp(&b.rect[1])).unwrap();
+    assert!((last.rect[0] - 111.0).abs() < 1.0, "the added row starts at {}, not at the hanging indent of 111", last.rect[0]);
+}
+
+#[test]
 fn rewriting_a_justified_line_does_not_space_its_letters_by_the_justification() {
     // Quartz puts the word space of a justified line in `Tc` (here a third of an em, four points)
     // and cancels it with `TJ` numbers inside the words. A rewrite that repeated that `Tc` on

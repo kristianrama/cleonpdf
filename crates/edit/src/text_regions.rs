@@ -597,7 +597,9 @@ pub(super) fn rewrite_styled_block(
         let anchor = anchor.unwrap_or(first);
         let w = measured.get(row_index).copied().unwrap_or(0.0);
         let align = style.align.unwrap_or(if centered { crate::added::Align::Center } else { crate::added::Align::Left });
-        let original_rect = block.rows.get(row_index).and_then(|row| row_rect(row, lines)).unwrap_or(block.rect);
+        // A row the rewrite adds beyond the source's rows follows the last source row (its hanging
+        // indent and width), not the whole block, whose left edge is under a label such as "iii)".
+        let original_rect = block.rows.get(row_index).or_else(|| block.rows.last()).and_then(|row| row_rect(row, lines)).unwrap_or(block.rect);
         let left = if style.width.is_none() && style.align.is_none() { original_rect[0] } else { block.rect[0] };
         let available = if style.width.is_none() && style.align.is_none() { original_rect[2] - original_rect[0] } else { width };
         let mut x = left
