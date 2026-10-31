@@ -3646,6 +3646,72 @@ fn a_row_a_rewrite_adds_follows_the_hanging_indent_of_the_last_row() {
     assert!((last.rect[0] - 111.0).abs() < 1.0, "the added row starts at {}, not at the hanging indent of 111", last.rect[0]);
 }
 
+/// A subset CID font as a browser writes it: only the letters a document used, and "fi" as one
+/// glyph (code 9). Every glyph is 5 pt wide at 10 pt, the space 2.5 pt and the ligature 8 pt.
+/// `maps_ligature` tells whether its ToUnicode says what the glyph is (U+FB01), as Chromium's does.
+fn fi_subset_page(content: &str, maps_ligature: bool) -> Document {
+    let ligature = if maps_ligature { "<0009> <FB01> " } else { "" };
+    let count = if maps_ligature { 7 } else { 6 };
+    let cmap = format!(
+        "/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CMapType 2 def \
+         1 begincodespacerange <0000> <FFFF> endcodespacerange {count} beginbfchar \
+         <0003> <0020> <0004> <0063> <0005> <006F> <0006> <0064> <0007> <0069> <0008> <0061> {ligature}\
+         endbfchar endcmap CMapName currentdict /CMap defineresource pop end end"
+    );
+    build(&[
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+        &stream("", content),
+        "<< /Type /Font /Subtype /Type0 /BaseFont /ABCDEF+Subset /Encoding /Identity-H /DescendantFonts [7 0 R] /ToUnicode 6 0 R >>",
+        &stream("", &cmap),
+        "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /ABCDEF+Subset /CIDSystemInfo << /Registry (Synthetic) /Ordering (Identity) /Supplement 0 >> /DW 500 /W [3 [250 500 500 500 500 500 800]] >>",
+    ])
+}
+
+/// The horizontal scale of every run a rewrite wrote, in percent (not the `100 Tz` that puts the
+/// text state back after them).
+fn written_scales(doc: &Document) -> Vec<f64> {
+    let mut scales: Vec<f64> =
+        cleonpdf_content::parse(&page_content_bytes(doc, 0)).ops.iter().filter(|o| o.is("Tz")).filter_map(|o| o.num(0)).collect();
+    scales.pop();
+    scales
+}
+
+/// A row a TJ gap widened is rewritten at the width it had, as a fraction of its measured width. A
+/// word in the subset's "fi" glyph used to drop out of that measure, so the row looked 4 times
+/// narrower than it was and was stretched to the maximum.
+#[test]
+fn a_row_with_a_ligature_glyph_keeps_its_width_when_rewritten() {
+    // "ca codifica": 50.5 pt of glyphs, and a 1 pt gap after "ca", so the row is 51.5 pt wide.
+    let content = "BT /F1 10 Tf 72 700 Td [<00040008> -100 <00030004000500060007>] TJ /Span <</ActualText (fi)>> BDC <0009> Tj EMC <00040008> Tj ET";
+    let mut doc = fi_subset_page(content, true);
+    let blocks = text::text_blocks(&doc, 0).unwrap();
+    assert_eq!(blocks[0].editor_text, "ca codifica");
+    text::replace_block(&mut doc, 0, 0, "ca codifica\nca").unwrap();
+    let scales = written_scales(&doc);
+    assert!(!scales.is_empty());
+    for scale in scales {
+        assert!((scale - 100.0 * 51.5 / 50.5).abs() < 0.5, "the row is written at {scale}%, not at its measured 102%");
+    }
+}
+
+/// When the font can't say what a glyph is, the row's measured width is unknown, and rewriting
+/// leaves it at its natural width instead of stretching it to cover the unmeasured word.
+#[test]
+fn a_row_with_an_unmeasurable_glyph_is_not_stretched_when_rewritten() {
+    let content = "BT /F1 10 Tf 72 700 Td <00040008000300040008> Tj /Span <</ActualText (fi)>> BDC <0009> Tj EMC <00040008> Tj ET";
+    let mut doc = fi_subset_page(content, false);
+    let blocks = text::text_blocks(&doc, 0).unwrap();
+    assert_eq!(blocks[0].editor_text, "ca cafica");
+    text::replace_block(&mut doc, 0, 0, "ca ca\nca").unwrap();
+    let scales = written_scales(&doc);
+    assert!(!scales.is_empty());
+    for scale in scales {
+        assert!((scale - 100.0).abs() < 0.5, "the row is written at {scale}%");
+    }
+}
+
 /// A paragraph the editor wrapped (or LaTeX justified) reads back as rows, but its row breaks are
 /// only where the words ran out of room. Deleting words from it pulls the next row's words up.
 #[test]
