@@ -127,10 +127,20 @@ update the numbers.
     used (a "fi" ligature and no loose "f") had its row measured with the word missing, so a
     rewritten heading came out 32% wider; a row's width is now measured with the ligature, and left
     uncalibrated when a word can't be measured. **Still open from that check:** a loose "f" outside
-    the subset is drawn in a substitute face; rewritten justified paragraphs keep each row's old
-    word spacing instead of being justified again (uneven gaps, ragged right edge); wkhtmltopdf's
-    word-by-word text reads back with tabs between words; a browser PDF whose paragraphs are 10 pt
-    apart reads as one block, so editing one loses the justification of the next.
+    the subset is drawn in a substitute face; wkhtmltopdf's word-by-word text reads back with
+    tabs between words (its font maps the space glyph to U+0009 in ToUnicode); a browser PDF whose
+    paragraphs are 10 pt apart reads as one block, and because row baselines follow the row's
+    index, a paragraph that loses a row pulls the next paragraph's first row up into the gap; the
+    italic words of a LaTeX paragraph read back with a space between every letter (`è i l m o d o`
+    in `due.pdf`), so editing that paragraph overprints them.
+    A paragraph the source justified (most rows but the last end at one right edge) is now
+    justified again when it is rewrapped, with its own word spaces instead of the ones of the rows
+    it replaces: the slack goes to the spaces as TJ adjustments (word spacing does nothing in a
+    composite font), up to one em per space, and the stretch of letters that kept row widths in
+    browser PDFs is dropped. A ragged paragraph, a hard-broken row and the last row stay as they
+    were. Checked on the same four files: Chromium and reportlab come out flush; `due.pdf` looks
+    the same. Rows are only justified at spaces the font can show as such: a word-by-word PDF with
+    tabs still gets uneven gaps.
   - **By design, not a defect:** a heading (17 pt bold) and the paragraph after it come out as one
     paragraph. That is the mixed-style region a contributor added on 2026-10-11 (rows keep their own
     style on a rewrite; `mixed_styles_and_matrix_sizes_form_visual_regions_without_merging_columns`

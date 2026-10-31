@@ -3712,6 +3712,77 @@ fn a_row_with_an_unmeasurable_glyph_is_not_stretched_when_rewritten() {
     }
 }
 
+/// The right edge of each printed row of a page, top to bottom (rows are the lines sharing a baseline).
+fn row_right_edges(doc: &Document) -> Vec<f64> {
+    let mut rows: Vec<(f64, f64)> = Vec::new();
+    for line in text::text_lines(doc, 0).unwrap() {
+        match rows.iter_mut().find(|(y, _)| (y - line.rect[1]).abs() < 1.0) {
+            Some(row) => row.1 = row.1.max(line.rect[2]),
+            None => rows.push((line.rect[1], line.rect[2])),
+        }
+    }
+    rows.sort_by(|a, b| b.0.total_cmp(&a.0));
+    rows.into_iter().map(|(_, right)| right).collect()
+}
+
+/// A justified paragraph as a word processor writes it: every row but the last 133.3 pt wide, the
+/// shorter ones' spaces widened with Tw. "mm" is 16.66 pt, "mmm" 24.99 pt, a space 2.78 pt.
+fn justified_paragraph() -> Document {
+    text_page(
+        "BT /F1 10 Tf 12 TL 72 700 Td (mm mm mm mm mm mm mm) Tj T* 2.222 Tw (mmm mm mm mm mm mm) Tj T* (mm mmm mm mm mm mm) Tj T* \
+         (mm mm mm mm mm mmm) Tj T* 0 Tw (mm mm mm) Tj ET",
+    )
+}
+
+/// Rewrapping a justified paragraph fills each row to the right edge again instead of leaving the
+/// rows ragged or giving them the word spaces of the rows they replace.
+#[test]
+fn a_rewrapped_justified_paragraph_stays_flush_on_the_right() {
+    let mut doc = justified_paragraph();
+    let block = text::text_blocks(&doc, 0).unwrap().remove(0);
+    assert_eq!(block.rows.len(), 5);
+    let right = block.rect[2];
+    let edited = block.editor_text.replacen("mm ", "", 1);
+    text::replace_block(&mut doc, 0, 0, &edited).unwrap();
+    let after = reopen(&doc);
+    let edges = row_right_edges(&after);
+    assert!(edges.len() >= 4, "rows: {edges:?}");
+    for (i, edge) in edges.iter().take(edges.len() - 1).enumerate() {
+        assert!((edge - right).abs() < 0.6, "row {i} ends at {edge}, not at the column's {right}: {edges:?}");
+    }
+    // Only spaces moved: the text reads back as typed.
+    let text = text::text_blocks(&after, 0).unwrap().remove(0).editor_text.replace('\n', " ");
+    assert_eq!(text, block.editor_text.replace('\n', " ").replacen("mm ", "", 1));
+}
+
+/// Text typed over a whole justified paragraph has no row breaks at all, and is justified too.
+#[test]
+fn text_typed_over_a_justified_paragraph_is_justified() {
+    let mut doc = justified_paragraph();
+    let right = text::text_blocks(&doc, 0).unwrap()[0].rect[2];
+    let typed = "mm mmm mm mm mm mm mm mm mmm mm mm mm mm mm mm mm mmm mm mm mm mm";
+    text::replace_block(&mut doc, 0, 0, typed).unwrap();
+    let edges = row_right_edges(&reopen(&doc));
+    assert!(edges.len() >= 3, "rows: {edges:?}");
+    for (i, edge) in edges.iter().take(edges.len() - 1).enumerate() {
+        assert!((edge - right).abs() < 0.6, "row {i} ends at {edge}, not at the column's {right}: {edges:?}");
+    }
+}
+
+/// A ragged paragraph is not justified by an edit: text typed over it wraps ragged, as it did.
+#[test]
+fn text_typed_over_a_ragged_paragraph_stays_ragged() {
+    let mut doc = text_page(
+        "BT /F1 10 Tf 12 TL 72 700 Td (mm mm mm mm mm mm mm) Tj T* (mmm mm mm mm mm mm) Tj T* (mm mm mm mm mm mm) Tj T* (mm mmm mm mm mm mm) Tj T* (mm mm mm) Tj ET",
+    );
+    let right = text::text_blocks(&doc, 0).unwrap()[0].rect[2];
+    let typed = "mm mmm mm mm mm mm mm mm mmm mm mm mm mm mm mm mm mmm mm mm mm mm";
+    text::replace_block(&mut doc, 0, 0, typed).unwrap();
+    let edges = row_right_edges(&reopen(&doc));
+    let short = edges.iter().take(edges.len() - 1).filter(|edge| right - **edge > 3.0).count();
+    assert!(short > 0, "no row is shorter than the column, so the paragraph was justified: {edges:?}");
+}
+
 /// A paragraph the editor wrapped (or LaTeX justified) reads back as rows, but its row breaks are
 /// only where the words ran out of room. Deleting words from it pulls the next row's words up.
 #[test]

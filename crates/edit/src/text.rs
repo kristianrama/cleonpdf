@@ -1592,10 +1592,41 @@ fn ligature_width(metrics: &Metrics, word: &str, size: f64, char_spacing: f64) -
 }
 
 fn source_show(metrics: &Metrics, text: &str, size: f64, space: f64, char_spacing: f64, word_spacing: f64) -> Result<Vec<Op>, EditError> {
+    source_show_spaced(metrics, text, size, space, char_spacing, word_spacing, 0.0)
+}
+
+/// Like `source_show`, with `gap` more text-space units after every space: a justified row's slack,
+/// which a TJ adjustment can carry in any font (word spacing does nothing in a composite one).
+fn source_show_spaced(
+    metrics: &Metrics,
+    text: &str,
+    size: f64,
+    space: f64,
+    char_spacing: f64,
+    word_spacing: f64,
+    gap: f64,
+) -> Result<Vec<Op>, EditError> {
+    if gap > 0.0 && !(gap.is_finite() && size.is_finite() && size > 0.0) {
+        return Err(EditError::Invalid("the source font's space advance is invalid".into()));
+    }
+    if gap > 0.0
+        && text.contains(' ')
+        && let Some(tokens) = text.split_inclusive(' ').map(|word| metrics.encode(word)).collect::<Option<Vec<_>>>()
+    {
+        let adjustment = cleonpdf_content::num(-gap / size * 1000.0);
+        let mut pieces = Vec::new();
+        for (i, bytes) in tokens.into_iter().enumerate() {
+            if i > 0 {
+                pieces.push(adjustment.clone());
+            }
+            pieces.push(Object::String(PdfString::literal(bytes)));
+        }
+        return Ok(vec![Op::new("TJ", vec![Object::Array(pieces)])]);
+    }
     if let Some(bytes) = metrics.encode(text) {
         return Ok(vec![Op::new("Tj", vec![Object::String(PdfString::literal(bytes))])]);
     }
-    let adjustment = -1000.0 * (space + (char_spacing + word_spacing) / size);
+    let adjustment = -1000.0 * (space + (char_spacing + word_spacing + gap) / size);
     if !adjustment.is_finite() {
         return Err(EditError::Invalid("the source font's space advance is invalid".into()));
     }
@@ -2004,7 +2035,9 @@ pub(crate) fn rewrite_block_with_limit(
     if !width.is_finite() {
         return Err(EditError::Invalid("the paragraph's width must be a number".into()));
     }
-    let align = style.align.or(rtl.then_some(crate::added::Align::Right));
+    // A paragraph the source justified stays justified when it is rewrapped.
+    let justified_source = style.align.is_none() && style.width.is_none() && !rtl && regions::justified_edge(&b, &lines).is_some();
+    let align = style.align.or(rtl.then_some(crate::added::Align::Right)).or(justified_source.then_some(crate::added::Align::Justify));
     // Where a right-aligned line ends, from the paragraph's left edge (user space).
     let right_edge = if anchored_right { (b.rect[2] - b.rect[0]).max(0.0) } else { width };
     // The move and the width are checked here, before the fallback fonts are written: a refused
@@ -2111,16 +2144,20 @@ pub(crate) fn rewrite_block_with_limit(
     };
     // Justify: word spacing (single-byte code 32 only) so each line but the last fills the width.
     let single_byte = !reuse || metrics.as_ref().is_some_and(|m| !m.composite);
-    let justify = align == Some(crate::added::Align::Justify) && single_byte;
+    let justify = align == Some(crate::added::Align::Justify);
     let mut x = 0.0;
     let mut tw_set = 0.0;
     let mut underlines: Vec<(f64, f64, f64)> = Vec::new(); // (x0, x1, y) in text space
     for (i, line) in wrapped.iter().enumerate() {
         let spaces = line.matches(' ').count();
-        let tw =
+        let slack =
             if justify && i + 1 < wrapped.len() && spaces > 0 { (width - advance(line)).max(0.0) / k / o_state.scale / spaces as f64 } else { 0.0 };
+        // Word spacing reaches only single-byte code 32; any other font gets the slack as a gap
+        // after each space. A row of a justified source that is a long word short stays ragged.
+        let slack = if justified_source && slack > size { 0.0 } else { slack };
+        let (tw, gap) = if single_byte { (slack, 0.0) } else { (0.0, slack) };
         // A stretched line fills the width from the left edge.
-        let dx = if tw > 0.0 { 0.0 } else { offset(line) };
+        let dx = if tw > 0.0 || gap > 0.0 { 0.0 } else { offset(line) };
         if i > 0 || dx != 0.0 {
             block_ops.push(Op::new("Td", vec![n(dx - x), n(if i > 0 { -lead } else { 0.0 })]));
         }
@@ -2133,7 +2170,7 @@ pub(crate) fn rewrite_block_with_limit(
         let visual = crate::bidi::to_visual(line);
         if let Some(metrics) = metrics.as_ref().filter(|_| reuse) {
             let indic_line = if metrics.visual_order { crate::indic::to_visual(&visual) } else { visual };
-            block_ops.extend(source_show(metrics, &indic_line, size, space, o_state.char_spacing, tw)?);
+            block_ops.extend(source_show_spaced(metrics, &indic_line, size, space, o_state.char_spacing, tw, gap)?);
         } else {
             for (font, bytes) in encode(&visual).ok_or_else(|| EditError::Invalid(format!("\"{line}\" can't be shown")))? {
                 if font != shown_font {
@@ -2143,7 +2180,7 @@ pub(crate) fn rewrite_block_with_limit(
                 block_ops.push(Op::new("Tj", vec![Object::String(PdfString::literal(bytes))]));
             }
         }
-        let w = (advance(line) + tw * spaces as f64 * o_state.scale * k) / k;
+        let w = (advance(line) + (tw + gap) * spaces as f64 * o_state.scale * k) / k;
         underlines.push((dx, dx + w, -(i as f64) * lead - size * 0.12));
     }
     block_ops.push(Op::new("ET", vec![]));
