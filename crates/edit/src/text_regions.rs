@@ -25,6 +25,16 @@ fn row_rect(row: &[usize], lines: &[TextLine]) -> Option<[f64; 4]> {
     row.iter().filter_map(|i| lines.get(*i)).map(|l| l.rect).reduce(union)
 }
 
+/// The right edge a paragraph was justified to: most of its rows, all but the last, end there
+/// (a ragged paragraph, or one with a single row to go by, has none).
+pub(super) fn justified_edge(block: &TextBlock, lines: &[TextLine]) -> Option<f64> {
+    let rights: Vec<f64> = block.rows.iter().rev().skip(1).filter_map(|r| row_rect(r, lines).map(|rect| rect[2])).collect();
+    let right = rights.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let tolerance = ((right - block.rect[0]) * 0.004).max(0.75);
+    let flush = rights.iter().filter(|r| right - **r <= tolerance).count();
+    (rights.len() >= 2 && right.is_finite() && flush * 10 >= rights.len() * 6).then_some(right)
+}
+
 pub(super) fn group_blocks(lines: &[TextLine]) -> Vec<TextBlock> {
     group_layout(lines, true)
 }
@@ -556,6 +566,14 @@ pub(super) fn rewrite_styled_block(
             calibration.insert(index, factor);
         }
     }
+    // Its rewrapped rows are justified again, with their own spacing: a row keeps neither the word
+    // space nor the stretch of the source row it happens to sit on, which fit other words.
+    let column_right = if style.width.is_none() && style.align.is_none() { justified_edge(block, lines) } else { None };
+    let justified = column_right.is_some();
+    if justified {
+        calibration.values_mut().for_each(|factor| *factor = 1.0);
+    }
+    let word_spacing_of = |source: &TextLine| if justified { 0.0 } else { source.origin.state.word_spacing };
     let advance = |item: &(char, usize, String)| -> f64 {
         let source = lines.get(item.1).unwrap_or(first);
         let Some(m) = metrics.get(&item.2) else { return 0.0 };
@@ -569,7 +587,7 @@ pub(super) fn rewrite_styled_block(
                 .and_then(|r| r.char_spacing)
                 .or(style.char_spacing)
                 .map_or(source.origin.state.char_spacing, |c| c / source.origin.k.max(1e-6)),
-            source.origin.state.word_spacing,
+            word_spacing_of(source),
         ) * overrides.get(&item.1).and_then(|r| r.scale).or(style.scale).map_or(source.origin.state.scale, |s| (s / 100.0).clamp(0.1, 10.0))
             * across(source)
             * calibration.get(&item.1).copied().unwrap_or(1.0)
@@ -595,7 +613,7 @@ pub(super) fn rewrite_styled_block(
                     .map_or(source.origin.state.char_spacing, |s| s / source.origin.k.max(1e-6));
                 width += (shaped.advance * size_of(source, item.1)
                     + spacing * string.chars().count() as f64
-                    + source.origin.state.word_spacing * string.matches(' ').count() as f64)
+                    + word_spacing_of(source) * string.matches(' ').count() as f64)
                     * scale
                     * source.origin.k;
             } else {
@@ -616,6 +634,8 @@ pub(super) fn rewrite_styled_block(
         block.rows.get(row).or_else(|| block.rows.last()).map_or(0.0, indent)
     };
     let mut rows: Vec<Vec<(char, usize, String)>> = Vec::new();
+    // Whether a row ended because the next word did not fit, not at an explicit break or the end.
+    let mut wrapped: Vec<bool> = Vec::new();
     let mut row = Vec::new();
     let mut row_width = 0.0;
     // Wrap at word boundaries, retaining explicit source row breaks and whitespace.
@@ -624,6 +644,7 @@ pub(super) fn rewrite_styled_block(
         let Some(item) = chars.get(at) else { break };
         if item.0 == '\n' {
             rows.push(std::mem::take(&mut row));
+            wrapped.push(false);
             row_width = 0.0;
             at += 1;
             continue;
@@ -641,6 +662,7 @@ pub(super) fn rewrite_styled_block(
                 row.pop();
             }
             rows.push(std::mem::take(&mut row));
+            wrapped.push(true);
             row_width = 0.0;
         }
         row.extend_from_slice(word);
@@ -649,6 +671,7 @@ pub(super) fn rewrite_styled_block(
     }
     if !row.is_empty() {
         rows.push(row);
+        wrapped.push(false);
     }
     for row in &rows {
         let text: String = row.iter().map(|v| v.0).collect();
@@ -730,6 +753,16 @@ pub(super) fn rewrite_styled_block(
                 crate::added::Align::Right => available - w,
                 _ => 0.0,
             };
+        // A row that wrapped in a justified paragraph is filled to the column's right edge by
+        // widening its spaces equally, up to one em: a row only one long word short stays ragged.
+        let gaps = row.iter().filter(|c| c.0 == ' ').count();
+        let gap = match column_right {
+            Some(right) if wrapped.get(row_index) == Some(&true) && gaps > 0 && !shaped_runs.keys().any(|key| key.0 == row_index) => {
+                let each = (right - left - w) / gaps as f64;
+                if each > 0.0 && each <= anchor.size.max(1.0) { each } else { 0.0 }
+            }
+            _ => 0.0,
+        };
         let mut pos = 0;
         while pos < row.len() {
             let Some(item) = row.get(pos) else { break };
@@ -742,6 +775,7 @@ pub(super) fn rewrite_styled_block(
             let string: String = segment.iter().map(|c| c.0).collect();
             let m = metrics.get(&item.2).ok_or_else(|| EditError::Invalid("the paragraph font is missing".into()))?;
             let mut state = source.origin.state.clone();
+            state.word_spacing = word_spacing_of(source);
             state.font = Some((item.2.clone(), size_of(source, item.1)));
             if let Some(c) = overrides.get(&item.1).and_then(|r| r.char_spacing).or(style.char_spacing) {
                 state.char_spacing = c / source.origin.k.max(1e-6);
@@ -791,15 +825,19 @@ pub(super) fn rewrite_styled_block(
                 block_ops.push(Op::new("BT", vec![]));
                 block_ops.extend(state.ops());
                 block_ops.push(Op::new("Tm", tm.iter().map(|v| n(*v)).collect()));
-                block_ops.extend(source_show(
+                // The row's slack in text-space units, before the run's scale and transform.
+                let gap_text = gap / (state.scale * source.origin.k).max(1e-6);
+                block_ops.extend(source_show_spaced(
                     m,
                     &string,
                     size_of(source, item.1),
                     state.space_advance(source_space(doc, &fonts, m)),
                     state.char_spacing,
                     state.word_spacing,
+                    gap_text,
                 )?);
                 block_ops.push(Op::new("ET", vec![]));
+                segment_width += gap * segment.iter().filter(|c| c.0 == ' ').count() as f64;
             }
             if underlines.get(&item.1).copied().or(style.underline) == Some(true) {
                 let [r, g, b] = overrides.get(&item.1).and_then(|r| r.color).or(style.color).unwrap_or(source.color);
