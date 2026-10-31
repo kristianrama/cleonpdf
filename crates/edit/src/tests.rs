@@ -3712,6 +3712,48 @@ fn a_row_with_an_unmeasurable_glyph_is_not_stretched_when_rewritten() {
     }
 }
 
+/// A justifying producer (Quartz, for italic) backs every glyph up by a negative `Tc` and gives
+/// it back with a `TJ` number, so the letters of a word sit together and only a word gap is
+/// left: 0.47 em taken, 0.472 given inside a word, 0.923 given at a gap.
+#[test]
+fn a_tj_number_that_a_negative_tc_takes_back_is_not_a_space() {
+    let doc = text_page("BT -0.47 Tc 12 0 0 12 100 700 Tm /F1 1 Tf [(a) -472 (b) -472 (c) -472 (d) -923 (e) -472 (f) -472 (g)] TJ ET");
+    let lines = text::text_lines(&doc, 0).unwrap();
+    assert_eq!(lines.len(), 1);
+    assert_eq!(lines[0].text, "abcd efg");
+    assert_eq!(text::text_blocks(&doc, 0).unwrap()[0].editor_text, "abcd efg");
+}
+
+/// A page with one run in a subset font that has the letters a to g and no space glyph, as a
+/// TeX italic does: the gap between words is only spacing.
+fn no_space_glyph_page(content: &str) -> Document {
+    build(&[
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+        &stream("", content),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /ABCDEF+Italic /FirstChar 97 /LastChar 103 /Widths [556 556 500 556 556 278 556] /Encoding /WinAnsiEncoding >>",
+    ])
+}
+
+/// Rewriting such a run must not apply its negative `Tc` to every glyph, which the numbers no
+/// longer give back: the letters would be drawn on top of each other.
+#[test]
+fn a_run_whose_negative_tc_is_taken_back_is_rewritten_at_its_width() {
+    let mut doc = no_space_glyph_page("BT -0.47 Tc 12 0 0 12 100 700 Tm /F1 1 Tf [(a) -472 (b) -472 (c) -472 (d) -923 (e) -472 (f) -472 (g)] TJ ET");
+    let before = text::text_lines(&doc, 0).unwrap();
+    assert_eq!(before[0].text, "abcd efg");
+    text::replace_block(&mut doc, 0, 0, "abcd efg").unwrap();
+    let after = text::text_lines(&reopen(&doc), 0).unwrap();
+    assert_eq!(after.iter().map(|l| l.text.as_str()).collect::<Vec<_>>().join(" "), "abcd efg");
+    // The last glyph's `Tc` is never given back, which shortens the source's box by 0.47 em.
+    let width = |lines: &[text::TextLine]| {
+        lines.iter().map(|l| l.rect[2]).fold(f64::MIN, f64::max) - lines.iter().map(|l| l.rect[0]).fold(f64::MAX, f64::min)
+    };
+    let expected = width(&before) + 0.47 * 12.0;
+    assert!((width(&after) - expected).abs() < 1.0, "the line is {} pt wide, expected {expected}", width(&after));
+}
+
 /// The right edge of each printed row of a page, top to bottom (rows are the lines sharing a baseline).
 fn row_right_edges(doc: &Document) -> Vec<f64> {
     let mut rows: Vec<(f64, f64)> = Vec::new();
