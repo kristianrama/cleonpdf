@@ -532,15 +532,19 @@ pub(super) fn rewrite_styled_block(
     let mut calibration = HashMap::new();
     for (index, source) in lines.iter().enumerate() {
         if let Some(m) = metrics.get(&source.font) {
-            let nominal = source_width(
+            // A word the source font cannot show (a letter outside a subset) makes the measure
+            // unknown. Calibrating against a short sum would stretch the row by the missing word.
+            let nominal = source_width_with(
                 m,
                 &source.text,
                 source.origin.state.font.as_ref().map_or(1.0, |(_, s)| *s),
                 source.origin.state.space_advance(source_space(doc, &fonts, m)),
                 source.origin.state.char_spacing,
                 source.origin.state.word_spacing,
-            ) * source.origin.state.scale
-                * across(source);
+                true,
+            )
+            .map(|w| w * source.origin.state.scale * across(source))
+            .unwrap_or(0.0);
             let changed_face = style.resource.is_some() || overrides.get(&index).is_some_and(|r| r.family.is_some() || r.resource.is_some());
             // A justified run's box counts the word space left after its last glyph, which its
             // text does not have, so measure the ink only.

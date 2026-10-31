@@ -1531,22 +1531,64 @@ fn source_space(doc: &Document, fonts: &Dict, metrics: &Metrics) -> f64 {
 }
 
 fn source_width(metrics: &Metrics, text: &str, size: f64, space: f64, char_spacing: f64, word_spacing: f64) -> f64 {
+    source_width_with(metrics, text, size, space, char_spacing, word_spacing, false).unwrap_or(0.0)
+}
+
+/// The width of `text` in the source font. A word the font cannot show is left out of the sum, or,
+/// when `strict`, makes the whole measure `None`: a width that is silently short is worse than none
+/// for a caller that compares it with the drawn width.
+fn source_width_with(metrics: &Metrics, text: &str, size: f64, space: f64, char_spacing: f64, word_spacing: f64, strict: bool) -> Option<f64> {
     if let Some(bytes) = metrics.encode(text) {
         // PDF word spacing applies only to single-byte code 32, even for a Unicode space.
-        return metrics
-            .codes(&bytes)
-            .iter()
-            .map(|(c, len)| metrics.width(*c) * size + char_spacing + if metrics.is_space(*c, *len) { word_spacing } else { 0.0 })
-            .sum();
+        return Some(
+            metrics
+                .codes(&bytes)
+                .iter()
+                .map(|(c, len)| metrics.width(*c) * size + char_spacing + if metrics.is_space(*c, *len) { word_spacing } else { 0.0 })
+                .sum(),
+        );
     }
-    let words: f64 = text
-        .split(' ')
-        .filter_map(|w| match metrics.encode(w) {
-            Some(b) => Some(metrics.codes(&b).iter().map(|(c, _)| metrics.width(*c) * size + char_spacing).sum::<f64>()),
-            None => word_pieces(metrics, w, size, char_spacing).map(|(_, width)| width),
-        })
-        .sum();
-    words + text.matches(' ').count() as f64 * (space * size + char_spacing + word_spacing)
+    let mut words = 0.0;
+    for w in text.split(' ') {
+        match metrics.encode(w) {
+            Some(b) => words += metrics.codes(&b).iter().map(|(c, _)| metrics.width(*c) * size + char_spacing).sum::<f64>(),
+            None => {
+                match word_pieces(metrics, w, size, char_spacing).map(|(_, width)| width).or_else(|| ligature_width(metrics, w, size, char_spacing)) {
+                    Some(width) => words += width,
+                    None if strict => return None,
+                    None => {}
+                }
+            }
+        }
+    }
+    Some(words + text.matches(' ').count() as f64 * (space * size + char_spacing + word_spacing))
+}
+
+/// The width of a word whose "fi", "fl", "ff", "ffi" or "ffl" is one glyph in the font (a
+/// subset keeps just the ligature a text used, not the letters apart), or `None` if some other
+/// letter is missing. This only measures: the editor still draws such a word from the letters.
+fn ligature_width(metrics: &Metrics, word: &str, size: f64, char_spacing: f64) -> Option<f64> {
+    const LIGATURES: [(&str, char); 5] = [("ffi", '\u{FB03}'), ("ffl", '\u{FB04}'), ("ff", '\u{FB00}'), ("fi", '\u{FB01}'), ("fl", '\u{FB02}')];
+    let width_of = |piece: &str| -> Option<f64> {
+        let bytes = metrics.encode(piece)?;
+        Some(metrics.codes(&bytes).iter().map(|(c, _)| metrics.width(*c) * size + char_spacing).sum())
+    };
+    let mut total = 0.0;
+    let mut rest = word;
+    while let Some(c) = rest.chars().next() {
+        let ligature = LIGATURES.iter().find_map(|(letters, glyph)| {
+            let tail = rest.strip_prefix(letters)?;
+            Some((tail, width_of(&glyph.to_string())?))
+        });
+        if let Some((tail, width)) = ligature {
+            total += width;
+            rest = tail;
+        } else {
+            total += width_of(&c.to_string())?;
+            rest = rest.get(c.len_utf8()..)?;
+        }
+    }
+    total.is_finite().then_some(total)
 }
 
 fn source_show(metrics: &Metrics, text: &str, size: f64, space: f64, char_spacing: f64, word_spacing: f64) -> Result<Vec<Op>, EditError> {

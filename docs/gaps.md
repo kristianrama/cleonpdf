@@ -122,6 +122,15 @@ update the numbers.
     and ragged short rows keep their hard breaks; the heuristic is a guess by nature (a line
     that happens to end where the wrap would have is read as soft); the live preview in the editor
     keeps the old rows until the edit is applied.
+    Checked on synthetic PDFs from Chromium, LibreOffice, reportlab and wkhtmltopdf (2026-10-31):
+    the reflow works on all four. A browser PDF whose subset font holds only the glyphs the text
+    used (a "fi" ligature and no loose "f") had its row measured with the word missing, so a
+    rewritten heading came out 32% wider; a row's width is now measured with the ligature, and left
+    uncalibrated when a word can't be measured. **Still open from that check:** a loose "f" outside
+    the subset is drawn in a substitute face; rewritten justified paragraphs keep each row's old
+    word spacing instead of being justified again (uneven gaps, ragged right edge); wkhtmltopdf's
+    word-by-word text reads back with tabs between words; a browser PDF whose paragraphs are 10 pt
+    apart reads as one block, so editing one loses the justification of the next.
   - **By design, not a defect:** a heading (17 pt bold) and the paragraph after it come out as one
     paragraph. That is the mixed-style region a contributor added on 2026-10-11 (rows keep their own
     style on a rewrite; `mixed_styles_and_matrix_sizes_form_visual_regions_without_merging_columns`
