@@ -130,9 +130,14 @@ update the numbers.
     the subset is drawn in a substitute face; wkhtmltopdf's word-by-word text reads back with
     tabs between words (its font maps the space glyph to U+0009 in ToUnicode); a browser PDF whose
     paragraphs are 10 pt apart reads as one block, and because row baselines follow the row's
-    index, a paragraph that loses a row pulls the next paragraph's first row up into the gap; the
-    italic words of a LaTeX paragraph read back with a space between every letter (`è i l m o d o`
-    in `due.pdf`), so editing that paragraph overprints them.
+    index, a paragraph that loses a row pulls the next paragraph's first row up into the gap.
+    **Fixed:** the italic words of a LaTeX paragraph (`due.pdf`) read back with a space between
+    every letter and overprinted when the paragraph was edited. Their runs set a negative `Tc`
+    (about −0.47 em) and the `TJ` numbers inside the words (about −472) give it back; the reader
+    counted each number as a gap, and the rewrite repeated the `Tc` on every glyph. A gap is now
+    what is left after the glyph's own `Tc`, and a run whose negative `Tc` is given back is
+    rewritten with that word gap and no `Tc`. The block rewrite also keeps the source's own word
+    gap under any justification slack. Seen on LaTeX/Quartz italics only.
     A paragraph the source justified (most rows but the last end at one right edge) is now
     justified again when it is rewrapped, with its own word spaces instead of the ones of the rows
     it replaces: the slack goes to the spaces as TJ adjustments (word spacing does nothing in a

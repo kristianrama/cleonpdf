@@ -209,9 +209,15 @@ impl TextState {
 
     /// This state for rewriting a run a justifying producer set: its `Tc` is the word space (the
     /// `TJ` numbers inside the words cancel it), so it goes to the word gaps and not to every glyph.
-    fn without_justification(mut self, justified: bool) -> Self {
+    fn without_justification(mut self, justified: bool, taken_back_gap: Option<f64>) -> Self {
         if justified {
             self.word_spacing += self.char_spacing;
+            self.char_spacing = 0.0;
+            self.justified = true;
+        } else if let Some(gap) = taken_back_gap {
+            // A negative `Tc` the numbers give back inside the words is no tracking at all; the
+            // gap between words is what they give back beyond it.
+            self.word_spacing = gap;
             self.char_spacing = 0.0;
             self.justified = true;
         }
@@ -516,6 +522,9 @@ struct Shown {
     gap_after: bool,
     /// Its `Tc` is a word space that `TJ` numbers cancel inside the words (justified text).
     justified: bool,
+    /// Its `Tc` is negative and the `TJ` numbers give it back inside the words (Quartz italics): the
+    /// word gap that is left, in text space.
+    taken_back_gap: Option<f64>,
 }
 
 /// The graphics state carried from one of a page's content streams to the next: the streams
@@ -703,12 +712,15 @@ fn interpret(
                 // Where in `text` the last glyph, a spacing accent, begins.
                 let mut accent_at: Option<usize> = None;
                 let mut justified = false;
+                // What was left of each gap read as a space, to tell a negative `Tc` the numbers give back.
+                let mut gaps: Vec<f64> = Vec::new();
                 for p in &pieces {
                     match p {
                         Object::String(s) => {
                             for (code, len) in m.codes(&s.bytes) {
                                 if pending > ts.size * 0.2 && !text.is_empty() && !text.ends_with(' ') {
                                     text.push(' ');
+                                    gaps.push(pending);
                                     accent_at = None;
                                 }
                                 glyph_count = glyph_count.saturating_add(1);
@@ -752,13 +764,15 @@ fn interpret(
                         other => {
                             if let Some(n) = other.as_f64() {
                                 let dx = -n / 1000.0 * ts.size * ts.scale;
-                                // A large gap inside TJ reads as a space.
-                                if dx > ts.size * 0.2 && !text.ends_with(' ') {
-                                    text.push(' ');
-                                    accent_at = None;
-                                }
                                 x_text += dx;
                                 pending += dx;
+                                // A large gap inside TJ reads as a space: what is left after the
+                                // glyph's own `Tc`, which a negative one (Quartz italics) takes back.
+                                if pending > ts.size * 0.2 && !text.ends_with(' ') {
+                                    text.push(' ');
+                                    gaps.push(pending);
+                                    accent_at = None;
+                                }
                                 // A `Tc` the numbers take back after a glyph is not tracking.
                                 justified |= glyph_count > 0 && ts.char_spacing > ts.size * 0.2 && pending.abs() < ts.size * 0.05;
                             }
@@ -766,6 +780,9 @@ fn interpret(
                     }
                 }
                 let gap_after = pending > ts.size * 0.2;
+                let taken_back_gap = (ts.char_spacing < -ts.size * 0.2 && ts.scale > 0.0 && !gaps.is_empty())
+                    .then(|| gaps.iter().sum::<f64>() / gaps.len() as f64 / ts.scale)
+                    .filter(|gap| gap.is_finite());
                 tm = Matrix([1.0, 0.0, 0.0, 1.0, x_text, 0.0]).then(&tm);
                 let end = tm.then(&ts.ctm).apply(0.0, ts.rise);
                 // The box: from descent to ascent along the run.
@@ -813,6 +830,7 @@ fn interpret(
                     actual_text: false,
                     gap_after,
                     justified,
+                    taken_back_gap,
                 });
             }
             _ => {}
@@ -904,7 +922,7 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
                     baseline: s.baseline,
                     x: s.start_x,
                     raw_spacing: s.justified.then_some((s.state.char_spacing, s.state.word_spacing)),
-                    state: TextState::of(&s.state).without_justification(s.justified),
+                    state: TextState::of(&s.state).without_justification(s.justified, s.taken_back_gap),
                     bt_op: s.bt_op,
                     bt_state: TextState::of(&s.bt_state),
                 },
@@ -966,7 +984,7 @@ const SPACING_JITTER: f64 = 0.02;
 /// transforms and spacing. In particular, a nearby rotated label isn't part of this line.
 fn compatible_word(line: &TextLine, shown: &Shown) -> bool {
     let same = |a: &[f64], b: &[f64]| a.iter().zip(b).all(|(a, b)| (a - b).abs() < 1e-6);
-    let (a, b) = (&line.origin.state, TextState::of(&shown.state).without_justification(shown.justified));
+    let (a, b) = (&line.origin.state, TextState::of(&shown.state).without_justification(shown.justified, shown.taken_back_gap));
     // Justifying producers (Quartz) give every text object of a line its own `Tc`, a few
     // thousandths of an em apart, so spacing is compared as the distance it makes on the page
     // (a fraction of the glyph size), not for equality.
@@ -1040,7 +1058,7 @@ fn add_shown(lines: &mut Vec<TextLine>, last: &mut Option<(usize, f64, f64, f64)
                 baseline: s.baseline,
                 x: s.start_x,
                 raw_spacing: s.justified.then_some((s.state.char_spacing, s.state.word_spacing)),
-                state: TextState::of(&s.state).without_justification(s.justified),
+                state: TextState::of(&s.state).without_justification(s.justified, s.taken_back_gap),
                 bt_op: s.bt_op,
                 bt_state: TextState::of(&s.bt_state),
             },
@@ -2155,9 +2173,11 @@ pub(crate) fn rewrite_block_with_limit(
         // Word spacing reaches only single-byte code 32; any other font gets the slack as a gap
         // after each space. A row of a justified source that is a long word short stays ragged.
         let slack = if justified_source && slack > size { 0.0 } else { slack };
-        let (tw, gap) = if single_byte { (slack, 0.0) } else { (0.0, slack) };
+        // The source's own word gap stays under the slack: `advance` measured every space with it.
+        let own = if o_state.word_spacing.is_finite() { o_state.word_spacing } else { 0.0 };
+        let (tw, gap) = if single_byte { (slack + own, 0.0) } else { (0.0, slack + own) };
         // A stretched line fills the width from the left edge.
-        let dx = if tw > 0.0 || gap > 0.0 { 0.0 } else { offset(line) };
+        let dx = if slack > 0.0 { 0.0 } else { offset(line) };
         if i > 0 || dx != 0.0 {
             block_ops.push(Op::new("Td", vec![n(dx - x), n(if i > 0 { -lead } else { 0.0 })]));
         }
