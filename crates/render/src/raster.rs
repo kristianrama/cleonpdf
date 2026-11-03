@@ -2408,6 +2408,139 @@ endstream endobj
 trailer << /Root 1 0 R >>
 %%EOF";
 
+    /// The shape of `issue16263` in the pdf.js corpus: a form XObject (BBox 3954 x 740, scaled by
+    /// its Matrix) draws a 2 x 2 black and white indexed image whose soft mask is a 34862 x 4332 one-bit gray image,
+    /// fully opaque (151 million pixels), run-length encoded so that the file stays small.
+    fn huge_bilevel_soft_mask_pdf() -> Vec<u8> {
+        // One row: 4358 bytes of 0xFF, as 34 runs of 128 and one of 6.
+        let mut row = Vec::new();
+        for _ in 0..34 {
+            row.extend_from_slice(&[129, 0xFF]);
+        }
+        row.extend_from_slice(&[(257 - 6) as u8, 0xFF]);
+        let mut data = Vec::with_capacity(row.len() * 4332 + 1);
+        for _ in 0..4332 {
+            data.extend_from_slice(&row);
+        }
+        data.push(128);
+        let mut pdf = b"%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 960 540] /Contents 4 0 R /Resources << /XObject << /Meta 6 0 R >> >> >> endobj
+4 0 obj << /Length 9 >> stream
+/Meta Do
+endstream endobj
+5 0 obj << /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace [/Indexed /DeviceRGB 1 <000000FFFFFF>] /BitsPerComponent 1 /Interpolate false /SMask 7 0 R /Filter /ASCIIHexDecode /Length 5 >> stream
+4080>
+endstream endobj
+6 0 obj << /Type /XObject /Subtype /Form /BBox [0 0 3954.39 740.79] /Matrix [0.018208 0 0 0.097194 0 0] /Resources << /XObject << /Im 5 0 R >> >> /Length 46 >> stream
+q 4183.5 0 0 519.94 56.896 518.39 cm /Im Do Q
+endstream endobj
+"
+        .to_vec();
+        pdf.extend_from_slice(
+            format!(
+                "7 0 obj << /Type /XObject /Subtype /Image /Width 34862 /Height 4332 /ColorSpace /DeviceGray /BitsPerComponent 1 /Filter /RunLengthDecode /Length {} >> stream\n",
+                data.len()
+            )
+            .as_bytes(),
+        );
+        pdf.extend_from_slice(&data);
+        pdf.extend_from_slice(b"\nendstream endobj\ntrailer << /Root 1 0 R >>\n%%EOF");
+        pdf
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn an_image_with_a_huge_bilevel_soft_mask_renders_in_seconds_not_minutes() {
+        // issue16263 in the pdf.js corpus: a 2 x 2 image with a 34862 x 4332 bilevel soft mask took
+        // minutes (MuPDF: under a second). This file has the same shape but renders in 5 s without
+        // the fix, 0.4 s with it, so the bound is tight on purpose; the real file is far slower. Every sample became a u16, an f32 and an RGB triple, and
+        // the mask was decoded again for each of about 40 draw windows.
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let mut renderer = PageRenderer::new(Arc::new(huge_bilevel_soft_mask_pdf()), RenderConfig::default());
+            let page = renderer.render(RenderRequest { page: 0, scale: 1.0, ..Default::default() });
+            let _ = tx.send(page);
+        });
+        let page = rx.recv_timeout(std::time::Duration::from_secs(4)).expect("the page renders within 4 s");
+        assert!(page.error.is_none(), "{:?}", page.error);
+        let dark = |x: std::ops::Range<u32>, y: std::ops::Range<u32>| {
+            x.flat_map(|x| y.clone().map(move |y| (x, y))).filter(|&(x, y)| page.rgba[((y * page.width + x) * 4) as usize] < 64).count()
+        };
+        // The form maps the image, clipped to its BBox, to about x 1..72 and y 468..490 (from the
+        // top): black where the image is black and its mask opaque; the rest of the page is white.
+        assert!(dark(2..72, 469..489) > 100, "the opaque mask shows the black parts of the image");
+        assert_eq!(dark(100..960, 0..540), 0, "elsewhere the page is white");
+    }
+
+    use hayro::hayro_interpret::{box_average_gray, subsample_factor};
+
+    #[test]
+    fn small_images_are_not_subsampled_and_huge_ones_get_a_power_of_two() {
+        assert_eq!(subsample_factor(4000, 4000), None);
+        assert_eq!(subsample_factor(34862, 4332), Some(4));
+        assert_eq!(subsample_factor(1 << 14, 1 << 14), Some(4));
+        assert_eq!(subsample_factor(1 << 16, 1 << 16), Some(16));
+    }
+
+    #[test]
+    fn a_bilevel_image_averages_to_gray_by_blocks() {
+        // 8 x 4, every row 1111 0000: with k = 4 the blocks are all white and all black.
+        let (out, w, h) = box_average_gray(&[0xF0; 4], 8, 4, 1, 4);
+        assert_eq!((w, h, out), (2, 1, vec![255, 0]));
+        // Half of a block's pixels set rounds to mid gray.
+        let (out, ..) = box_average_gray(&[0xA0; 4], 4, 4, 1, 4);
+        assert_eq!(out, vec![128]);
+    }
+
+    #[test]
+    fn every_path_agrees_with_a_naive_average() {
+        // 20 x 8 bilevel pixels (a width that is not a whole number of bytes), pseudo-random. k = 2,
+        // 4 and 8 take the byte-wise path, 3 the per-pixel one.
+        let (w, h) = (20usize, 8usize);
+        let pixel = |x: usize, y: usize| (x * 7 + y * 13 + x * y).is_multiple_of(3);
+        let stride = w.div_ceil(8);
+        let mut packed = vec![0u8; stride * h];
+        for y in 0..h {
+            for x in 0..w {
+                if pixel(x, y) {
+                    packed[y * stride + x / 8] |= 0x80 >> (x % 8);
+                }
+            }
+        }
+        for k in [2usize, 3, 4, 8] {
+            let (out, ow, oh) = box_average_gray(&packed, w as u32, h as u32, 1, k as u32);
+            assert_eq!((ow as usize, oh as usize), (w.div_ceil(k), h.div_ceil(k)), "k = {k}");
+            for by in 0..oh as usize {
+                for bx in 0..ow as usize {
+                    let (mut ones, mut n) = (0u32, 0u32);
+                    for y in by * k..((by + 1) * k).min(h) {
+                        for x in bx * k..((bx + 1) * k).min(w) {
+                            ones += u32::from(pixel(x, y));
+                            n += 1;
+                        }
+                    }
+                    let expected = (ones * 255 + n / 2) / n;
+                    assert_eq!(u32::from(out[by * ow as usize + bx]), expected, "k = {k}, block ({bx}, {by})");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn partial_blocks_at_the_edges_average_over_their_own_pixels() {
+        // 5 x 3, all set, k = 4: the right block is 1 pixel wide and still full white.
+        let (out, w, h) = box_average_gray(&[0xF8; 3], 5, 3, 1, 4);
+        assert_eq!((w, h, out), (2, 1, vec![255, 255]));
+    }
+
+    #[test]
+    fn missing_data_reads_as_black() {
+        let (out, w, h) = box_average_gray(&[], 8, 8, 1, 4);
+        assert_eq!((w, h, out), (2, 2, vec![0; 4]));
+    }
+
     const ONE_PAGE_TWICE: &[u8] = b"%PDF-1.4
 1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
 2 0 obj << /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >> endobj

@@ -162,6 +162,12 @@ impl<'a> Stream<'a> {
         self.filters_and_params().filters
     }
 
+    /// CleonPDF patch: whether the stream is JPEG 2000 encoded, the one filter whose decoding
+    /// depends on the requested target size ([`ImageDecodeParams::target_dimension`]).
+    pub fn is_jpx(&self) -> bool {
+        self.filters().iter().any(|f| matches!(f, Filter::JpxDecode))
+    }
+
     /// PdfCraft patch: how the decoded data of the stream can be produced a piece at a time.
     pub(crate) fn incremental(&self) -> Incremental {
         let filters_and_params = self.filters_and_params();

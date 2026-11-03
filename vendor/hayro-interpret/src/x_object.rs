@@ -407,7 +407,10 @@ impl<'a> ImageXObject<'a> {
             is_mask: self.is_mask,
             is_stencil_mask: self.is_stencil_mask,
             interpolate: self.interpolate,
-            target: target_dimension,
+            // CleonPDF patch: only a JPEG 2000 stream decodes differently for another target
+            // size, so the others share one entry; keyed by target, a page drawn in many windows
+            // decoded a 151-million-pixel mask once per window (40 times).
+            target: target_dimension.filter(|_| self.stream.is_jpx()),
             preview: cache.preview,
         })
     }
@@ -501,7 +504,7 @@ fn decode_context<'a>(
         height: obj.height,
     };
 
-    let decoded = obj
+    let mut decoded = obj
         .stream
         .decoded_image(&decode_params)
         .map_err(|_| (obj.warning_sink)(InterpreterWarning::ImageDecodeFailure))
@@ -509,7 +512,7 @@ fn decode_context<'a>(
 
     let (mut scale_x, mut scale_y) = (1.0, 1.0);
 
-    let (width, height) = decoded
+    let (mut width, mut height) = decoded
         .image_data
         .as_ref()
         .map(|d| {
@@ -519,6 +522,28 @@ fn decode_context<'a>(
             (d.width, d.height)
         })
         .unwrap_or((obj.width, obj.height));
+
+    // CleonPDF patch: a huge single-component image (a scanned 34862 x 4332 bilevel page took
+    // minutes and gigabytes: every sample became a u16, an f32 and then an RGB triple) is box-averaged
+    // to a bounded size right after the filter, as an 8-bit gray image.
+    let mut bits_per_component_override = None;
+    if decoded.image_data.is_none()
+        && !is_indexed
+        && color_space.as_ref().is_none_or(|c| c.num_components() == 1)
+        // A colour-key `/Mask` compares raw samples, which averaging would change.
+        && dict.get::<Array<'_>>(MASK).is_none()
+        && matches!(dict_bpc.unwrap_or(if obj.is_stencil_mask { 1 } else { 8 }), 1 | 2 | 4 | 8)
+        && let Some(k) = subsample_factor(width, height)
+    {
+        let bpc = dict_bpc.unwrap_or(if obj.is_stencil_mask { 1 } else { 8 });
+        let (small, w, h) = box_average_gray(&decoded.data, width, height, bpc, k);
+        decoded.data = Cow::Owned(small);
+        scale_x = obj.width as f32 / w as f32;
+        scale_y = obj.height as f32 / h as f32;
+        width = w;
+        height = h;
+        bits_per_component_override = Some(8);
+    }
 
     let color_space = color_space
         .or_else(|| {
@@ -539,10 +564,8 @@ fn decode_context<'a>(
 
     let fallback_bpc = if obj.is_stencil_mask { 1 } else { 8 };
 
-    let bits_per_component = decoded
-        .image_data
-        .as_ref()
-        .map(|i| i.bits_per_component)
+    let bits_per_component = bits_per_component_override
+        .or_else(|| decoded.image_data.as_ref().map(|i| i.bits_per_component))
         .or(dict_bpc)
         .unwrap_or(fallback_bpc);
 
@@ -1055,8 +1078,80 @@ fn apply_decode_array(
     Some(decoded_arr)
 }
 
+/// CleonPDF patch: images with more pixels than this are box-averaged before conversion.
+const MAX_FULL_DECODE_PIXELS: u64 = 1 << 24;
+
+/// CleonPDF patch: the power-of-two factor by which a `width` × `height` image is averaged down to
+/// stay under [`MAX_FULL_DECODE_PIXELS`]; `None` when it already is.
+pub fn subsample_factor(width: u32, height: u32) -> Option<u32> {
+    let pixels = u64::from(width) * u64::from(height);
+    if pixels <= MAX_FULL_DECODE_PIXELS {
+        return None;
+    }
+    let mut k = 2u32;
+    while pixels / (u64::from(k) * u64::from(k)) > MAX_FULL_DECODE_PIXELS && k < 1 << 12 {
+        k *= 2;
+    }
+    Some(k)
+}
+
+/// CleonPDF patch: `data` is a one-component image of `bpc` (1, 2, 4 or 8) bits with rows padded to
+/// whole bytes. Returns it averaged over `k` × `k` blocks as 8-bit gray (samples scaled to
+/// 0..=255), with its new width and height. Missing data reads as zero, as `get_components` does.
+pub fn box_average_gray(data: &[u8], width: u32, height: u32, bpc: u8, k: u32) -> (Vec<u8>, u32, u32) {
+    let (w, h, k) = (width as usize, height as usize, (k as usize).max(1));
+    let (nw, nh) = (w.div_ceil(k), h.div_ceil(k));
+    // Other depths read as 8 bits; callers pass 1, 2, 4 or 8.
+    let bits = if matches!(bpc, 1 | 2 | 4) { usize::from(bpc) } else { 8 };
+    let stride = w.saturating_mul(bits).div_ceil(8);
+    let max_sample = (1u64 << bits) - 1;
+    let mut sums = vec![0u64; nw];
+    let mut out = Vec::with_capacity(nw.saturating_mul(nh).min(1 << 26));
+    for by in 0..nh {
+        sums.iter_mut().for_each(|s| *s = 0);
+        let y0 = by * k;
+        let y1 = (y0 + k).min(h);
+        for y in y0..y1 {
+            let row = data.get(y.saturating_mul(stride)..).unwrap_or(&[]);
+            // Bilevel images in whole bytes: count the set bits of each group of `k` pixels.
+            let mut x_start = 0;
+            if bits == 1 && matches!(k, 2 | 4 | 8) {
+                let mask = (1u16 << k) - 1;
+                for (index, byte) in row.iter().take(w / 8).enumerate() {
+                    for group in 0..8 / k {
+                        let shift = 8 - k * (group + 1);
+                        let ones = ((u16::from(*byte) >> shift) & mask).count_ones();
+                        if let Some(sum) = sums.get_mut(index * (8 / k) + group) {
+                            *sum += u64::from(ones);
+                        }
+                    }
+                }
+                x_start = w / 8 * 8;
+            }
+            for x in x_start..w {
+                let bit = x * bits;
+                let byte = row.get(bit / 8).copied().unwrap_or(0);
+                let sample = (u64::from(byte) >> (8 - bits - (bit % 8))) & max_sample;
+                if let Some(sum) = sums.get_mut(x / k) {
+                    *sum += sample;
+                }
+            }
+        }
+        let rows = (y1 - y0) as u64;
+        for (bx, sum) in sums.iter().enumerate() {
+            let cols = (((bx + 1) * k).min(w) - bx * k) as u64;
+            let n = (rows * cols).max(1);
+            // Average sample, rounded, scaled from 0..=max_sample to 0..=255.
+            let value = (sum * 255 + (n * max_sample) / 2) / (n * max_sample);
+            out.push(value.min(255) as u8);
+        }
+    }
+    (out, nw as u32, nh as u32)
+}
+
 /// PdfCraft patch: whether an image or mask of `width` × `height` may be decoded (at most
 /// 2^28 pixels, the renderer's `MAX_IMAGE_PIXELS`).
 pub fn image_size_ok(width: u32, height: u32) -> bool {
     width > 0 && height > 0 && u64::from(width) * u64::from(height) <= 1 << 28
 }
+
