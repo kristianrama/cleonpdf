@@ -141,12 +141,16 @@ jobs:
           sudo apt-get install -y --no-install-recommends qpdf poppler-utils mupdf-tools ghostscript
       - name: Interop suite
         run: cargo xtask interop --require-all
+      - name: Render oracle (page images against MuPDF and Poppler)
+        run: cargo xtask render-oracle --require-all
       - name: Upload the outputs
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: interop-out
-          path: interop-out/out
+          path: |
+            interop-out/out
+            render-oracle-out
           if-no-files-found: ignore
 
   fuzz:
