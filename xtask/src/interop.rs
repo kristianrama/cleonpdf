@@ -484,14 +484,14 @@ fn cases() -> Vec<Case> {
 }
 
 /// A finished child process: exit code (None when killed by a signal), stdout, stderr.
-struct Output {
-    code: Option<i32>,
+pub(crate) struct Output {
+    pub(crate) code: Option<i32>,
     stdout: String,
-    stderr: String,
+    pub(crate) stderr: String,
 }
 
 /// Run `cmd`, killing it after `timeout`. `None` when it can't start or runs too long.
-fn run(cmd: &mut Command, timeout: Duration) -> Option<Output> {
+pub(crate) fn run(cmd: &mut Command, timeout: Duration) -> Option<Output> {
     let mut child = cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().ok()?;
     let mut out = child.stdout.take()?;
     let mut err = child.stderr.take()?;
@@ -523,7 +523,7 @@ fn run(cmd: &mut Command, timeout: Duration) -> Option<Output> {
     Some(Output { code: status.code(), stdout, stderr })
 }
 
-const TIMEOUT: Duration = Duration::from_secs(60);
+pub(crate) const TIMEOUT: Duration = Duration::from_secs(60);
 
 /// What one reader made of one file.
 #[derive(Default)]

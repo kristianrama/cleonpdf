@@ -11,6 +11,7 @@ mod interop;
 mod layers;
 mod macos_integration;
 mod parity;
+mod render_oracle;
 mod screenshots;
 mod version;
 
@@ -37,6 +38,11 @@ const COMMANDS: &[(&str, &str, Command)] = &[
         "interop",
         "Open every kind of PDF we write in qpdf, Poppler, MuPDF and Ghostscript; outputs in interop-out/ (--only NAME, --require-all)",
         interop::run_cmd,
+    ),
+    (
+        "render-oracle",
+        "Compare page images with MuPDF's and Poppler's over hand-written fixtures (--dir DIR, --limit N, --require-all); images in render-oracle-out/",
+        render_oracle::run_cmd,
     ),
     ("text-oracle", "Compare text extraction with pdftotext over corpus/ (word F1; target median ≥ 0.97)", gates::text_oracle),
     ("screenshots", "Regenerate the README screenshots in docs/images/ and their ATTRIBUTION entries", screenshots::run),

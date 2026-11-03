@@ -7,6 +7,7 @@ plan/
 .DS_Store
 /fuzz-out
 /interop-out
+/render-oracle-out
 /assets/models
 # A craft-fonts checkout used as the optional CRAFT_FONTS_DIR build input (CI and releases put it here).
 /craft-fonts
