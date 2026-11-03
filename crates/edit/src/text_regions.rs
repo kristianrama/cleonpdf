@@ -623,19 +623,52 @@ pub(super) fn rewrite_styled_block(
         }
         Ok(width)
     };
+    // The source rows in groups, one per paragraph a hard break ends (a wrapped row stays with the
+    // row it continues). A rewritten row sits on the row at the same place in the same group of the
+    // source, so a paragraph that gains or loses a row does not move the next one's position,
+    // indent or gap onto the wrong row.
+    let source_groups: Vec<std::ops::Range<usize>> = {
+        let soft = soft_breaks(block, lines);
+        let mut groups = Vec::new();
+        let mut start = 0;
+        for (k, is_soft) in soft.iter().enumerate() {
+            if !is_soft {
+                groups.push(start..k + 1);
+                start = k + 1;
+            }
+        }
+        if start < block.rows.len() {
+            groups.push(start..block.rows.len());
+        }
+        groups
+    };
+    // The source row for a row `k` rows into group `group` of the rewrite; the last row of the
+    // group when the rewrite has more rows there, the last row of the block past its last group.
+    let source_row = |(group, k): (usize, usize)| -> Option<usize> {
+        match source_groups.get(group) {
+            Some(range) => Some((range.start.saturating_add(k)).min(range.end.saturating_sub(1))),
+            None => block.rows.len().checked_sub(1),
+        }
+    };
     // A row is drawn from its source row's left edge (a paragraph's indented first row starts
     // further right), so it has that much less of the width to fill; rows added past the source's
     // follow the last one. With an explicit width or alignment every row starts at the block's edge.
-    let indent_of = |row: usize| {
+    let indent_of = |slot: (usize, usize)| {
         if style.width.is_some() || style.align.is_some() {
             return 0.0;
         }
         let indent = |r: &Vec<usize>| row_rect(r, lines).map_or(0.0, |rect| (rect[0] - block.rect[0]).max(0.0));
-        block.rows.get(row).or_else(|| block.rows.last()).map_or(0.0, indent)
+        source_row(slot).and_then(|row| block.rows.get(row)).map_or(0.0, indent)
     };
     let mut rows: Vec<Vec<(char, usize, String)>> = Vec::new();
     // Whether a row ended because the next word did not fit, not at an explicit break or the end.
     let mut wrapped: Vec<bool> = Vec::new();
+    // Where each row sits among the source's groups: (group, row within it).
+    let mut slots: Vec<(usize, usize)> = Vec::new();
+    let mut slot = (0usize, 0usize);
+    let next_slot = |wrapped: bool, slot: &mut (usize, usize)| {
+        *slot = if wrapped { (slot.0, slot.1.saturating_add(1)) } else { (slot.0.saturating_add(1), 0) };
+    };
     let mut row = Vec::new();
     let mut row_width = 0.0;
     // Wrap at word boundaries, retaining explicit source row breaks and whitespace.
@@ -645,6 +678,8 @@ pub(super) fn rewrite_styled_block(
         if item.0 == '\n' {
             rows.push(std::mem::take(&mut row));
             wrapped.push(false);
+            slots.push(slot);
+            next_slot(false, &mut slot);
             row_width = 0.0;
             at += 1;
             continue;
@@ -657,12 +692,14 @@ pub(super) fn rewrite_styled_block(
         }
         let word = chars.get(at..end).unwrap_or_default();
         let w = measure(word)?;
-        if !row.is_empty() && !item.0.is_whitespace() && row_width + w > width - indent_of(rows.len()).min(width * 0.5) + 0.5 {
+        if !row.is_empty() && !item.0.is_whitespace() && row_width + w > width - indent_of(slot).min(width * 0.5) + 0.5 {
             while row.last().is_some_and(|c: &(char, usize, String)| c.0.is_whitespace()) {
                 row.pop();
             }
             rows.push(std::mem::take(&mut row));
             wrapped.push(true);
+            slots.push(slot);
+            next_slot(true, &mut slot);
             row_width = 0.0;
         }
         row.extend_from_slice(word);
@@ -672,6 +709,7 @@ pub(super) fn rewrite_styled_block(
     if !row.is_empty() {
         rows.push(row);
         wrapped.push(false);
+        slots.push(slot);
     }
     for row in &rows {
         let text: String = row.iter().map(|v| v.0).collect();
@@ -730,21 +768,34 @@ pub(super) fn rewrite_styled_block(
         })
         .rfind(|v| *v > 0.0)
         .unwrap_or(first.size * 1.5);
+    let baseline_of = |row: usize| block.rows.get(row).and_then(|r| r.first()).and_then(|i| lines.get(*i)).map(|l| l.origin.baseline);
     let mut baseline = first.origin.baseline;
     for (row_index, row) in rows.iter().enumerate() {
-        let anchor = block.rows.get(row_index).and_then(|r| r.first()).and_then(|i| lines.get(*i));
-        if style.line_spacing.is_none()
-            && style.size.is_none()
-            && let Some(anchor) = anchor
-        {
-            baseline = anchor.origin.baseline;
+        let slot = slots.get(row_index).copied().unwrap_or((usize::MAX, 0));
+        let exact = source_groups.get(slot.0).and_then(|range| (range.start.saturating_add(slot.1) < range.end).then_some(range.start + slot.1));
+        let anchor = exact.and_then(|i| block.rows.get(i)).and_then(|r| r.first()).and_then(|i| lines.get(*i));
+        if style.line_spacing.is_none() && style.size.is_none() && row_index > 0 {
+            // Down from the row above by what separates the source rows this one and that one sit
+            // on: the leading inside a paragraph, the gap between paragraphs at its first row.
+            let previous = slots.get(row_index - 1).copied().unwrap_or((usize::MAX, 0));
+            let step = match exact {
+                Some(here) if slot.0 == previous.0 => {
+                    let above = source_row(previous).filter(|above| *above < here);
+                    above.and_then(baseline_of).zip(baseline_of(here)).map(|(above, here)| above - here)
+                }
+                // The first row of a group: from the last row of the group before it.
+                Some(here) if slot.1 == 0 && here > 0 => baseline_of(here - 1).zip(baseline_of(here)).map(|(above, here)| above - here),
+                _ => None,
+            };
+            let step = step.unwrap_or(source_leading);
+            baseline -= if step.is_finite() { step } else { source_leading };
         }
         let anchor = anchor.unwrap_or(first);
         let w = measured.get(row_index).copied().unwrap_or(0.0);
         let align = style.align.unwrap_or(if centered { crate::added::Align::Center } else { crate::added::Align::Left });
         // A row the rewrite adds beyond the source's rows follows the last source row (its hanging
         // indent and width), not the whole block, whose left edge is under a label such as "iii)".
-        let original_rect = block.rows.get(row_index).or_else(|| block.rows.last()).and_then(|row| row_rect(row, lines)).unwrap_or(block.rect);
+        let original_rect = source_row(slot).and_then(|row| block.rows.get(row)).and_then(|row| row_rect(row, lines)).unwrap_or(block.rect);
         let left = if style.width.is_none() && style.align.is_none() { original_rect[0] } else { block.rect[0] };
         let available = if style.width.is_none() && style.align.is_none() { original_rect[2] - original_rect[0] } else { width };
         let mut x = left
@@ -853,11 +904,9 @@ pub(super) fn rewrite_styled_block(
             x += segment_width;
             pos = end;
         }
-        baseline -= if style.line_spacing.is_none() && style.size.is_none() {
-            source_leading
-        } else {
-            style.line_spacing.unwrap_or(1.5).clamp(0.5, 5.0) * style.size.unwrap_or(anchor.size)
-        };
+        if style.line_spacing.is_some() || style.size.is_some() {
+            baseline -= style.line_spacing.unwrap_or(1.5).clamp(0.5, 5.0) * style.size.unwrap_or(anchor.size);
+        }
     }
     block_ops.push(Op::new("Q", vec![]));
     let streams = content_streams(doc, &p.dict);

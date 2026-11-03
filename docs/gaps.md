@@ -129,8 +129,13 @@ update the numbers.
     uncalibrated when a word can't be measured. **Still open from that check:** a loose "f" outside
     the subset is drawn in a substitute face; wkhtmltopdf's word-by-word text reads back with
     tabs between words (its font maps the space glyph to U+0009 in ToUnicode); a browser PDF whose
-    paragraphs are 10 pt apart reads as one block, and because row baselines follow the row's
-    index, a paragraph that loses a row pulls the next paragraph's first row up into the gap.
+    paragraphs are 10 pt apart reads as one block (a deliberate mixed-style region, see above).
+    **Fixed:** row baselines followed the row's index, so a paragraph of such a block that lost a
+    row moved the 10 pt gap into the middle of the next paragraph (and one that gained a row
+    pushed the next one's gap the wrong way). Rows now sit on the source row at the same place in
+    the same paragraph (a group of rows between hard breaks), and each baseline is the one above
+    minus the step between those source rows, so the gap stays between the paragraphs. Seen on a
+    Chromium page; the rows a longer paragraph adds still don't reflow the blocks below it.
     **Fixed:** the italic words of a LaTeX paragraph (`due.pdf`) read back with a space between
     every letter and overprinted when the paragraph was edited. Their runs set a negative `Tc`
     (about −0.47 em) and the `TJ` numbers inside the words (about −472) give it back; the reader
