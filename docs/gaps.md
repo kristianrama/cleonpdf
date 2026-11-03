@@ -127,9 +127,13 @@ update the numbers.
     used (a "fi" ligature and no loose "f") had its row measured with the word missing, so a
     rewritten heading came out 32% wider; a row's width is now measured with the ligature, and left
     uncalibrated when a word can't be measured. **Still open from that check:** a loose "f" outside
-    the subset is drawn in a substitute face; wkhtmltopdf's word-by-word text reads back with
-    tabs between words (its font maps the space glyph to U+0009 in ToUnicode); a browser PDF whose
-    paragraphs are 10 pt apart reads as one block (a deliberate mixed-style region, see above).
+    the subset is drawn in a substitute face; a browser PDF whose paragraphs are 10 pt apart
+    reads as one block (a deliberate mixed-style region, see above).
+    **Fixed:** wkhtmltopdf's word-by-word text read back with tabs between words, because its
+    font maps the space glyph to U+0009 in ToUnicode. A ToUnicode entry that is a single tab,
+    line feed, carriage return, vertical tab or form feed now reads as a space, and a space is
+    written with that glyph (`cleonpdf-fonts`); the sample's paragraphs round-trip pixel for
+    pixel and a retyped paragraph wraps and justifies with real spaces.
     **Fixed:** row baselines followed the row's index, so a paragraph of such a block that lost a
     row moved the 10 pt gap into the middle of the next paragraph (and one that gained a row
     pushed the next one's gap the wrong way). Rows now sit on the source row at the same place in
