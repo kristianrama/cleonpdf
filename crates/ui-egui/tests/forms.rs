@@ -182,6 +182,18 @@ fn saved_value(path: &std::path::Path, name: &str) -> Vec<String> {
     app.session.get(app.views[0].id).unwrap().form.iter().find(|f| f.name == name).unwrap().value.clone()
 }
 
+/// Step the app until `path` exists, for at most about a second. A save that has not landed yet
+/// is a slow runner, not a different result; the assertion after it still fails if no file comes.
+fn wait_for_file(h: &mut Harness<'static, CleonPdfApp>, path: &std::path::Path) {
+    for _ in 0..40 {
+        if path.exists() {
+            return;
+        }
+        h.run_steps(1);
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+}
+
 fn scratch(name: &str) -> std::path::PathBuf {
     let dir = std::env::temp_dir().join(format!("cleonpdf-forms-{name}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
@@ -258,6 +270,8 @@ fn tabbing_back_to_the_same_field_then_saving_keeps_the_committed_value() {
             h.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::S);
         }
         h.run_steps(4);
+        wait_for_file(&mut h, &out);
+        assert!(out.exists(), "{case}: the shortcut saved the document");
         assert_eq!(saved_value(&out, "qty"), ["42"], "{case}: saving cannot restore the old value");
         assert_eq!(value(&h, "qty"), ["42"], "{case}");
         // One typing action is one history entry, even after saving. Escape closes the
