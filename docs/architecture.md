@@ -10,7 +10,7 @@ crate's `README.md` has the detail.
 
 One Cargo workspace (`Cargo.toml`, edition 2024, Rust ≥ 1.95, `MIT OR Apache-2.0`), 31 library
 crates in `crates/`, three binaries in `apps/`, build tooling in `xtask/`, and patched third-party
-crates in `vendor/`. About 152k lines of Rust and 1,765 tests (2026-10-10). Rust only: no
+crates in `vendor/`. About 233k lines of Rust and 3,178 test functions (2026-11-03; counted with `wc` and `grep`, unlike the 152k lines and 1,765 tests of 2026-10-10). Rust only: no
 handwritten JS/TS, in the product or the build.
 
 | Binary | What it is |
