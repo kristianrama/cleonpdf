@@ -11,10 +11,10 @@ interface is copied. Gaps ranked in [gaps.md](gaps.md).
 
 ## Measured
 
-- **184 registered commands** (`crates/engine/src/commands.rs`), every one in the menus, the
+- **190 registered commands** (`crates/engine/src/commands.rs`), every one in the menus, the
   command palette and the automation `command_run` tool; menus are generated from the registry
   (`view.menus-from-registry`).
-- **141 automation tools** (`crates/automation/src/tools.rs`), so every UI action can be checked
+- **143 automation tools** (`crates/automation/src/tools.rs`), so every UI action can be checked
   headlessly.
 - **View area of the checklist: 62.5% breadth** (52 shipped, 11 partial of 92).
 

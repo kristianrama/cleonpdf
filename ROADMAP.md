@@ -49,7 +49,7 @@ and add a line to the [progress log](#progress-log); when a gap closes, remove i
 
 | | Value | Kind |
 |---|---|---|
-| **Feature breadth** | **≈ 67%** tier-weighted (56.9% unweighted: 423 shipped + 74 partial of 808; P0 94.2%) | measured, `parity/acrobat-features.toml` |
+| **Feature breadth** | **≈ 68.5%** tier-weighted (58.4% unweighted: 430 shipped + 90 partial of 814; P0 94.2%), re-measured 2026-11-03 | measured, `parity/acrobat-features.toml` |
 | Feature breadth, mainstream practitioner | ≈ 70% tier-weighted (63.2% unweighted; P0 95.3%) | measured ([split](docs/target-app-parity.md#mainstream-practitioner-vs-full-acrobat-pro)) |
 | **Ready for real work**, full Acrobat Pro | **≈ 49%** (45–53%) | estimated, weighted sum over [dimensions](#by-dimension) |
 | **Ready for real work**, mainstream practitioner | **≈ 55%** (50–60%) | estimated ([split](docs/target-app-parity.md#mainstream-practitioner-vs-full-acrobat-pro)) |
@@ -95,19 +95,19 @@ Hours are calibrated as in [Effort and calibration](docs/target-app-parity.md#ef
 
 | Area | Breadth (measured) | Ready (estimated) | Remaining (h) |
 |---|---|---|---|
-| A Core model and fidelity | 76.8% | 70% | 25–45 |
-| B View and navigation | 62.5% | 55% | 110–190 |
-| C Content editing | 53.3% | 30% | 100–180 |
-| D Organize pages | 61.2% | 70% | 12–25 |
+| A Core model and fidelity | 77.2% | 70% | 25–45 |
+| B View and navigation | 62.8% | 55% | 110–190 |
+| C Content editing | 58.1% | 30% | 100–180 |
+| D Organize pages | 63.0% | 70% | 12–25 |
 | E Comments and review | 77.7% | 70% | 12–25 |
 | F Forms and JavaScript | 78.5% | 65% | 40–75 |
-| G Protect, redact, sanitize | 58.5% | 55% | 15–30 |
+| G Protect, redact, sanitize | 58.3% | 55% | 15–30 |
 | H Digital signatures | 62.2% | 45% | 40–70 |
-| I Scan and OCR | 23.1% | 15% | 40–75 |
-| J Create and export | 39.7% | 25% | 55–100 |
+| I Scan and OCR | 32.7% | 15% | 40–75 |
+| J Create and export | 41.2% | 25% | 55–100 |
 | K Optimize and standards | 34.5% | 20% | 65–115 |
 | L Print | 39.7% | 35% | 30–55 |
-| M Accessibility | 63.1% | 30% | 40–70 |
+| M Accessibility | 68.9% | 30% | 40–70 |
 | N Automation, preferences, misc | 30.0% | 35% | 25–45 |
 
 What's strong and missing in each: [target-app-parity.md](docs/target-app-parity.md#by-feature-area).
@@ -165,6 +165,7 @@ Ranked; detail and the full milestone table in [docs/roadmap.md](docs/roadmap.md
 - **2026-10-31 (browser PDFs, gap 3):** 0.2.1 draft built from `release` (all jobs green) and checked on the user's Mac. Then tried the editor on synthetic PDFs from four producers (Chromium, LibreOffice, reportlab, wkhtmltopdf): the reflow works on all. Found and fixed one defect: a Chromium subset font with a "fi" ligature and no loose "f" made a row measure short, so a rewritten heading was stretched 32% (two tests, both seen at 200% without the fix). Listed in gap 3 and left open: uneven word spacing in rewritten justified paragraphs, tabs between words in wkhtmltopdf text, a loose "f" in a substitute face, 10 pt-apart browser paragraphs read as one block.
 - **2026-10-31 (justified paragraphs, gap 3):** a paragraph rewritten from a justified source (most rows but the last end at one right edge) is justified again: the slack of each wrapped row goes to its spaces as TJ adjustments (they work in composite fonts, word spacing does not), capped at one em per space, and a row no longer keeps the word spacing and letter stretch of the source row it replaces. Three tests: justified stays flush after a reflow and when text is typed over it, ragged stays ragged (each seen failing with its rule off). Checked on Chromium and reportlab files (flush now), LibreOffice (rows pull up, see gap 3) and `due.pdf` (same as before). Found on `due.pdf`, not fixed: italic words read back with letter spaces and overprint when the paragraph is edited.
 - **2026-10-31 (0.2.1 published):** the 0.2.1 release is published; its macOS DMG was installed and checked by the user ("works perfectly").
+- **2026-11-03 (re-measure, breadth and counts):** first re-measure since the fork, done on the parts that can be measured. The checklist is 837 features (814 counted): 430 shipped and 90 partial, 58.4% unweighted, ≈ 68.5% tier-weighted (was 56.9% and ≈ 67%), P0 unchanged at 94.2%; the areas that moved most are I Scan and OCR (23.1% → 32.7%), C Content editing (53.3% → 58.1%) and M Accessibility (63.1% → 68.9%), partly because the checklist grew by 6 rows. Counts: 233k lines of Rust, 3,178 test functions, 190 registered commands, 143 automation tools (counted with `wc`/`grep`, not comparable with the 2026-10-10 figures). **Not changed:** every "ready for real work" figure (49%, 55%, 66%) and the hours to beta and to full parity are still the 2026-10-10 judgement, and the mainstream/specialist split was not recomputed: nothing since the fork was compared against Acrobat, so there is no evidence to move them.
 - **2026-11-03 (wkhtmltopdf tabs, gap 3):** a PDF from wkhtmltopdf read back with a tab between words in the editor, because its font maps the space glyph to U+0009 in ToUnicode. A ToUnicode entry that is one tab, line break or form feed is now read as a space, and a space is written with that glyph, in `cleonpdf-fonts` (so the editor, search and every caller of the font metrics agree). Test seen failing first (`a\ta\na`). On the sample, every paragraph round-trips with no pixel changed and a retyped one wraps with real spaces. Not covered by an edit-crate test: the unit test is on the font metrics.
 - **2026-11-03 (growing paragraphs, gap 3):** a paragraph that grows is drawn over the blocks below it, as in Acrobat, and nobody was told. `text_edit_layout` and `text_edit` (paragraph) now return `covers`, the other paragraphs (1-based) the draft ends up over and the paragraph's own box did not already reach; the inline editor tints them and turns the draft frame amber (checked in a headless screenshot). Seen failing first in the edit crate and through the tools. Decision (the owner's): warn, do not move other blocks. Not done: pushing the blocks below down, an automated check of the drawing (only the data is tested).
 - **2026-11-03 (paragraph gaps, gap 3):** in a block that holds several paragraphs (a browser page: paragraphs 10 pt apart), a paragraph that lost a row moved the gap into the middle of the next paragraph, because rewritten rows took the baseline of the source row with the same index. They now sit on the source row at the same place in the same paragraph and step down by what separated those source rows. Three tests (loses a row, gains a row, plus the unchanged suite), the first two seen failing with the fix stashed. Other producers checked first, nothing to fix: ten slide decks (Microsoft Print To PDF, Quartz iOS) and a 634-page Chromium/pdf-lib documentation file, 153 of 156 sampled pages identical after rewriting a paragraph with its own text, the other three within 2 pt, the same before and after this fix. Left open: the rows a longer paragraph adds still overlap the blocks below it.
