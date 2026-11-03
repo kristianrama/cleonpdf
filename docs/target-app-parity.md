@@ -262,6 +262,21 @@ stage set to pre-alpha; see the revision history.)
 | Open-issue backlog, stability and performance budgets | 40–70 |
 | **Total** | **≈ 390–690** |
 
+**To reach 1.0** (stable). Set by the owner on 2026-11-03; the percentages and the 30 minutes are
+his accepted proposal, not measurements. 1.0.0 is released when **all** of these hold:
+
+| # | 1.0 requirement | Today (2026-11-03) |
+|---|---|---|
+| 1 | **Breadth.** No P0 feature `missing`; P0 ≥ 98%; tier-weighted breadth ≥ 80% | P0 94.2%; ≈ 68.5% |
+| 2 | **Ready for real work** ≥ 85% (judged, as above; the beta gate is ≈ 75%) | ≈ 49% |
+| 3 | **No blocking gap** open in [gaps.md](gaps.md). Editing existing text covers CJK, right-to-left and rotated text, or says plainly that it does not, in the docs and in the app | open: CJK, RTL and rotated text editing |
+| 4 | **Evidence.** Every shipped P0 and P1 feature cites at least two tests; text editing is measured on real PDFs from several producers, Word, Pages and scans included | 133 of 430 shipped features cite exactly one test; Word, Pages and scans not tried |
+| 5 | **Robustness.** A 30-minute `cargo xtask fuzz` finds nothing new; `cargo xtask interop --require-all` is green on Linux, macOS and Windows | fuzz clean at 10 minutes (2026-10-15); interop runs on Linux only (no macOS or Windows CI job) |
+| 6 | **Rendering fidelity.** A comparison against an external oracle (MuPDF or Poppler) with a stated threshold. Acrobat captures count only if the owner takes them by hand, on synthetic fixtures | no harness |
+
+Requirement 2 is the hardest: the hours to reach it are those of the full-parity estimate above.
+A release that fails any row keeps its 0.x number.
+
 ## Effort and calibration
 
 **Calibrated against this repository's own history.**
