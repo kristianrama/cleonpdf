@@ -829,8 +829,17 @@ fn add_explicit(out: &mut Unicode, budget: &mut usize, seq: &mut u32, code: u32,
         return false;
     }
     *seq = seq.saturating_add(1);
-    out.explicit.insert(code, (*seq, text));
+    out.explicit.insert(code, (*seq, space_for_control_whitespace(text)));
     true
+}
+
+/// A glyph is never a tab or a line break: a font whose ToUnicode gives its space glyph one
+/// (wkhtmltopdf maps it to U+0009) shows a space, which is what reads back and what writes it.
+fn space_for_control_whitespace(text: String) -> String {
+    match only_char(&text) {
+        Some('\t' | '\n' | '\r' | '\u{b}' | '\u{c}') => " ".to_owned(),
+        _ => text,
+    }
 }
 
 /// Adds a sequential range, which covers at least two codes and so costs two; `false` once the budget is spent.
@@ -1290,6 +1299,41 @@ mod tests {
         assert!(m.subset);
         assert_eq!(m.encode("ab").as_deref(), Some(&b"ab"[..]));
         assert_eq!(m.encode("abc"), None);
+    }
+
+    /// wkhtmltopdf maps its space glyph to U+0009 in ToUnicode; a glyph is never a tab, so the
+    /// text it shows is a space, and a space is written with that glyph.
+    #[test]
+    fn a_space_glyph_mapped_to_a_control_character_reads_and_writes_as_a_space() {
+        let mut doc = Document::new_empty();
+        let cmap = b"/CIDInit /ProcSet findresource begin 1 begincodespacerange <0000> <FFFF> endcodespacerange \
+            3 beginbfchar <0003> <0009> <0004> <000A> <0010> <0061> endbfchar end";
+        let tu = doc.add(Object::Stream(Stream::from_raw(Dict::new(), cmap.to_vec())));
+        let mut desc = Dict::new();
+        desc.set(b"Subtype".to_vec(), Object::name("CIDFontType2"));
+        desc.set(
+            b"W".to_vec(),
+            Object::Array(vec![
+                Object::Int(3),
+                Object::Array(vec![Object::Int(250), Object::Int(250)]),
+                Object::Int(16),
+                Object::Int(16),
+                Object::Int(500),
+            ]),
+        );
+        let f = font(
+            &mut doc,
+            vec![
+                ("Subtype", Object::name("Type0")),
+                ("BaseFont", Object::name("QWERTY+Noto")),
+                ("Encoding", Object::name("Identity-H")),
+                ("DescendantFonts", Object::Array(vec![Object::Dict(desc)])),
+                ("ToUnicode", Object::Ref(tu)),
+            ],
+        );
+        let m = Metrics::from_dict(&doc, &f);
+        assert_eq!(m.decode(&[0, 0x10, 0, 3, 0, 0x10, 0, 4, 0, 0x10]), "a a a");
+        assert_eq!(m.encode("a a").as_deref(), Some(&[0, 0x10, 0, 3, 0, 0x10][..]), "the lowest code showing a space");
     }
 
     #[test]
