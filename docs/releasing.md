@@ -28,7 +28,8 @@ This is the official scheme, set by the owner on 2026-10-26.
 - **Patch (0.2.1, 0.2.2, …):** fixes and small features between them.
 - **Beta:** the first release that meets the beta gate keeps the number it gets (say 0.7.0) and is
   named a beta in its title and in the docs.
-- **1.0.0:** stable, ready for real work.
+- **1.0.0:** stable, ready for real work: every row of "To reach 1.0" in
+  [target-app-parity.md](target-app-parity.md#stage) holds (set by the owner on 2026-11-03).
 - **What triggers a release:** the number follows what a release contains, not what is planned. Work
   users don't see, such as a test suite or a CI job, waits for the next release instead of making
   one.
