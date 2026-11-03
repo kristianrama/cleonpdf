@@ -3825,6 +3825,71 @@ fn text_typed_over_a_ragged_paragraph_stays_ragged() {
     assert!(short > 0, "no row is shorter than the column, so the paragraph was justified: {edges:?}");
 }
 
+/// Two wrapped paragraphs 10 pt apart that one block holds, as a browser prints a heading's body
+/// paragraphs: four rows of seven "mm" words each, the last of three, then the same again.
+fn two_paragraphs_page() -> Document {
+    let rows = |top: f64| {
+        let mut ops = String::new();
+        for (i, words) in [7, 7, 7, 3].iter().enumerate() {
+            let text = vec!["mm"; *words].join(" ");
+            ops.push_str(&format!("BT /F1 10 Tf 72 {} Td ({text}) Tj ET ", top - 12.0 * i as f64));
+        }
+        ops
+    };
+    text_page(&format!("{}{}", rows(700.0), rows(642.0)))
+}
+
+/// The distance between the baselines of consecutive rows, top to bottom.
+fn row_steps(doc: &Document) -> Vec<f64> {
+    let mut ys: Vec<f64> = Vec::new();
+    for line in text::text_lines(doc, 0).unwrap() {
+        if !ys.iter().any(|y| (y - line.rect[1]).abs() < 1.0) {
+            ys.push(line.rect[1]);
+        }
+    }
+    ys.sort_by(|a, b| b.total_cmp(a));
+    ys.windows(2).map(|pair| pair[0] - pair[1]).collect()
+}
+
+/// The gap between two paragraphs belongs between them: when the first loses a row the second moves
+/// up with it, and does not take the gap into its own rows (as when rows kept the baseline of the
+/// source row at the same index).
+#[test]
+fn a_paragraph_that_loses_a_row_keeps_the_gap_before_the_next_one() {
+    let mut doc = two_paragraphs_page();
+    let block = text::text_blocks(&doc, 0).unwrap().remove(0);
+    assert_eq!(block.rows.len(), 8, "one block: {:?}", block.editor_text);
+    let steps = row_steps(&doc);
+    assert_eq!(steps.iter().filter(|s| (**s - 22.0).abs() < 0.5).count(), 1, "{steps:?}");
+    // Seven words fewer in the first paragraph: it needs three rows instead of four.
+    let edited = block.editor_text.replacen("mm mm mm mm mm mm mm\nmm mm mm mm mm mm mm\n", "mm mm mm mm mm mm mm\n", 1);
+    text::replace_block(&mut doc, 0, 0, &edited).unwrap();
+    let after = text::text_blocks(&reopen(&doc), 0).unwrap().remove(0);
+    assert_eq!(after.rows.len(), 7, "{:?}", after.editor_text);
+    let steps = row_steps(&reopen(&doc));
+    let expected = [12.0, 12.0, 22.0, 12.0, 12.0, 12.0];
+    assert_eq!(steps.len(), expected.len(), "{steps:?}");
+    for (got, want) in steps.iter().zip(expected) {
+        assert!((got - want).abs() < 0.5, "row steps {steps:?}, wanted {expected:?}");
+    }
+}
+
+/// And when the first paragraph gains a row the second is pushed down, still a gap away.
+#[test]
+fn a_paragraph_that_gains_a_row_pushes_the_next_one_down() {
+    let mut doc = two_paragraphs_page();
+    let block = text::text_blocks(&doc, 0).unwrap().remove(0);
+    // Seven more words typed into the first row.
+    let edited = block.editor_text.replacen("mm ", "mm mm mm mm mm mm mm mm ", 1);
+    text::replace_block(&mut doc, 0, 0, &edited).unwrap();
+    let steps = row_steps(&reopen(&doc));
+    let expected = [12.0, 12.0, 12.0, 12.0, 22.0, 12.0, 12.0, 12.0];
+    assert_eq!(steps.len(), expected.len(), "{steps:?}");
+    for (got, want) in steps.iter().zip(expected) {
+        assert!((got - want).abs() < 0.5, "row steps {steps:?}, wanted {expected:?}");
+    }
+}
+
 /// A paragraph the editor wrapped (or LaTeX justified) reads back as rows, but its row breaks are
 /// only where the words ran out of room. Deleting words from it pulls the next row's words up.
 #[test]
