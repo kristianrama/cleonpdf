@@ -14,6 +14,8 @@ use egui::{Color32, CornerRadius, FontFamily, FontId, Pos2, Rect, Stroke};
 use crate::canvas::{DocView, PageXform};
 
 const ACCENT: Color32 = Color32::from_rgb(0x14, 0x73, 0xE6);
+/// The frame of a draft that would be drawn over other text, and the tint of that text.
+const COVERS: Color32 = Color32::from_rgb(0xE0, 0x8A, 0x00);
 
 /// A cached, read-only page background. The source glyphs are removed before rasterization;
 /// colour, pictures and unselected text beneath the editor remain visible.
@@ -26,6 +28,8 @@ pub(crate) struct TextBackground {
     received: Option<u64>,
     draft_key: Option<(String, cleonpdf_engine::BlockStyle)>,
     draft_rect: Option<[f64; 4]>,
+    /// The boxes (user space) of the other paragraphs the draft would be drawn over.
+    draft_covers: Vec<[f64; 4]>,
 }
 
 impl TextBackground {
@@ -44,7 +48,11 @@ impl TextBackground {
         if let Some(ed) = editor {
             let draft_key = (ed.text.clone(), ed.style());
             if self.draft_key.as_ref() != Some(&draft_key) {
-                self.draft_rect = doc.text_edit_layout(ed.page, ed.block, &ed.text, &draft_key.1).ok().and_then(|layout| layout.draft_rect);
+                let layout = doc.text_edit_layout(ed.page, ed.block, &ed.text, &draft_key.1).ok();
+                self.draft_rect = layout.as_ref().and_then(|layout| layout.draft_rect);
+                let blocks = doc.text_blocks(ed.page);
+                self.draft_covers =
+                    layout.map_or_else(Vec::new, |layout| layout.covers.iter().filter_map(|i| blocks.get(*i)).map(|b| b.rect).collect());
                 self.draft_key = Some(draft_key);
             }
         }
@@ -957,6 +965,7 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
         .as_ref()
         .is_some_and(|ed| view.text_background.ready(ed.page, ed.block) && !ed.source.as_ref().is_some_and(|(b, _)| b.invisible));
     let draft_rect = view.text_background.draft_rect.map(|r| xf.user_rect(info, page, r.map(|v| v as f32)));
+    let covered: Vec<egui::Rect> = view.text_background.draft_covers.iter().map(|r| xf.user_rect(info, page, r.map(|v| v as f32))).collect();
     let ed = view.line_editor.as_mut()?;
     if hold {
         ed.focus = true;
@@ -998,7 +1007,13 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
             // Unsupported source programs use an interface fallback whose glyph advances
             // can differ from the PDF's. Keep every visible row inside the growing frame.
             let live = draft_rect.map_or(visible, |bounds| bounds.union(visible));
-            ui.painter().rect_stroke(live.expand(2.0), CornerRadius::ZERO, Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
+            // Text the draft would be drawn over is tinted, and the frame turns the same colour.
+            for rect in &covered {
+                ui.painter().rect_filled(rect.expand(1.0), CornerRadius::ZERO, COVERS.gamma_multiply(0.25));
+                ui.painter().rect_stroke(rect.expand(1.0), CornerRadius::ZERO, Stroke::new(1.0, COVERS), egui::StrokeKind::Outside);
+            }
+            let frame = if covered.is_empty() { ACCENT } else { COVERS };
+            ui.painter().rect_stroke(live.expand(2.0), CornerRadius::ZERO, Stroke::new(1.5, frame), egui::StrokeKind::Outside);
             // White, unless the text is too pale to read on white (white text from a coloured
             // banner, #913): then a dark box, with a caret that shows on it.
             let fill = if background_ready { Color32::TRANSPARENT } else { editor_fill(text_color) };

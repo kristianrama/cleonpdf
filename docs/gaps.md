@@ -135,7 +135,11 @@ update the numbers.
     pushed the next one's gap the wrong way). Rows now sit on the source row at the same place in
     the same paragraph (a group of rows between hard breaks), and each baseline is the one above
     minus the step between those source rows, so the gap stays between the paragraphs. Seen on a
-    Chromium page; the rows a longer paragraph adds still don't reflow the blocks below it.
+    Chromium page. A paragraph that grows still does not move the blocks around it (Acrobat's
+    text boxes don't either); the layout and the edit's result now say which paragraphs it ends
+    up drawn over (`covers`, 1-based in the tools), and the inline editor tints them and turns
+    its frame amber. Not done: a warning when the apply happens without the editor (a tool call
+    only reports it), and an option to push the blocks below down.
     **Fixed:** the italic words of a LaTeX paragraph (`due.pdf`) read back with a space between
     every letter and overprinted when the paragraph was edited. Their runs set a negative `Tc`
     (about −0.47 em) and the `TJ` numbers inside the words (about −472) give it back; the reader

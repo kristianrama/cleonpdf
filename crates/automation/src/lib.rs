@@ -577,7 +577,8 @@ impl Automation {
                 };
                 let fonts: Vec<_> = doc.text_editor_fonts(page).into_iter().map(|f| json!({"resource": f.resource, "face": f.face})).collect();
                 json!({ "page": page + 1, "paragraph": k, "source_rect": view_rect(layout.source_rect),
-                    "draft_rect": layout.draft_rect.map(view_rect), "overflow": layout.overflow, "embedded_fonts": fonts })
+                    "draft_rect": layout.draft_rect.map(view_rect), "overflow": layout.overflow,
+                    "covers": layout.covers.iter().map(|i| i + 1).collect::<Vec<_>>(), "embedded_fonts": fonts })
             }
             "text_edit" if a.get("paragraph").is_some() => {
                 let page = self.page(&a)?;
@@ -625,10 +626,18 @@ impl Automation {
                         other => return Err(ToolError::InvalidArgs(format!("unknown align {other:?}"))),
                     });
                 }
+                // Measured before the edit, which does not move the blocks around a paragraph that
+                // grows: the paragraphs it ends up over (1-based), for the caller to tell the user.
+                let covers: Vec<usize> = self
+                    .doc(&a)?
+                    .text_edit_layout(page, k as usize - 1, &text, &style)
+                    .map(|l| l.covers.iter().map(|i| i + 1).collect())
+                    .unwrap_or_default();
                 let mut out = self.apply(&a, Edit::EditTextBlock { page, block: k as usize - 1, text, style })?;
                 if let Some(b) = self.doc(&a)?.text_blocks(page).get(k as usize - 1) {
                     out["paragraph"] = json!({ "text": b.text, "lines": b.lines.len(), "font": b.base_font });
                 }
+                out["covers"] = json!(covers);
                 out
             }
             "text_edit" => {
