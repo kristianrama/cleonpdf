@@ -788,6 +788,15 @@ fn files_and_quit_from_the_operating_system() {
     let queue = std::rc::Rc::new(std::cell::RefCell::new(vec![OsEvent::Open(vec![path.to_string_lossy().into_owned()])]));
     let q = queue.clone();
     let mut h = harness(move |app| app.os_events = Some(Box::new(move || q.borrow_mut().drain(..).collect())));
+    // A live app reads the file on a worker, so the file goes away only once the tab is open;
+    // removing it right after the first frames raced the read on a slow runner.
+    for _ in 0..200 {
+        if !h.state().views.is_empty() {
+            break;
+        }
+        h.step();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
     std::fs::remove_file(&path).ok();
     assert_eq!(h.state().views.len(), 1, "the file opens in a tab");
     h.get_by_label_contains(&name);
