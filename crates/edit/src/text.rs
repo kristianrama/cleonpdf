@@ -140,13 +140,23 @@ pub struct TextEditLayout {
     pub source_rect: [f64; 4],
     pub draft_rect: Option<[f64; 4]>,
     pub overflow: bool,
+    /// The other text blocks of the page (indices into [`text_blocks`]) the draft would be drawn
+    /// over: its box reaches into theirs and the paragraph's own box did not. A paragraph that
+    /// grows does not move the blocks around it, so this is how a caller learns of the overlap.
+    pub covers: Vec<usize>,
+}
+
+/// Whether two boxes share more than a point in both directions (touching or grazing is not overlap).
+fn boxes_overlap(a: [f64; 4], b: [f64; 4]) -> bool {
+    a[0].min(a[2]).max(b[0].min(b[2])) + 1.0 < a[0].max(a[2]).min(b[0].max(b[2]))
+        && a[1].min(a[3]).max(b[1].min(b[3])) + 1.0 < a[1].max(a[3]).min(b[1].max(b[3]))
 }
 
 pub fn text_edit_layout(doc: &Document, page: usize, block: usize, text: &str, style: &BlockStyle) -> Result<TextEditLayout, EditError> {
     let original = text_blocks(doc, page)?;
     let source = original.get(block).ok_or(EditError::Invalid("text block does not exist".into()))?;
     if text == source.editor_text && *style == BlockStyle::default() {
-        return Ok(TextEditLayout { source_rect: source.rect, draft_rect: Some(source.rect), overflow: false });
+        return Ok(TextEditLayout { source_rect: source.rect, draft_rect: Some(source.rect), overflow: false, covers: Vec::new() });
     }
     // Subtract the untouched runs by value, rather than by operator offsets: a rewrite may
     // split BT/ET or add font resources. A multiset also handles coincident repeated text.
@@ -172,7 +182,16 @@ pub fn text_edit_layout(doc: &Document, page: usize, block: usize, text: &str, s
     }
     let overflow = rect
         .is_some_and(|r| r[0] < source.rect[0] - 0.5 || r[1] < source.rect[1] - 0.5 || r[2] > source.rect[2] + 0.5 || r[3] > source.rect[3] + 0.5);
-    Ok(TextEditLayout { source_rect: source.rect, draft_rect: rect, overflow })
+    let covers = match rect {
+        Some(draft) if overflow => original
+            .iter()
+            .enumerate()
+            .filter(|(index, other)| *index != block && boxes_overlap(draft, other.rect) && !boxes_overlap(source.rect, other.rect))
+            .map(|(index, _)| index)
+            .collect(),
+        _ => Vec::new(),
+    };
+    Ok(TextEditLayout { source_rect: source.rect, draft_rect: rect, overflow, covers })
 }
 
 /// Text and graphics state captured for rewriting.

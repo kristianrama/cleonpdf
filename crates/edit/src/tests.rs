@@ -3046,6 +3046,30 @@ fn explicit_editor_rows_survive_single_run_edit_and_reopen() {
     assert_eq!(Some(blocks[0].rect), layout.draft_rect);
 }
 
+/// A paragraph that grows does not move the blocks around it; the layout names the ones it would
+/// be drawn over so a caller can say so, and only those: growing into empty space covers nothing.
+#[test]
+fn a_paragraph_that_grows_over_another_block_names_it() {
+    let doc = text_page("BT /F1 12 Tf 14 TL 72 700 Td (Heading) Tj T* (Body text here.) Tj ET BT /F1 12 Tf 72 640 Td (Below the paragraph) Tj ET");
+    let blocks = text::text_blocks(&doc, 0).unwrap();
+    assert_eq!(blocks.len(), 2, "{:?}", blocks.iter().map(|b| &b.editor_text).collect::<Vec<_>>());
+    let style = text::BlockStyle::default();
+    // One more row still ends above the block below.
+    let one = text::text_edit_layout(&doc, 0, 0, "Heading\nBody text here.\nOne more", &style).unwrap();
+    assert!(one.overflow);
+    assert_eq!(one.covers, Vec::<usize>::new());
+    // Five more rows reach it.
+    let many = text::text_edit_layout(&doc, 0, 0, "Heading\nBody text here.\nA\nB\nC\nD\nE", &style).unwrap();
+    assert!(many.overflow);
+    assert_eq!(many.covers, vec![1]);
+    // The block below does not cover the paragraph above it by growing downward.
+    let below = text::text_edit_layout(&doc, 0, 1, "Below the paragraph\nand more", &style).unwrap();
+    assert_eq!(below.covers, Vec::<usize>::new());
+    // Shorter text and the unchanged text cover nothing.
+    assert!(text::text_edit_layout(&doc, 0, 0, "Heading", &style).unwrap().covers.is_empty());
+    assert!(text::text_edit_layout(&doc, 0, 0, &blocks[0].editor_text, &style).unwrap().covers.is_empty());
+}
+
 #[test]
 fn rich_region_edits_preserve_styles_positions_and_delete_all_runs_after_reopen() {
     let original = mixed_region_page();

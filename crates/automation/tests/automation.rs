@@ -5376,6 +5376,52 @@ fn mixed_visual_region_edit_preview_save_reopen_and_undo_through_tools() {
     assert_eq!(ok(&mut a, "text_paragraphs", json!({"doc":re,"page":1})), after);
 }
 
+/// A page with a two-row paragraph and another block 60 pt below it.
+fn two_blocks_pdf() -> Vec<u8> {
+    let content = "BT /F1 12 Tf 14 TL 72 700 Td (Heading) Tj T* (Body text here.) Tj ET BT /F1 12 Tf 72 640 Td (Below the paragraph) Tj ET";
+    let objs: Vec<String> = vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>".into(),
+        format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len()),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>".into(),
+    ];
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, o) in objs.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend_from_slice(format!("{} 0 obj\n{o}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+    for o in offsets {
+        out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
+    out
+}
+
+/// A paragraph that grows does not move the blocks around it, so the layout and the edit's result
+/// name the paragraphs (1-based) it ends up over.
+#[test]
+fn a_paragraph_that_grows_over_another_one_is_reported_through_the_tools() {
+    let dir = workdir("grows-over");
+    std::fs::write(dir.join("two.pdf"), two_blocks_pdf()).unwrap();
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "doc_open", json!({"path":"two.pdf"}))["doc"].as_u64().unwrap();
+    assert_eq!(ok(&mut a, "text_paragraphs", json!({"doc":doc,"page":1}))["count"], 2);
+    let long = "Heading\nBody text here.\nA\nB\nC\nD\nE";
+    let layout = ok(&mut a, "text_edit_layout", json!({"doc":doc,"page":1,"paragraph":1,"text":long}));
+    assert_eq!(layout["covers"], json!([2]));
+    let short = ok(&mut a, "text_edit_layout", json!({"doc":doc,"page":1,"paragraph":1,"text":"Heading\nBody text here.\nOne more"}));
+    assert_eq!(short["covers"], json!([]));
+    // The edit applies, as before, and says what it covers.
+    let edited = ok(&mut a, "text_edit", json!({"doc":doc,"page":1,"paragraph":1,"text":long}));
+    assert_eq!(edited["covers"], json!([2]));
+    let plain = ok(&mut a, "text_edit", json!({"doc":doc,"page":1,"paragraph":2,"text":"Below"}));
+    assert_eq!(plain["covers"], json!([]));
+}
+
 #[test]
 fn clipped_image_bounds_and_text_edit_save_reopen_through_tools() {
     use cleonpdf_cos::{Dict, Document, Object, Stream, write_incremental};
