@@ -271,8 +271,8 @@ his accepted proposal, not measurements. 1.0.0 is released when **all** of these
 | 2 | **Ready for real work** ≥ 85% (judged, as above; the beta gate is ≈ 75%) | ≈ 49% |
 | 3 | **No blocking gap** open in [gaps.md](gaps.md). Editing existing text covers CJK, right-to-left and rotated text, or says plainly that it does not, in the docs and in the app | open: CJK, RTL and rotated text editing |
 | 4 | **Evidence.** Every shipped P0 and P1 feature cites at least two tests; text editing is measured on real PDFs from several producers, Word, Pages and scans included | 133 of 430 shipped features cite exactly one test; Word, Pages and scans not tried |
-| 5 | **Robustness.** A 30-minute `cargo xtask fuzz` finds nothing new; `cargo xtask interop --require-all` is green on Linux, macOS and Windows | fuzz clean at 10 minutes (2026-10-15); interop runs on Linux only (no macOS or Windows CI job) |
-| 6 | **Rendering fidelity.** A comparison against an external oracle (MuPDF or Poppler) with a stated threshold. Acrobat captures count only if the owner takes them by hand, on synthetic fixtures | no harness |
+| 5 | **Robustness.** A 30-minute `cargo xtask fuzz` finds nothing new; `cargo xtask interop --require-all` is green on Linux, macOS and Windows | fuzz clean at 10 minutes (2026-10-15), not at 30; interop green on Linux and macOS in CI (2026-11-03), nothing on Windows (the readers are not packaged there) |
+| 6 | **Rendering fidelity.** A comparison against an external oracle (MuPDF or Poppler) with a stated threshold. Acrobat captures count only if the owner takes them by hand, on synthetic fixtures | `cargo xtask render-oracle` (2026-11-03): 9 synthetic fixtures, ours within 1.03 mean difference of the nearer of MuPDF and Poppler (limit 2.5); not run on real documents yet |
 
 Requirement 2 is the hardest: the hours to reach it are those of the full-parity estimate above.
 A release that fails any row keeps its 0.x number.
