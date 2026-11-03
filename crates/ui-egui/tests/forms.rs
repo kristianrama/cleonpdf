@@ -271,7 +271,7 @@ fn tabbing_back_to_the_same_field_then_saving_keeps_the_committed_value() {
         }
         h.run_steps(4);
         wait_for_file(&mut h, &out);
-        assert!(out.exists(), "{case}: the shortcut saved the document");
+        assert!(out.exists(), "{case}: the shortcut saved the document (toast: {:?}, qty: {:?})", h.state().toast, value(&h, "qty"));
         assert_eq!(saved_value(&out, "qty"), ["42"], "{case}: saving cannot restore the old value");
         assert_eq!(value(&h, "qty"), ["42"], "{case}");
         // One typing action is one history entry, even after saving. Escape closes the
