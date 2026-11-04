@@ -196,7 +196,9 @@ jobs:
         shell: pwsh
         run: |
           choco install qpdf poppler mupdf ghostscript -y --no-progress
-          Get-ChildItem C:\ProgramData\chocolatey\bin | Where-Object { $_.Name -match 'qpdf|pdfinfo|pdftoppm|mutool|gswin64c' } | Select-Object -ExpandProperty Name
+          # Ghostscript's installer puts its programs in Program Files, not in a shim.
+          $gs = Get-ChildItem 'C:\Program Files\gs' -Directory | Select-Object -First 1
+          Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $gs.FullName 'bin')
       - name: Interop suite
         run: cargo xtask interop --require-all
       - name: Upload the outputs
