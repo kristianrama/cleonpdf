@@ -562,7 +562,7 @@ impl Reader {
             Reader::Qpdf => ("qpdf", "--version"),
             Reader::Poppler => ("pdfinfo", "-v"),
             Reader::MuPdf => ("mutool", "-v"),
-            Reader::Ghostscript => ("gs", "--version"),
+            Reader::Ghostscript => (ghostscript_program(), "--version"),
         };
         let o = run(Command::new(prog).arg(arg), TIMEOUT)?;
         let all = format!("{}{}", o.stdout, o.stderr);
@@ -578,6 +578,11 @@ impl Reader {
             Reader::Ghostscript => ghostscript(file, password),
         }
     }
+}
+
+/// Ghostscript's command line program: `gs` everywhere but Windows, where it is `gswin64c`.
+fn ghostscript_program() -> &'static str {
+    if cfg!(windows) { "gswin64c" } else { "gs" }
 }
 
 /// The lines of `text` that contain one of `markers` (case-sensitively), trimmed.
@@ -676,7 +681,7 @@ fn mupdf(file: &Path, password: Option<&str>) -> Reading {
 
 fn ghostscript(file: &Path, password: Option<&str>) -> Reading {
     let gs = |device: &str| {
-        let mut c = Command::new("gs");
+        let mut c = Command::new(ghostscript_program());
         c.args(["-q", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-sstdout=%stderr", &format!("-sDEVICE={device}"), "-sOutputFile=-"]);
         if let Some(p) = password {
             c.arg(format!("-sPDFPassword={p}"));
