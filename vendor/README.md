@@ -44,6 +44,8 @@ Object streams: `XRef` keeps the parsed index of each object stream (`object_str
 
 Non-isolated groups: `draw_form_xobject` (hayro-interpret) pushes a transparency-group layer only when the group is isolated (`/I true`) or is drawn with opacity below 1, a soft mask or a blend mode other than Normal; otherwise it paints the content straight onto the page, which is what a non-isolated, non-knockout group means, and lets a blend mode inside it see the page behind it. A knockout group (`/K true`) is painted as a non-knockout one. The pdf.js corpus file `knockout_blend_multiply.pdf` drew cyan where MuPDF and Poppler draw green. Test: `cleonpdf-render` (`a_blend_mode_inside_a_non_isolated_group_sees_the_page_behind_it`, `raster.rs`).
 
+TrueType `loca` format: `OpenTypeFontBlob::new` (hayro-interpret) reads a font whose `head.indexToLocFormat` is not 0 or 1 from a copy with it set from the size of `loca` (long when `loca` holds at least `numGlyphs + 1` four-byte offsets), see `repair_loca_format`. The pdf.js corpus file `issue2537r.pdf` stores 256 and drew .notdef boxes. Tests: `cleonpdf-render` (`a_truetype_font_with_a_bad_index_to_loc_format_still_draws_its_glyphs` on a font built in the test, and `the_loca_format_is_repaired_only_when_it_is_invalid_and_never_panics`, `raster.rs`).
+
 Text extraction: hayro-interpret exposes `OutlineGlyph::is_vertical` from a Type0 font’s CMap writing mode. PdfCraft follows negative glyph-space y for WMode 1 so upright vertical columns can be searched (#126).
 
 Lab Bradford follow-up to #1237: Lab adapts XYZ to D65 with white-point ratios

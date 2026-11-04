@@ -29,6 +29,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 mod blob;
+pub use blob::repair_loca_format;
 mod cid;
 mod generated;
 mod glyph_simulator;

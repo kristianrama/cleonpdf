@@ -2518,6 +2518,143 @@ trailer << /Root 1 0 R >>
         assert_eq!(pixel("/I true /CS /DeviceRGB"), [0, 255, 255], "an isolated group has nothing to blend with");
     }
 
+    /// A TrueType font of two glyphs: .notdef (empty) and glyph 1, a square filling the em. Built
+    /// here so no font file is committed. `index_to_loc_format` goes into `head` as it is given;
+    /// `loca` is always the long form.
+    fn square_font(index_to_loc_format: u16) -> Vec<u8> {
+        let be16 = |v: u16| v.to_be_bytes().to_vec();
+        let be32 = |v: u32| v.to_be_bytes().to_vec();
+        // One contour, four on-curve points: (0,0) (1000,0) (1000,1000) (0,1000), 16-bit deltas.
+        let mut glyph = Vec::new();
+        glyph.extend(be16(1));
+        for v in [0i16, 0, 1000, 1000] {
+            glyph.extend(v.to_be_bytes());
+        }
+        glyph.extend(be16(3)); // end point of the contour
+        glyph.extend(be16(0)); // no instructions
+        glyph.extend([1u8; 4]); // on curve, 16-bit deltas
+        for v in [0i16, 1000, 0, -1000, 0, 0, 1000, 0] {
+            glyph.extend(v.to_be_bytes());
+        }
+        while glyph.len() % 4 != 0 {
+            glyph.push(0);
+        }
+        let mut head = Vec::new();
+        head.extend(be32(0x0001_0000));
+        head.extend(be32(0));
+        head.extend(be32(0));
+        head.extend(be32(0x5F0F_3CF5));
+        head.extend(be16(0));
+        head.extend(be16(1000)); // unitsPerEm
+        head.extend([0u8; 16]); // created, modified
+        for v in [0i16, 0, 1000, 1000] {
+            head.extend(v.to_be_bytes());
+        }
+        head.extend(be16(0));
+        head.extend(be16(8));
+        head.extend(be16(2));
+        head.extend(be16(index_to_loc_format));
+        head.extend(be16(0));
+        let mut maxp = be32(0x0001_0000);
+        maxp.extend(be16(2)); // numGlyphs
+        maxp.extend([0u8; 26]);
+        let mut loca = Vec::new();
+        for offset in [0u32, 0, glyph.len() as u32] {
+            loca.extend(be32(offset));
+        }
+        let mut hhea = be32(0x0001_0000);
+        hhea.extend([0u8; 30]);
+        hhea.extend(be16(2)); // numberOfHMetrics
+        let mut hmtx = Vec::new();
+        for _ in 0..2 {
+            hmtx.extend(be16(1000));
+            hmtx.extend(be16(0));
+        }
+        let tables: [(&[u8; 4], Vec<u8>); 6] =
+            [(b"glyf", glyph), (b"head", head), (b"hhea", hhea), (b"hmtx", hmtx), (b"loca", loca), (b"maxp", maxp)];
+        let mut font = be32(0x0001_0000);
+        font.extend(be16(tables.len() as u16));
+        font.extend([0u8; 6]);
+        let mut offset = 12 + 16 * tables.len();
+        for (tag, data) in &tables {
+            font.extend(*tag);
+            font.extend(be32(0));
+            font.extend(be32(offset as u32));
+            font.extend(be32(data.len() as u32));
+            offset += data.len().div_ceil(4) * 4;
+        }
+        for (_, data) in &tables {
+            font.extend(data);
+            while font.len() % 4 != 0 {
+                font.push(0);
+            }
+        }
+        font
+    }
+
+    fn page_with_the_square_font(font: &[u8]) -> Vec<u8> {
+        let content = "BT /F1 60 Tf 20 20 Td <0001> Tj ET";
+        let mut pdf = format!(
+            "%PDF-1.7
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources << /Font << /F1 4 0 R >> >> /Contents 8 0 R >> endobj
+4 0 obj << /Type /Font /Subtype /Type0 /BaseFont /AAAAAA+Square /Encoding /Identity-H /DescendantFonts [5 0 R] >> endobj
+5 0 obj << /Type /Font /Subtype /CIDFontType2 /BaseFont /AAAAAA+Square /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /DW 1000 /FontDescriptor 6 0 R >> endobj
+6 0 obj << /Type /FontDescriptor /FontName /AAAAAA+Square /Flags 4 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 1000 /Descent 0 /CapHeight 1000 /StemV 80 /FontFile2 7 0 R >> endobj
+8 0 obj << /Length {} >> stream
+{content}
+endstream endobj
+7 0 obj << /Length {} >> stream
+",
+            content.len(),
+            font.len()
+        )
+        .into_bytes();
+        pdf.extend_from_slice(font);
+        pdf.extend_from_slice(b"\nendstream endobj\ntrailer << /Root 1 0 R >>\n%%EOF");
+        pdf
+    }
+
+    fn dark_pixels_of(pdf: Vec<u8>) -> usize {
+        let mut renderer = PageRenderer::new(Arc::new(pdf), RenderConfig::default());
+        let page = renderer.render(RenderRequest { page: 0, scale: 1.0, ..Default::default() });
+        assert!(page.error.is_none(), "{:?}", page.error);
+        page.rgba.as_chunks::<4>().0.iter().filter(|p| p[0] < 64).count()
+    }
+
+    #[test]
+    fn a_truetype_font_with_a_bad_index_to_loc_format_still_draws_its_glyphs() {
+        // pdf.js `issue2537r.pdf`: `head` says 256 but `loca` is the long form, and the text came
+        // out as .notdef boxes. The square is 60 x 60 points: about 3600 dark pixels.
+        for format in [1, 256, 0xFFFF] {
+            let dark = dark_pixels_of(page_with_the_square_font(&square_font(format)));
+            assert!((3000..4200).contains(&dark), "indexToLocFormat {format}: {dark} dark pixels");
+        }
+    }
+
+    #[test]
+    fn the_loca_format_is_repaired_only_when_it_is_invalid_and_never_panics() {
+        use hayro::hayro_interpret::font::repair_loca_format;
+        let at = |font: &[u8]| {
+            // `head` is the second table here, after glyf (the directory takes 12 + 4 x 16 bytes).
+            let head = u32::from_be_bytes(font[12 + 16 + 8..12 + 16 + 12].try_into().unwrap()) as usize;
+            u16::from_be_bytes([font[head + 50], font[head + 51]])
+        };
+        for valid in [0u16, 1] {
+            assert_eq!(repair_loca_format(&square_font(valid)), None, "{valid} is left alone");
+        }
+        let repaired = repair_loca_format(&square_font(256)).expect("256 is repaired");
+        assert_eq!(at(&repaired), 1, "a loca of three four-byte offsets is the long form");
+        // Every cut of a font, and a collection, are refused or repaired without a panic.
+        let font = square_font(256);
+        for end in 0..font.len() {
+            let _ = repair_loca_format(&font[..end]);
+        }
+        assert_eq!(repair_loca_format(b"ttcf\0\x01\0\0\0\0\0\x01"), None);
+        assert_eq!(repair_loca_format(&[]), None);
+    }
+
     use hayro::hayro_interpret::{box_average_gray, subsample_factor};
 
     #[test]

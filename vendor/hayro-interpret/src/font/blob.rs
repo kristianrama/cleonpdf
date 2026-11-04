@@ -160,6 +160,56 @@ impl CffFontBlob {
     }
 }
 
+/// CleonPDF patch: a TrueType font whose `head` table has an `indexToLocFormat` other than 0
+/// (short `loca`) or 1 (long) can't be read by skrifa, so its glyphs came out as .notdef boxes
+/// (pdf.js `issue2537r.pdf` stores 256, and its `loca` is the long form). Returns a copy with the
+/// format set from the size of `loca` (long when it holds at least `numGlyphs + 1` four-byte
+/// offsets), or `None` when the font is not a plain sfnt, has no such tables, or the value is
+/// already 0 or 1.
+pub fn repair_loca_format(font: &[u8]) -> Option<Vec<u8>> {
+    // Offsets into the sfnt directory and the tables; every read is bounds-checked.
+    let be16 = |at: usize| -> Option<usize> {
+        let b = font.get(at..at.checked_add(2)?)?;
+        Some(usize::from(u16::from_be_bytes([*b.first()?, *b.get(1)?])))
+    };
+    let be32 = |at: usize| -> Option<usize> {
+        let b = font.get(at..at.checked_add(4)?)?;
+        let n = u32::from_be_bytes([*b.first()?, *b.get(1)?, *b.get(2)?, *b.get(3)?]);
+        usize::try_from(n).ok()
+    };
+    // Only a single font (not a collection): version 1.0 or "true".
+    if !matches!(font.get(..4)?, [0, 1, 0, 0] | b"true") {
+        return None;
+    }
+    let tables = be16(4)?;
+    let find = |tag: &[u8; 4]| -> Option<(usize, usize)> {
+        (0..tables.min(256)).find_map(|i| {
+            let entry = 12usize.checked_add(i.checked_mul(16)?)?;
+            if font.get(entry..entry.checked_add(4)?)? == tag {
+                Some((be32(entry.checked_add(8)?)?, be32(entry.checked_add(12)?)?))
+            } else {
+                None
+            }
+        })
+    };
+    let (head, head_len) = find(b"head")?;
+    let (maxp, _) = find(b"maxp")?;
+    let (_, loca_len) = find(b"loca")?;
+    if head_len < 52 {
+        return None;
+    }
+    let format_at = head.checked_add(50)?;
+    if be16(format_at)? <= 1 {
+        return None;
+    }
+    let glyphs = be16(maxp.checked_add(4)?)?;
+    let long = loca_len >= glyphs.checked_add(1)?.checked_mul(4)?;
+    let mut repaired = font.to_vec();
+    let at = repaired.get_mut(format_at..format_at.checked_add(2)?)?;
+    at.copy_from_slice(&[0, u8::from(long)]);
+    Some(repaired)
+}
+
 /// A font blob for OpenType fonts.
 #[derive(Clone)]
 pub(crate) struct OpenTypeFontBlob {
@@ -175,6 +225,11 @@ impl Debug for OpenTypeFontBlob {
 
 impl OpenTypeFontBlob {
     pub(crate) fn new(data: FontData, index: u32) -> Option<Self> {
+        // CleonPDF patch: see `repair_loca_format`.
+        let data = match repair_loca_format(data.as_ref().as_ref()) {
+            Some(repaired) => Arc::new(repaired) as FontData,
+            None => data,
+        };
         // Check first whether the font is valid so we can unwrap in the closure.
         let f = FontRef::from_index(data.as_ref().as_ref(), index).ok()?;
         // Reject fonts with invalid post table version, fixes pdf.js issue 9462. Not sure if there
