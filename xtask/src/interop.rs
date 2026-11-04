@@ -562,7 +562,7 @@ impl Reader {
             Reader::Qpdf => ("qpdf", "--version"),
             Reader::Poppler => ("pdfinfo", "-v"),
             Reader::MuPdf => ("mutool", "-v"),
-            Reader::Ghostscript => ("gs", "--version"),
+            Reader::Ghostscript => (ghostscript_program(), "--version"),
         };
         let o = run(Command::new(prog).arg(arg), TIMEOUT)?;
         let all = format!("{}{}", o.stdout, o.stderr);
@@ -578,6 +578,11 @@ impl Reader {
             Reader::Ghostscript => ghostscript(file, password),
         }
     }
+}
+
+/// Ghostscript's command line program: `gs` everywhere but Windows, where it is `gswin64c`.
+fn ghostscript_program() -> &'static str {
+    if cfg!(windows) { "gswin64c" } else { "gs" }
 }
 
 /// The lines of `text` that contain one of `markers` (case-sensitively), trimmed.
@@ -675,9 +680,9 @@ fn mupdf(file: &Path, password: Option<&str>) -> Reading {
 }
 
 fn ghostscript(file: &Path, password: Option<&str>) -> Reading {
-    let gs = |device: &str| {
-        let mut c = Command::new("gs");
-        c.args(["-q", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-sstdout=%stderr", &format!("-sDEVICE={device}"), "-sOutputFile=-"]);
+    let gs = |device: &str, output: &str| {
+        let mut c = Command::new(ghostscript_program());
+        c.args(["-q", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-sstdout=%stderr", &format!("-sDEVICE={device}"), &format!("-sOutputFile={output}")]);
         if let Some(p) = password {
             c.arg(format!("-sPDFPassword={p}"));
         }
@@ -686,7 +691,7 @@ fn ghostscript(file: &Path, password: Option<&str>) -> Reading {
     };
     let mut r = Reading::default();
     // bbox writes one %%BoundingBox line per page to stderr: the page count.
-    let Some(o) = run(&mut gs("bbox"), TIMEOUT) else {
+    let Some(o) = run(&mut gs("bbox", "-"), TIMEOUT) else {
         r.notes.push("gs did not finish".into());
         return r;
     };
@@ -697,10 +702,17 @@ fn ghostscript(file: &Path, password: Option<&str>) -> Reading {
     if !r.opened {
         return r;
     }
-    if let Some(o) = run(&mut gs("txtwrite"), TIMEOUT) {
+    // The text goes to a file: through a pipe, Ghostscript on Windows sometimes wrote none of it.
+    let out = std::env::temp_dir().join(format!(
+        "cleonpdf-interop-gs-{}-{}.txt",
+        std::process::id(),
+        file.file_name().and_then(|n| n.to_str()).unwrap_or("out")
+    ));
+    if let Some(o) = run(&mut gs("txtwrite", &out.to_string_lossy()), TIMEOUT) {
         r.notes.extend(o.stderr.lines().map(|l| l.trim().to_string()).filter(|l| !l.is_empty()).map(|l| format!("txtwrite: {l}")));
-        r.text = Some(o.stdout);
+        r.text = Some(std::fs::read(&out).map(|b| String::from_utf8_lossy(&b).into_owned()).unwrap_or_default());
     }
+    let _ = std::fs::remove_file(&out);
     r
 }
 
@@ -766,7 +778,8 @@ fn check(case: &Case, file: &Path, readers: &[Reader], noise: &[Vec<String>]) ->
             let text = squash(text);
             for t in &case.text {
                 if !text.contains(&squash(t)) {
-                    problems.push(format!("{name}: text {t:?} missing"));
+                    let got: String = text.chars().take(160).collect();
+                    problems.push(format!("{name}: text {t:?} missing (got {got:?})"));
                 }
             }
             for t in &case.absent {
@@ -807,6 +820,9 @@ fn check(case: &Case, file: &Path, readers: &[Reader], noise: &[Vec<String>]) ->
     }
     if case.signatures > 0 && readers.contains(&Reader::Poppler) {
         match valid_signatures(file) {
+            // The Windows build of Poppler has no `pdfsig`: signatures are checked on the other
+            // systems only.
+            None if cfg!(windows) => {}
             None => problems.push("pdfsig: did not run".into()),
             Some((valid, notes)) => {
                 if valid != case.signatures {
