@@ -40,6 +40,8 @@ horizontal differencing and an 8-bit control) and
 
 Huge single-component images: hayro-interpret box-averages a one-component, non-indexed image of more than 2^24 pixels (a bilevel scan, or a soft mask of one) right after its filter, as 8-bit gray, by a power of two (`subsample_factor`, `box_average_gray`), and keys the decoded-image cache by target size only for JPEG 2000 streams (`Stream::is_jpx`, hayro-syntax), the one filter that decodes differently for another target. The pdf.js corpus file `issue16263.pdf` (a 2 x 2 image with a 34862 x 4332 bilevel soft mask) did not finish in 180 s and now takes about 6 s in a test build: it decoded 151 million samples as u16, f32 and RGB, and decoded them again for each of about 40 draw windows. Tests: `cleonpdf-render` (`an_image_with_a_huge_bilevel_soft_mask_renders_in_seconds_not_minutes` and the averaging tests next to it, `raster.rs`).
 
+Object streams: `XRef` keeps the parsed index of each object stream (`object_stream_indexes`, at most 64 streams, cleared when the xref is repaired) instead of parsing it again for every object read from the stream. The pdf.js corpus file `bug1978317.pdf` has 65542 objects in one stream and took 91 s to draw; it takes about 2 s. Test: `cleonpdf-render` (`objects_in_a_large_object_stream_do_not_re_read_its_index`, `raster.rs`).
+
 Text extraction: hayro-interpret exposes `OutlineGlyph::is_vertical` from a Type0 font’s CMap writing mode. PdfCraft follows negative glyph-space y for WMode 1 so upright vertical columns can be searched (#126).
 
 Lab Bradford follow-up to #1237: Lab adapts XYZ to D65 with white-point ratios

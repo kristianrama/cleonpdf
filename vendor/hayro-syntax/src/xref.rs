@@ -289,6 +289,41 @@ impl XRef {
         Some(f(&mut cache))
     }
 
+    fn cached_object_stream_index(&self, id: ObjectIdentifier) -> Option<Arc<Vec<(u32, usize)>>> {
+        let Inner::Some(repr) = &self.0 else {
+            return None;
+        };
+        #[cfg(feature = "std")]
+        let cache = repr
+            .object_stream_indexes
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        #[cfg(not(feature = "std"))]
+        let cache = repr.object_stream_indexes.try_borrow_mut().ok()?;
+        cache.get(&id).cloned()
+    }
+
+    fn cache_object_stream_index(&self, id: ObjectIdentifier, index: Arc<Vec<(u32, usize)>>) {
+        // A file with more object streams than this just re-parses the least recently used.
+        const MAX_CACHED_INDEXES: usize = 64;
+        let Inner::Some(repr) = &self.0 else {
+            return;
+        };
+        #[cfg(feature = "std")]
+        let mut cache = repr
+            .object_stream_indexes
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        #[cfg(not(feature = "std"))]
+        let Ok(mut cache) = repr.object_stream_indexes.try_borrow_mut() else {
+            return;
+        };
+        if cache.len() >= MAX_CACHED_INDEXES {
+            cache.clear();
+        }
+        cache.insert(id, index);
+    }
+
     fn new(
         data: PdfData,
         xref_map: XrefMap,
@@ -310,6 +345,7 @@ impl XRef {
             trailer_data,
             password: password.to_vec(),
             dict_cache: Arc::new(Mutex::new(DictCache::default())),
+            object_stream_indexes: Arc::new(Mutex::new(FxHashMap::default())),
         })));
 
         // We read the trailer twice, once to determine the encryption used and then a second
@@ -500,6 +536,16 @@ impl XRef {
         locked.repaired = true;
         let (xref_map, _) = fallback_xref_map(r.data.get(), &r.password);
         locked.xref_map = xref_map;
+        // The same object number may now be a different stream.
+        #[cfg(feature = "std")]
+        r.object_stream_indexes
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .clear();
+        #[cfg(not(feature = "std"))]
+        if let Ok(mut cache) = r.object_stream_indexes.try_borrow_mut() {
+            cache.clear();
+        }
     }
 
     #[inline]
@@ -622,10 +668,17 @@ impl XRef {
                     return None;
                 }
 
-                let stream = self.get_with::<Stream<'_>>(obj_stream_id, &ctx)?;
                 let data = repr.data.get_with(obj_stream_id, &ctx)?;
-                let object_stream = ObjectStream::new(stream, data, &ctx)?;
-                object_stream.get(index)
+                let offsets = match self.cached_object_stream_index(obj_stream_id) {
+                    Some(offsets) => offsets,
+                    None => {
+                        let stream = self.get_with::<Stream<'_>>(obj_stream_id, &ctx)?;
+                        let offsets = Arc::new(ObjectStream::parse_index(&stream, data)?);
+                        self.cache_object_stream_index(obj_stream_id, offsets.clone());
+                        offsets
+                    }
+                };
+                ObjectStream::with_index(data, &ctx, offsets).get(index)
             }
         }
     }
@@ -698,6 +751,9 @@ impl TrailerData {
 #[derive(Debug, Clone)]
 struct SomeRepr {
     dict_cache: Arc<Mutex<DictCache>>,
+    // CleonPDF patch: the parsed index of each object stream, so reading N objects out of a
+    // stream with N entries doesn't parse the index N times.
+    object_stream_indexes: Arc<Mutex<FxHashMap<ObjectIdentifier, Arc<Vec<(u32, usize)>>>>>,
     data: Arc<Data>,
     map: Arc<RwLock<MapRepr>>,
     metadata: Arc<Metadata>,
@@ -1070,11 +1126,17 @@ fn get_decryptor(trailer_dict: &Dict<'_>, password: &[u8]) -> Result<Decryptor, 
 struct ObjectStream<'a> {
     data: &'a [u8],
     ctx: ReaderContext<'a>,
-    offsets: Vec<(u32, usize)>,
+    offsets: Arc<Vec<(u32, usize)>>,
 }
 
 impl<'a> ObjectStream<'a> {
     fn new(inner: Stream<'_>, data: &'a [u8], ctx: &ReaderContext<'a>) -> Option<Self> {
+        let offsets = Arc::new(Self::parse_index(&inner, data)?);
+        Some(Self::with_index(data, ctx, offsets))
+    }
+
+    /// The (object number, offset) pairs at the start of the stream's decoded `data`.
+    fn parse_index(inner: &Stream<'_>, data: &[u8]) -> Option<Vec<(u32, usize)>> {
         let num_objects = inner.dict().get::<usize>(N)?;
         let first_offset = inner.dict().get::<usize>(FIRST)?;
 
@@ -1091,10 +1153,18 @@ impl<'a> ObjectStream<'a> {
             offsets.push((obj_num, first_offset + relative_offset));
         }
 
+        Some(offsets)
+    }
+
+    fn with_index(
+        data: &'a [u8],
+        ctx: &ReaderContext<'a>,
+        offsets: Arc<Vec<(u32, usize)>>,
+    ) -> Self {
         let mut ctx = ctx.clone();
         ctx.set_in_object_stream(true);
 
-        Some(Self { data, ctx, offsets })
+        Self { data, ctx, offsets }
     }
 
     fn get<T>(&self, index: u32) -> Option<T>
