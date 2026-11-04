@@ -42,6 +42,8 @@ Huge single-component images: hayro-interpret box-averages a one-component, non-
 
 Object streams: `XRef` keeps the parsed index of each object stream (`object_stream_indexes`, at most 64 streams, cleared when the xref is repaired) instead of parsing it again for every object read from the stream. The pdf.js corpus file `bug1978317.pdf` has 65542 objects in one stream and took 91 s to draw; it takes about 2 s. Test: `cleonpdf-render` (`objects_in_a_large_object_stream_do_not_re_read_its_index`, `raster.rs`).
 
+Non-isolated groups: `draw_form_xobject` (hayro-interpret) pushes a transparency-group layer only when the group is isolated (`/I true`) or is drawn with opacity below 1, a soft mask or a blend mode other than Normal; otherwise it paints the content straight onto the page, which is what a non-isolated, non-knockout group means, and lets a blend mode inside it see the page behind it. A knockout group (`/K true`) is painted as a non-knockout one. The pdf.js corpus file `knockout_blend_multiply.pdf` drew cyan where MuPDF and Poppler draw green. Test: `cleonpdf-render` (`a_blend_mode_inside_a_non_isolated_group_sees_the_page_behind_it`, `raster.rs`).
+
 Text extraction: hayro-interpret exposes `OutlineGlyph::is_vertical` from a Type0 font’s CMap writing mode. PdfCraft follows negative glyph-space y for WMode 1 so upright vertical columns can be searched (#126).
 
 Lab Bradford follow-up to #1237: Lab adapts XYZ to D65 with white-point ratios

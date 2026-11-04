@@ -60,6 +60,8 @@ pub(crate) struct FormXObject<'a> {
     pub(crate) matrix: Affine,
     pub(crate) bbox: [f32; 4],
     is_transparency_group: bool,
+    // CleonPDF patch: the group's /I; an absent /I is false (non-isolated).
+    isolated: bool,
     pub(crate) dict: Dict<'a>,
     resources: Dict<'a>,
 }
@@ -77,12 +79,17 @@ impl<'a> FormXObject<'a> {
                 .unwrap_or([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
         );
         let bbox = dict.get::<[f32; 4]>(BBOX)?;
-        let is_transparency_group = dict.get::<Dict<'_>>(GROUP).is_some();
+        let group = dict.get::<Dict<'_>>(GROUP);
+        let is_transparency_group = group.is_some();
+        let isolated = group
+            .and_then(|g| g.get::<bool>(I))
+            .unwrap_or(false);
 
         Some(Self {
             decoded,
             matrix,
             is_transparency_group,
+            isolated,
             bbox,
             dict: dict.clone(),
             resources,
@@ -134,12 +141,23 @@ pub(crate) fn draw_form_xobject<'a, 'b>(
     context.pre_concat_affine(x_object.matrix);
     context.push_root_transform();
 
+    // CleonPDF patch: a non-isolated group that is painted with full opacity, no soft mask and
+    // the Normal blend mode is the same as painting its content straight onto the page, and
+    // that is what lets a blend mode inside it see the page behind it (an isolated layer
+    // would blend against transparent black). A knockout group is painted as a non-knockout
+    // one; the two differ only where its objects overlap and are partly transparent.
+    let mut group_layer = false;
     if x_object.is_transparency_group {
-        device.push_transparency_group(
-            context.get().graphics_state.non_stroke_alpha,
-            std::mem::take(&mut context.get_mut().graphics_state.soft_mask),
-            std::mem::take(&mut context.get_mut().graphics_state.blend_mode),
-        );
+        let opacity = context.get().graphics_state.non_stroke_alpha;
+        let mask = std::mem::take(&mut context.get_mut().graphics_state.soft_mask);
+        let blend_mode = std::mem::take(&mut context.get_mut().graphics_state.blend_mode);
+        group_layer = x_object.isolated
+            || opacity != 1.0
+            || mask.is_some()
+            || blend_mode != BlendMode::Normal;
+        if group_layer {
+            device.push_transparency_group(opacity, mask, blend_mode);
+        }
 
         context.get_mut().graphics_state.non_stroke_alpha = 1.0;
         context.get_mut().graphics_state.stroke_alpha = 1.0;
@@ -169,7 +187,7 @@ pub(crate) fn draw_form_xobject<'a, 'b>(
 
     device.pop_clip_path();
 
-    if x_object.is_transparency_group {
+    if group_layer {
         device.pop_transparency_group();
     }
 

@@ -2474,6 +2474,50 @@ endstream endobj
         assert_eq!(dark(100..960, 0..540), 0, "elsewhere the page is white");
     }
 
+    /// A yellow page with a cyan rectangle drawn in Multiply inside a form whose /Group is `group`.
+    fn multiply_in_a_group_pdf(group: &str) -> Vec<u8> {
+        let form = "q\n/M gs\n0 1 1 rg\n40 30 120 100 re\nf\nQ";
+        let page = "q\n1 1 0 rg\n0 0 200 160 re\nf\n/G1 Do\nQ";
+        format!(
+            "%PDF-1.7
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 200 160] /Resources << /XObject << /G1 4 0 R >> >> /Contents 6 0 R >> endobj
+4 0 obj << /Type /XObject /Subtype /Form /BBox [0 0 200 160] /Resources << /ExtGState << /M 5 0 R >> >> /Group << /Type /Group /S /Transparency {group} >> /Length {} >> stream
+{form}
+endstream endobj
+5 0 obj << /Type /ExtGState /BM /Multiply >> endobj
+6 0 obj << /Length {} >> stream
+{page}
+endstream endobj
+trailer << /Root 1 0 R >>
+%%EOF",
+            form.len(),
+            page.len()
+        )
+        .into_bytes()
+    }
+
+    #[test]
+    fn a_blend_mode_inside_a_non_isolated_group_sees_the_page_behind_it() {
+        // pdf.js `knockout_blend_multiply.pdf`: cyan multiplied with the yellow page is green.
+        // Only an isolated group blends against nothing, and leaves the cyan as it is.
+        let pixel = |group: &str| {
+            let mut renderer = PageRenderer::new(Arc::new(multiply_in_a_group_pdf(group)), RenderConfig::default());
+            let page = renderer.render(RenderRequest { page: 0, scale: 1.0, ..Default::default() });
+            assert!(page.error.is_none(), "{:?}", page.error);
+            let at = |x: u32, y: u32| {
+                let i = ((y * page.width + x) * 4) as usize;
+                [page.rgba[i], page.rgba[i + 1], page.rgba[i + 2]]
+            };
+            assert_eq!(at(10, 10), [255, 255, 0], "outside the rectangle the page stays yellow");
+            at(100, 80)
+        };
+        assert_eq!(pixel("/I false /K true /CS /DeviceRGB"), [0, 255, 0], "non-isolated knockout group");
+        assert_eq!(pixel("/CS /DeviceRGB"), [0, 255, 0], "a group without /I is non-isolated");
+        assert_eq!(pixel("/I true /CS /DeviceRGB"), [0, 255, 255], "an isolated group has nothing to blend with");
+    }
+
     use hayro::hayro_interpret::{box_average_gray, subsample_factor};
 
     #[test]
