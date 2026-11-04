@@ -2620,7 +2620,7 @@ endstream endobj
         let mut renderer = PageRenderer::new(Arc::new(pdf), RenderConfig::default());
         let page = renderer.render(RenderRequest { page: 0, scale: 1.0, ..Default::default() });
         assert!(page.error.is_none(), "{:?}", page.error);
-        page.rgba.chunks_exact(4).filter(|p| p[0] < 64).count()
+        page.rgba.as_chunks::<4>().0.iter().filter(|p| p[0] < 64).count()
     }
 
     #[test]
