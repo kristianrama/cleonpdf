@@ -195,7 +195,11 @@ fn wait_for_file(h: &mut Harness<'static, CleonPdfApp>, path: &std::path::Path) 
 }
 
 fn scratch(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("cleonpdf-forms-{name}-{}", std::process::id()));
+    // Tests run in parallel threads of one process: two that pick the same name (a case called
+    // "same-frame" in one test and the test of that name) must not share, and so delete, a folder.
+    static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("cleonpdf-forms-{name}-{}-{n}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir
