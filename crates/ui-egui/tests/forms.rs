@@ -195,7 +195,11 @@ fn wait_for_file(h: &mut Harness<'static, CleonPdfApp>, path: &std::path::Path) 
 }
 
 fn scratch(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("cleonpdf-forms-{name}-{}", std::process::id()));
+    // Tests run in parallel threads of one process: two that pick the same name (a case called
+    // "same-frame" in one test and the test of that name) must not share, and so delete, a folder.
+    static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("cleonpdf-forms-{name}-{}-{n}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir
@@ -335,6 +339,8 @@ fn type_then_save_in_one_frame(h: &mut Harness<'static, CleonPdfApp>, name: &str
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     one_frame(h, vec![last, key(egui::Key::S, egui::Modifiers::COMMAND)]);
     h.run_steps(3);
+    wait_for_file(h, out);
+    assert!(out.exists(), "⌘S in the frame of the last input saved the document (toast: {:?}, {name}: {:?})", h.state().toast, value(h, name));
 }
 
 #[test]
