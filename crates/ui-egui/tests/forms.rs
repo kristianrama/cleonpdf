@@ -335,6 +335,8 @@ fn type_then_save_in_one_frame(h: &mut Harness<'static, CleonPdfApp>, name: &str
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     one_frame(h, vec![last, key(egui::Key::S, egui::Modifiers::COMMAND)]);
     h.run_steps(3);
+    wait_for_file(h, out);
+    assert!(out.exists(), "⌘S in the frame of the last input saved the document (toast: {:?}, {name}: {:?})", h.state().toast, value(h, name));
 }
 
 #[test]
