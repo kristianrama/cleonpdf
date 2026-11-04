@@ -771,7 +771,8 @@ fn check(case: &Case, file: &Path, readers: &[Reader], noise: &[Vec<String>]) ->
             let text = squash(text);
             for t in &case.text {
                 if !text.contains(&squash(t)) {
-                    problems.push(format!("{name}: text {t:?} missing"));
+                    let got: String = text.chars().take(160).collect();
+                    problems.push(format!("{name}: text {t:?} missing (got {got:?})"));
                 }
             }
             for t in &case.absent {
@@ -812,6 +813,9 @@ fn check(case: &Case, file: &Path, readers: &[Reader], noise: &[Vec<String>]) ->
     }
     if case.signatures > 0 && readers.contains(&Reader::Poppler) {
         match valid_signatures(file) {
+            // The Windows build of Poppler has no `pdfsig`: signatures are checked on the other
+            // systems only.
+            None if cfg!(windows) => {}
             None => problems.push("pdfsig: did not run".into()),
             Some((valid, notes)) => {
                 if valid != case.signatures {
