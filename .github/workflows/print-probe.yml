@@ -1,0 +1,27 @@
+name: print-probe
+on:
+  push:
+    branches: [ci/windows-print-probe]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: windows-latest
+    steps:
+      - name: What printing offers on this runner
+        shell: pwsh
+        run: |
+          Get-Service Spooler | Format-List Name, Status
+          "--- printers"
+          Get-Printer | Format-Table Name, DriverName, PortName, PrinterStatus -AutoSize
+          "--- drivers"
+          Get-PrinterDriver | Format-Table Name -AutoSize
+          "--- feature"
+          Get-WindowsOptionalFeature -Online -FeatureName Printing-PrintToPDFServices-Features | Format-List FeatureName, State
+          "--- file port"
+          $out = Join-Path $env:RUNNER_TEMP 'probe.pdf'
+          try {
+            Add-PrinterPort -Name $out -ErrorAction Stop
+            Add-Printer -Name 'CleonProbe' -DriverName 'Microsoft Print To PDF' -PortName $out -ErrorAction Stop
+            Get-Printer -Name CleonProbe | Format-List Name, DriverName, PortName
+          } catch { "add failed: $_" }
