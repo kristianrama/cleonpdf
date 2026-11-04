@@ -265,14 +265,14 @@ stage set to pre-alpha; see the revision history.)
 **To reach 1.0** (stable). Set by the owner on 2026-11-03; the percentages and the 30 minutes are
 his accepted proposal, not measurements. 1.0.0 is released when **all** of these hold:
 
-| # | 1.0 requirement | Today (2026-11-03) |
+| # | 1.0 requirement | Today (2026-11-04) |
 |---|---|---|
 | 1 | **Breadth.** No P0 feature `missing`; P0 ≥ 98%; tier-weighted breadth ≥ 80% | P0 94.2%; ≈ 68.5% |
 | 2 | **Ready for real work** ≥ 85% (judged, as above; the beta gate is ≈ 75%) | ≈ 49% |
 | 3 | **No blocking gap** open in [gaps.md](gaps.md). Editing existing text covers CJK, right-to-left and rotated text, or says plainly that it does not, in the docs and in the app | open: CJK, RTL and rotated text editing |
 | 4 | **Evidence.** Every shipped P0 and P1 feature cites at least two tests; text editing is measured on real PDFs from several producers, Word, Pages and scans included | 133 of 430 shipped features cite exactly one test; Word, Pages and scans not tried |
-| 5 | **Robustness.** A 30-minute `cargo xtask fuzz` finds nothing new; `cargo xtask interop --require-all` is green on Linux, macOS and Windows | fuzz clean at 10 minutes (2026-10-15), not at 30; interop green on Linux and macOS in CI (2026-11-03), nothing on Windows (the readers are not packaged there) |
-| 6 | **Rendering fidelity.** A comparison against an external oracle (MuPDF or Poppler) with a stated threshold. Acrobat captures count only if the owner takes them by hand, on synthetic fixtures | `cargo xtask render-oracle` (2026-11-03): 9 synthetic fixtures, ours within 1.03 mean difference of the nearer of MuPDF and Poppler (limit 2.5); not run on real documents yet |
+| 5 | **Robustness.** A 30-minute `cargo xtask fuzz` finds nothing new; `cargo xtask interop --require-all` is green on Linux, macOS and Windows | fuzz clean at 10 minutes (2026-10-15), not at 30; interop (50 cases, four readers) green in CI on Linux, macOS (2026-11-03) and Windows (2026-11-04); on Windows Poppler has no `pdfsig`, so the three signature cases are not checked there |
+| 6 | **Rendering fidelity.** A comparison against an external oracle (MuPDF or Poppler) with a stated threshold. Acrobat captures count only if the owner takes them by hand, on synthetic fixtures | `cargo xtask render-oracle` (2026-11-03): 9 synthetic fixtures, ours within 1.03 mean difference of the nearer of MuPDF and Poppler (limit 2.5), checked in CI. On the first page of the pdf.js corpus (2026-11-04): 956 files compared, 112 over the limit, which includes files the two oracles disagree on, files only some readers open and the cases still open in the ROADMAP.md log; not a gate on real documents yet |
 
 Requirement 2 is the hardest: the hours to reach it are those of the full-parity estimate above.
 A release that fails any row keeps its 0.x number.
