@@ -2541,6 +2541,50 @@ endstream endobj
         assert_eq!((w, h, out), (2, 2, vec![0; 4]));
     }
 
+    /// A file whose one object stream holds tens of thousands of objects (bug1978317 in the
+    /// pdf.js corpus took 91 s to draw): reading each object used to parse the stream's whole
+    /// index again, so reading them all cost the square of their number.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn objects_in_a_large_object_stream_do_not_re_read_its_index() {
+        use hayro::hayro_syntax::object::{Dict, ObjectIdentifier};
+        const COUNT: usize = 20_000;
+        let mut index = String::new();
+        let mut body = String::new();
+        for i in 0..COUNT {
+            index.push_str(&format!("{} {} ", 10 + i, body.len()));
+            body.push_str(&format!("<< /N {i} >>\n"));
+        }
+        let first = index.len();
+        let mut out = b"%PDF-1.5\n".to_vec();
+        for (n, obj) in [
+            (1, "<< /Type /Catalog /Pages 2 0 R >>"),
+            (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
+            (3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10 10] >>"),
+        ] {
+            out.extend_from_slice(format!("{n} 0 obj\n{obj}\nendobj\n").as_bytes());
+        }
+        let stream = format!("{index}{body}");
+        out.extend_from_slice(
+            format!("4 0 obj\n<< /Type /ObjStm /N {COUNT} /First {first} /Length {} >>\nstream\n{stream}\nendstream\nendobj\n", stream.len())
+                .as_bytes(),
+        );
+        // No cross-reference table: the reader finds the objects by scanning the file.
+        out.extend_from_slice(b"trailer\n<< /Root 1 0 R /Size 50010 >>\n%%EOF\n");
+        let pdf = Pdf::new(out).expect("the file opens");
+        let started = std::time::Instant::now();
+        let mut read = 0;
+        for i in 0..COUNT {
+            let id = ObjectIdentifier::new(i32::try_from(10 + i).expect("small"), 0);
+            if pdf.xref().get::<Dict<'_>>(id).is_some() {
+                read += 1;
+            }
+        }
+        assert_eq!(read, COUNT, "every object in the stream can be read");
+        // Well under a second with the index kept; tens of seconds when it is re-read each time.
+        assert!(started.elapsed() < std::time::Duration::from_secs(5), "reading {COUNT} objects took {:?}", started.elapsed());
+    }
+
     const ONE_PAGE_TWICE: &[u8] = b"%PDF-1.4
 1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
 2 0 obj << /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >> endobj
