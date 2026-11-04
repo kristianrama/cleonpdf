@@ -86,10 +86,10 @@ fn wait_for_output(file: &std::path::Path) -> Vec<u8> {
         if len > 0 && len == last.0 {
             last.1 += 1;
             // Unchanged for three polls: the driver has finished.
-            if last.1 >= 3 {
-                if let Ok(bytes) = std::fs::read(file) {
-                    return bytes;
-                }
+            if last.1 >= 3
+                && let Ok(bytes) = std::fs::read(file)
+            {
+                return bytes;
             }
         } else {
             last = (len, 0);
@@ -114,12 +114,12 @@ fn page_sizes(bytes: Vec<u8>) -> Vec<(f64, f64)> {
 }
 
 #[test]
-fn a_job_with_mixed_paper_sizes_reaches_the_driver_page_for_page() {
+fn a_job_with_one_paper_and_mixed_orientations_reaches_the_driver_page_for_page() {
     let Some(q) = queue() else { return };
     let _ = std::fs::remove_file(&q.file);
-    // A4 portrait, US Letter landscape, A5 portrait.
-    let wanted = [(595.0, 842.0), (792.0, 612.0), (420.0, 595.0)];
-    let pdf = pdf_with_pages(&[(595, 842), (792, 612), (420, 595)]);
+    // A4 portrait, A4 landscape, A4 portrait: one paper, two orientations.
+    let wanted = [(595.0, 842.0), (842.0, 595.0), (595.0, 842.0)];
+    let pdf = pdf_with_pages(&[(595, 842), (842, 595), (595, 842)]);
     let job = Job { printer: Some(q.name.clone()), title: "cleonpdf windows spooler test".into(), ..Job::default() };
     let id = spool::submit(&pdf, &job).expect("the spooler accepts the job");
     eprintln!("submitted: {id}");
@@ -130,4 +130,17 @@ fn a_job_with_mixed_paper_sizes_reaches_the_driver_page_for_page() {
         // The driver rounds paper to its own units; a point or two is not a change of paper.
         assert!((w - ew).abs() <= 3.0 && (h - eh).abs() <= 3.0, "page {} is {w} x {h} pt, wanted {ew} x {eh}", i + 1);
     }
+}
+
+#[test]
+fn a_job_that_mixes_paper_sizes_is_refused_and_nothing_is_printed() {
+    let Some(q) = queue() else { return };
+    let _ = std::fs::remove_file(&q.file);
+    // A4 then US Letter: a Windows job has one paper size, so this is refused, not shrunk.
+    let pdf = pdf_with_pages(&[(595, 842), (612, 792)]);
+    let job = Job { printer: Some(q.name.clone()), title: "cleonpdf windows spooler test".into(), ..Job::default() };
+    let err = spool::submit(&pdf, &job).expect_err("two paper sizes in one job are refused").to_string();
+    assert!(err.contains("one paper size per job"), "the refusal names the reason: {err}");
+    std::thread::sleep(Duration::from_secs(3));
+    assert!(!q.file.exists(), "a refused job must not reach the driver");
 }
