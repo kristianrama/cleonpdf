@@ -36,16 +36,22 @@ garbage-collected file (callers check the print permission).
 [`craft-print`](https://github.com/storytold/craft-libs/tree/main/crates/print).
 CleonPDF retains page selection, imposition, annotations and print-permission checks.
 CUPS jobs stream through stdin with `fit-to-page=false`. Windows renders sheets through
-`Windows.Data.Pdf` and spools them at their physical PDF size with per-page paper and
-orientation, zero added margins and hardware-edge clipping. Long-edge and short-edge duplex
+`Windows.Data.Pdf` and spools them at their physical PDF size, zero added margins and
+hardware-edge clipping. A Windows job has one paper and one orientation, taken from its first
+sheet: a sheet of another orientation is turned onto that paper at the same scale (it comes out
+sideways, not scaled or cut), and a job whose sheets need two papers (A4 and Letter) is refused
+with a message, not shrunk, so print them as separate jobs. Long-edge and short-edge duplex
 use the corresponding Windows binding edges. Random, exclusively created Windows job files
 are removed on success and failure. Other targets offer the print-ready PDF instead.
 
 The shared dependency requires Rust 1.95. Transport and native Windows regression tests
 live in craft-libs; local tests retain composition, facade, engine, automation and UI coverage.
 The desktop UI discovers printers and submits jobs on workers, so neither operation blocks
-the dialog; the Windows backend starts without a console window. Physical printer output
-still needs hardware validation.
+the dialog; the Windows backend starts without a console window. A CI job (`print (Windows
+spooler)`, `tests/windows_spooler.rs`) sends jobs through Windows' own *Microsoft Print to PDF*
+driver on a queue whose port is a file and reads the PDF back: page count, each sheet's size, and
+the refusal of mixed paper. Physical printer output (paper, ink, margins) still needs hardware
+validation.
 
 In a browser there is no spooler: the app (`cleonpdf-ui-egui`'s `web_print`) draws the print-ready
 PDF's sheets with CleonPDF's renderer and prints them through the browser's print dialog, which
