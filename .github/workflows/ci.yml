@@ -234,6 +234,13 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "CLEONPDF_TEST_PRINTER_REQUIRED=1"
       - name: Print through the Windows spooler
         run: cargo test -p cleonpdf-print --test windows_spooler -j 2 -- --nocapture
+      - name: Upload what the queue wrote
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: print-windows-output
+          path: ${{ runner.temp }}/spooled.pdf
+          if-no-files-found: ignore
 
   fuzz:
     name: fuzz (mutation, 15 min)
