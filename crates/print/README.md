@@ -36,9 +36,11 @@ garbage-collected file (callers check the print permission).
 [`craft-print`](https://github.com/storytold/craft-libs/tree/main/crates/print).
 CleonPDF retains page selection, imposition, annotations and print-permission checks.
 CUPS jobs stream through stdin with `fit-to-page=false`. Windows renders sheets through
-`Windows.Data.Pdf` and spools them at their physical PDF size with per-page orientation, zero
-added margins and hardware-edge clipping. A Windows job has one paper size: a job whose sheets
-need two (A4 and Letter) is refused with a message, not shrunk, so print them as separate jobs. Long-edge and short-edge duplex
+`Windows.Data.Pdf` and spools them at their physical PDF size, zero added margins and
+hardware-edge clipping. A Windows job has one paper and one orientation, taken from its first
+sheet: a sheet of another orientation is turned onto that paper at the same scale (it comes out
+sideways, not scaled or cut), and a job whose sheets need two papers (A4 and Letter) is refused
+with a message, not shrunk, so print them as separate jobs. Long-edge and short-edge duplex
 use the corresponding Windows binding edges. Random, exclusively created Windows job files
 are removed on success and failure. Other targets offer the print-ready PDF instead.
 

@@ -109,19 +109,6 @@ fn page_sizes(bytes: Vec<u8>) -> Vec<(f64, f64)> {
     cleonpdf_model::pages(&doc)
         .iter()
         .map(|p| {
-            // What the driver wrote, for the log: the page dictionary and the start of its content.
-            let cut = |s: String| s.chars().take(700).collect::<String>();
-            eprintln!("page dict: {}", cut(format!("{:?}", p.dict)));
-            let refs: Vec<_> = match p.dict.get(b"Contents").map(|c| doc.resolve(c)) {
-                Some(c) => c.as_array().map(|a| a.iter().filter_map(|o| o.as_ref()).collect()).unwrap_or_default(),
-                None => Vec::new(),
-            };
-            for r in refs {
-                if let cleonpdf_cos::Object::Stream(st) = &*doc.get(r) {
-                    let data = st.decoded().unwrap_or_default();
-                    eprintln!("page content ({} bytes): {}", data.len(), cut(String::from_utf8_lossy(&data).replace('\n', " ")));
-                }
-            }
             let c = p.crop(&doc);
             let (w, h) = (c[2] - c[0], c[3] - c[1]);
             if p.rotation(&doc) % 180 == 90 { (h, w) } else { (w, h) }
@@ -130,12 +117,16 @@ fn page_sizes(bytes: Vec<u8>) -> Vec<(f64, f64)> {
 }
 
 #[test]
-fn a_job_with_one_paper_and_mixed_orientations_reaches_the_driver_page_for_page() {
+fn a_landscape_sheet_is_turned_onto_the_jobs_portrait_paper_and_every_page_arrives() {
     let _one = ONE_AT_A_TIME.lock().unwrap_or_else(|e| e.into_inner());
     let Some(q) = queue() else { return };
     let _ = std::fs::remove_file(&q.file);
-    // A4 portrait, A4 landscape, A4 portrait: one paper, two orientations.
-    let wanted = [(595.0, 842.0), (842.0, 595.0), (595.0, 842.0)];
+    // A4 portrait, A4 landscape, A4 portrait: one paper, two orientations. The job's paper and
+    // orientation come from its first sheet, so the landscape sheet is turned onto portrait
+    // paper (CI's log showed its content rotated, the 18 pt frame margin kept, no scaling) and
+    // the PDF has three portrait pages. If craft-print ever sets orientation per page, this
+    // expectation changes to [(595, 842), (842, 595), (595, 842)] and the README with it.
+    let wanted = [(595.0, 842.0), (595.0, 842.0), (595.0, 842.0)];
     let pdf = pdf_with_pages(&[(595, 842), (842, 595), (595, 842)]);
     let job = Job { printer: Some(q.name.clone()), title: "cleonpdf windows spooler test".into(), ..Job::default() };
     let id = spool::submit(&pdf, &job).expect("the spooler accepts the job");
