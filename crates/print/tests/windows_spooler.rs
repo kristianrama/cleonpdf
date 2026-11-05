@@ -23,6 +23,9 @@ use std::time::{Duration, Instant};
 use cleonpdf_cos::Document;
 use cleonpdf_print::spool::{self, Job};
 
+/// Both tests use the one queue and its one output file, so they run one at a time.
+static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 struct Queue {
     name: String,
     file: PathBuf,
@@ -109,8 +112,15 @@ fn page_sizes(bytes: Vec<u8>) -> Vec<(f64, f64)> {
             // What the driver wrote, for the log: the page dictionary and the start of its content.
             let cut = |s: String| s.chars().take(700).collect::<String>();
             eprintln!("page dict: {}", cut(format!("{:?}", p.dict)));
-            if let Some(contents) = p.dict.get(b"Contents") {
-                eprintln!("page contents: {}", cut(format!("{:?}", doc.resolve(contents))));
+            let refs: Vec<_> = match p.dict.get(b"Contents").map(|c| doc.resolve(c)) {
+                Some(c) => c.as_array().map(|a| a.iter().filter_map(|o| o.as_ref()).collect()).unwrap_or_default(),
+                None => Vec::new(),
+            };
+            for r in refs {
+                if let cleonpdf_cos::Object::Stream(st) = &*doc.get(r) {
+                    let data = st.decoded().unwrap_or_default();
+                    eprintln!("page content ({} bytes): {}", data.len(), cut(String::from_utf8_lossy(&data).replace('\n', " ")));
+                }
             }
             let c = p.crop(&doc);
             let (w, h) = (c[2] - c[0], c[3] - c[1]);
@@ -121,6 +131,7 @@ fn page_sizes(bytes: Vec<u8>) -> Vec<(f64, f64)> {
 
 #[test]
 fn a_job_with_one_paper_and_mixed_orientations_reaches_the_driver_page_for_page() {
+    let _one = ONE_AT_A_TIME.lock().unwrap_or_else(|e| e.into_inner());
     let Some(q) = queue() else { return };
     let _ = std::fs::remove_file(&q.file);
     // A4 portrait, A4 landscape, A4 portrait: one paper, two orientations.
@@ -140,6 +151,7 @@ fn a_job_with_one_paper_and_mixed_orientations_reaches_the_driver_page_for_page(
 
 #[test]
 fn a_job_that_mixes_paper_sizes_is_refused_and_nothing_is_printed() {
+    let _one = ONE_AT_A_TIME.lock().unwrap_or_else(|e| e.into_inner());
     let Some(q) = queue() else { return };
     let _ = std::fs::remove_file(&q.file);
     // A4 then US Letter: a Windows job has one paper size, so this is refused, not shrunk.
