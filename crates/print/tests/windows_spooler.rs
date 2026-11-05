@@ -106,6 +106,12 @@ fn page_sizes(bytes: Vec<u8>) -> Vec<(f64, f64)> {
     cleonpdf_model::pages(&doc)
         .iter()
         .map(|p| {
+            // What the driver wrote, for the log: the page dictionary and the start of its content.
+            let cut = |s: String| s.chars().take(700).collect::<String>();
+            eprintln!("page dict: {}", cut(format!("{:?}", p.dict)));
+            if let Some(contents) = p.dict.get(b"Contents") {
+                eprintln!("page contents: {}", cut(format!("{:?}", doc.resolve(contents))));
+            }
             let c = p.crop(&doc);
             let (w, h) = (c[2] - c[0], c[3] - c[1]);
             if p.rotation(&doc) % 180 == 90 { (h, w) } else { (w, h) }
