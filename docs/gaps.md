@@ -298,14 +298,15 @@ update the numbers.
 
 - **Done so far:** `cleonpdf-net` asks an RFC 3161 server the caller names (sign_document
   `timestamp_url` and a Timestamp server field in the Sign dialog, PAdES B-T); nothing is
-  requested unless one is given.
+  requested unless one is given. `sign_add_validation_info` fetches OCSP responses and CRLs for
+  the signers' chains and embeds them (PAdES B-LT), refusing non-public hosts unless told otherwise.
 - **Missing:** PKCS #11 tokens and smart cards on macOS and Linux; a timestamp-server list in
-  Preferences; fetching OCSP/CRL online for LTV; FieldMDP and locking fields on signing; the OS trust store; EU
+  Preferences; a button for validation information in the Signatures panel; FieldMDP and locking fields on signing; the OS trust store; EU
   Trusted Lists; signature graphics and saved appearances; compare signed version; signing in the
   browser.
 - **Evidence:** `sign.pkcs11`, `sign.timestamp-servers`, `sign.field-mdp`, `sign.os-trust`,
-  `sign.eutl` planned; `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial (caller-supplied
-  evidence). Users ask for Acrobat-like validation
+  `sign.eutl` planned; `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial (evidence fetched in
+  tests against a loopback CA only). Users ask for Acrobat-like validation
   ([#824](https://github.com/storytold/pdfcraft/issues/824),
   [#775](https://github.com/storytold/pdfcraft/issues/775),
   [#718](https://github.com/storytold/pdfcraft/issues/718)).

@@ -48,8 +48,17 @@ for s in signatures(&doc, &bytes, &trust) {                                // li
   CertID hash matching, validity windows); validation checks embedded evidence against the
   signer's chain and a verified revocation invalidates the signature.
 
-Not yet: revocation fetching (AIA/CRLDP extraction and a fetcher), timestamp-server
-configuration, FieldMDP locks, certificate security, direct PKCS #11 access to tokens.
+- **Gathering evidence (PAdES B-LT):** `ltv::gather` takes the signers' chains and a
+  `RevocationFetcher` (this crate never opens a socket; `cleonpdf-net` is the HTTP one). For
+  each certificate below a root it asks the OCSP responders the certificate names, then its CRL
+  addresses (http and https only, three each), and keeps an answer only if `revocation` verifies
+  it and it is current. The result is `Evidence` for `dss::embed`, with a note per certificate:
+  fetched (OCSP or CRL), revoked, or missing with the reason. The OCSP request carries only the
+  issuer hash and serial number. The addresses come from the certificates, which is why the
+  transport, not this crate, decides which hosts to talk to.
+
+Not yet: fetching a missing issuer certificate (caIssuers), evidence for a signature timestamp's
+own chain, FieldMDP locks, certificate security, direct PKCS #11 access to tokens.
 macOS Keychain and Windows Current User Personal (My) store identities sign through
 `ExternalKey` without exporting private keys. Windows CNG supports RSA PKCS #1 v1.5 and
 ECDSA P-256/P-384; the store integration is tested with software-backed keys. A smart card

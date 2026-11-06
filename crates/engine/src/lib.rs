@@ -283,6 +283,57 @@ impl SignJob {
     }
 }
 
+/// What [`ValidationJob::run`] made: the file with its validation information, and what was
+/// found for each certificate.
+pub struct ValidationInfo {
+    pub bytes: Arc<Vec<u8>>,
+    pub gathered: cleonpdf_sign::ltv::Gathered,
+}
+
+/// A document copy and its signers' chains, to add validation information (OCSP responses and
+/// CRLs, PAdES B-LT) to. Made by [`Session::validation_job`]; it owns what it needs, so it can
+/// run on another thread while the session goes on.
+#[derive(Clone)]
+pub struct ValidationJob {
+    cos: cleonpdf_cos::Document,
+    chains: Vec<Vec<cleonpdf_sign::Certificate>>,
+    at: cleonpdf_sign::Time,
+    generation: u64,
+}
+
+impl ValidationJob {
+    /// The document's [`Document::edit_generation`] when the copy was made.
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+
+    /// Ask `fetcher` for the status of every certificate in the signers' chains and embed what
+    /// verified in the document's `/DSS`, as an incremental update (the signed bytes are never
+    /// rewritten). Nothing is embedded, and an error says why, when a certificate was found
+    /// revoked or when no OCSP response or CRL could be had for any of them.
+    pub fn run(&self, fetcher: &dyn cleonpdf_sign::ltv::RevocationFetcher) -> Result<ValidationInfo, EditError> {
+        use cleonpdf_sign::ltv::Outcome;
+        let gathered = cleonpdf_sign::ltv::gather(&self.chains, self.at, fetcher);
+        if let Some(n) = gathered.notes.iter().find(|n| matches!(n.outcome, Outcome::Revoked { .. })) {
+            let Outcome::Revoked { at, .. } = &n.outcome else { return Err(EditError::Sign("a certificate was revoked".into())) };
+            return Err(EditError::Sign(format!("the certificate of {} was revoked ({at}); nothing was added", n.subject)));
+        }
+        if !gathered.has_revocation_evidence() {
+            let why: Vec<String> = gathered
+                .notes
+                .iter()
+                .filter_map(|n| match &n.outcome {
+                    Outcome::Missing(m) => Some(format!("{}: {m}", n.subject)),
+                    _ => None,
+                })
+                .collect();
+            return Err(EditError::Sign(format!("no revocation information could be fetched ({})", why.join("; "))));
+        }
+        let bytes = Arc::new(cleonpdf_sign::dss::embed(&self.cos, &gathered.evidence)?);
+        Ok(ValidationInfo { bytes, gathered })
+    }
+}
+
 struct Editor {
     cos: cleonpdf_cos::Document,
     undo: Vec<Snapshot>,
@@ -4559,6 +4610,35 @@ impl Session {
         // Encrypted documents are signed under their permissions (the signer checks them).
         let editor = d.editor.as_ref().ok_or_else(|| EditError::ReadOnly(d.read_only_reason.clone().unwrap_or_default()))?;
         Ok(SignJob { cos: editor.cos.clone(), date: self.signing_date(), generation: d.edit_generation() })
+    }
+
+    /// A copy of document `doc` and its signatures' chains, ready to have validation information
+    /// fetched on another thread (OCSP and CRL servers can take seconds). Like
+    /// [`Session::sign_job`], the caller checks [`Document::edit_generation`] against the job's
+    /// `generation` before saving the result. Refused when the document has unsaved changes
+    /// (they would be written into the file along with the new information) or no signatures.
+    pub fn validation_job(&self, doc: DocId) -> Result<ValidationJob, EditError> {
+        let d = self.get(doc).ok_or(EditError::NoDocument)?;
+        let editor = d.editor.as_ref().ok_or_else(|| EditError::ReadOnly(d.read_only_reason.clone().unwrap_or_default()))?;
+        if d.dirty {
+            return Err(EditError::Sign(
+                "save the document first: its unsaved changes would be written along with the validation information".into(),
+            ));
+        }
+        let chains: Vec<Vec<cleonpdf_sign::Certificate>> =
+            d.signatures.iter().filter(|s| s.signed && !s.chain.is_empty()).map(|s| s.chain.clone()).collect();
+        if chains.is_empty() {
+            return Err(EditError::Sign("the document has no signature to add validation information to".into()));
+        }
+        let at = cleonpdf_sign::Time::from_unix(self.now().unwrap_or(0));
+        Ok(ValidationJob { cos: editor.cos.clone(), chains, at, generation: d.edit_generation() })
+    }
+
+    /// Fetch OCSP responses and CRLs for the document's signers through `fetcher` and embed them
+    /// (PAdES B-LT). Returns the file; the caller saves it and calls [`Session::mark_signed`].
+    /// The transport is the caller's: the engine never opens a socket.
+    pub fn add_validation_info(&self, doc: DocId, fetcher: &dyn cleonpdf_sign::ltv::RevocationFetcher) -> Result<ValidationInfo, EditError> {
+        self.validation_job(doc)?.run(fetcher)
     }
 
     /// Append a standalone document timestamp (RFC 3161, `/ETSI.RFC3161`) covering the file's
