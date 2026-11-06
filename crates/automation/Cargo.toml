@@ -10,6 +10,7 @@ workspace = true
 
 [dependencies]
 cleonpdf-engine = { workspace = true }
+cleonpdf-net = { workspace = true }
 cleonpdf-cos = { workspace = true }
 cleonpdf-render = { workspace = true }
 cleonpdf-organize = { workspace = true }

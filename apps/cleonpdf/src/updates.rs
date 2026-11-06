@@ -9,11 +9,7 @@ const LATEST: &str = "https://api.github.com/repos/kristianrama/cleonpdf/release
 /// The latest release. The answer is untrusted: its size is capped, and only a page under
 /// [`RELEASES_PAGE`] is ever offered for download (anything else falls back to that list).
 pub fn latest_release() -> Result<Release, String> {
-    let agent = ureq::Agent::config_builder()
-        .timeout_global(Some(Duration::from_secs(10)))
-        .tls_config(ureq::tls::TlsConfig::builder().root_certs(os_roots()?).build())
-        .build()
-        .new_agent();
+    let agent = cleonpdf_net::agent(Duration::from_secs(10))?;
     let mut response = agent
         .get(LATEST)
         .header("Accept", "application/vnd.github+json")
@@ -35,16 +31,6 @@ pub fn latest_release() -> Result<Release, String> {
     }
     let body = response.body_mut().with_config().limit(1 << 20).read_to_string().map_err(|e| format!("unreadable answer ({e})"))?;
     parse(&body)
-}
-
-/// The certificate authorities the operating system trusts.
-fn os_roots() -> Result<ureq::tls::RootCerts, String> {
-    let found = rustls_native_certs::load_native_certs();
-    let certs: Vec<ureq::tls::Certificate<'static>> = found.certs.iter().map(|c| ureq::tls::Certificate::from_der(c.as_ref()).to_owned()).collect();
-    if certs.is_empty() {
-        return Err("no trusted certificates found on this system".into());
-    }
-    Ok(ureq::tls::RootCerts::new_with_certs(&certs))
 }
 
 /// The current Unix time in seconds (0 when the clock gives nothing usable).
