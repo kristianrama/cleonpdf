@@ -444,6 +444,11 @@ pub struct SignatureInfo {
     /// token) its authority chains to the trust store. An untrusted token's time is never
     /// used as the validation time.
     pub timestamp_time: Option<Time>,
+    /// The timestamp authority's chain (its certificate first) as built from the token's
+    /// certificates and the trust store at the time it stamped, whether or not it is trusted.
+    /// Empty without a timestamp token. Long-term validation needs the same evidence for it as
+    /// for the signer's chain.
+    pub timestamp_chain: Vec<Certificate>,
     pub status: Status,
     pub modification: Modification,
     /// Acrobat-style sentences explaining the verdict, each one ready to read in English and ready to
@@ -590,6 +595,7 @@ pub fn list_cached(doc: &Document, bytes: &[u8], trust: &TrustStore, cache: &Dig
             signer: None,
             certificate: None,
             chain: Vec::new(),
+            timestamp_chain: Vec::new(),
             date: None,
             signing_time: None,
             reason: None,
@@ -633,6 +639,7 @@ pub fn list_cached(doc: &Document, bytes: &[u8], trust: &TrustStore, cache: &Dig
             signer: None,
             certificate: None,
             chain: Vec::new(),
+            timestamp_chain: Vec::new(),
             date: None,
             signing_time: None,
             reason: None,
@@ -761,9 +768,10 @@ fn validate_into(doc: &Document, bytes: &[u8], trust: &TrustStore, v: &Dict, inf
                     // own claimed time, as without a timestamp.
                     let mut pool = crate::timestamp::token_certs(raw);
                     pool.extend(trust.certs.iter().cloned());
-                    let trusted_tsa = t
-                        .signer_certificate()
-                        .is_some_and(|c| c.valid_at(t.gen_time) && build_chain(&c, &pool, Some(t.gen_time)).iter().any(|x| trust.trusts(x)));
+                    let tsa_chain: Vec<Certificate> =
+                        t.signer_certificate().map(|c| build_chain(&c, &pool, Some(t.gen_time)).into_iter().cloned().collect()).unwrap_or_default();
+                    let trusted_tsa = t.signer_certificate().is_some_and(|c| c.valid_at(t.gen_time)) && tsa_chain.iter().any(|x| trust.trusts(x));
+                    info.timestamp_chain = tsa_chain;
                     if trusted_tsa {
                         info.timestamp_time = Some(t.gen_time);
                     } else {
@@ -1062,7 +1070,10 @@ fn validate_doc_timestamp(doc: &Document, bytes: &[u8], v: &Dict, info: &mut Sig
         // A trusted authority whose certificate was not valid at the time it stamped proves
         // nothing either (its detail is already recorded above): never upgrade that to Valid.
         let in_validity = token.signer_certificate().is_some_and(|c| c.valid_at(token.gen_time));
-        let trusted_tsa = token.signer_certificate().is_some_and(|c| build_chain(&c, &pool, Some(token.gen_time)).iter().any(|x| trust.trusts(x)));
+        let tsa_chain: Vec<Certificate> =
+            token.signer_certificate().map(|c| build_chain(&c, &pool, Some(token.gen_time)).into_iter().cloned().collect()).unwrap_or_default();
+        let trusted_tsa = tsa_chain.iter().any(|x| trust.trusts(x));
+        info.timestamp_chain = tsa_chain;
         if trusted_tsa && in_validity {
             info.status = Status::Valid;
             info.details.push(Detail::plain("The timestamp token is valid and its authority is trusted."));
