@@ -2387,3 +2387,6 @@ window	Zoom	Spremeni velikost
 	The table of contents is linked and in the bookmarks	Kazalo vsebine je povezano in v zaznamkih
 	The table of contents is linked	Kazalo vsebine je povezano
 	The table of contents is in the bookmarks	Kazalo vsebine je v zaznamkih
+	Timestamp server	Strežnik časovnih žigov
+	Optional: https://…	Neobvezno: https://…
+	Only a digest of the signature is sent to this server, never the document.	Temu strežniku se pošlje samo povzetek podpisa, nikoli dokument.

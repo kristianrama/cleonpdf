@@ -13,6 +13,7 @@ workspace = true
 craft-ui = { workspace = true }
 cleonpdf-fonts = { workspace = true }
 cleonpdf-engine = { workspace = true }
+cleonpdf-net = { workspace = true }
 cleonpdf-cos = { workspace = true }
 cleonpdf-render = { workspace = true }
 cleonpdf-model = { workspace = true }

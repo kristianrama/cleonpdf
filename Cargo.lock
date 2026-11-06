@@ -1370,6 +1370,7 @@ dependencies = [
  "cleonpdf-engine",
  "cleonpdf-fonts",
  "cleonpdf-model",
+ "cleonpdf-net",
  "cleonpdf-platform",
  "cleonpdf-render",
  "cleonpdf-xfa",

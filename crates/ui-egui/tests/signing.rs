@@ -189,6 +189,8 @@ fn certifying_without_a_visible_signature() {
     h.get_by_label("Certify as \"Test Signer EC\"");
     h.get_by_label("Permitted actions after certifying");
     h.state_mut().sign_draft.as_mut().unwrap().password = "test".into();
+    // The timestamp-server row made the dialog a line taller; let it settle before clicking.
+    h.run_steps(2);
     h.get_by_label("Sign").click();
     h.run_steps(6);
     let s = h.state();

@@ -2382,3 +2382,6 @@ window	Zoom	Réduire/agrandir
 	The table of contents is linked and in the bookmarks	La table des matières est liée et dans les signets
 	The table of contents is linked	La table des matières est liée
 	The table of contents is in the bookmarks	La table des matières est dans les signets
+	Timestamp server	Serveur d’horodatage
+	Optional: https://…	Facultatif : https://…
+	Only a digest of the signature is sent to this server, never the document.	Seule une empreinte de la signature est envoyée à ce serveur, jamais le document.

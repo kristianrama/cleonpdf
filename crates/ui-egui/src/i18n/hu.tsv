@@ -2381,3 +2381,6 @@ window	Zoom	Méretezés
 	The table of contents is linked and in the bookmarks	A tartalomjegyzék össze van kapcsolva, és a könyvjelzők között van
 	The table of contents is linked	A tartalomjegyzék össze van kapcsolva
 	The table of contents is in the bookmarks	A tartalomjegyzék a könyvjelzők között van
+	Timestamp server	Időbélyegző szerver
+	Optional: https://…	Nem kötelező: https://…
+	Only a digest of the signature is sent to this server, never the document.	Ennek a szervernek csak az aláírás lenyomata kerül elküldésre, a dokumentum soha.

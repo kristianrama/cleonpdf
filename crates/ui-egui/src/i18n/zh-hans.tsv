@@ -2346,3 +2346,6 @@ window	Zoom	缩放
 	The table of contents is linked and in the bookmarks	目录已链接并已添加到书签
 	The table of contents is linked	目录已链接
 	The table of contents is in the bookmarks	目录已添加到书签
+	Timestamp server	时间戳服务器
+	Optional: https://…	可选：https://…
+	Only a digest of the signature is sent to this server, never the document.	只会向此服务器发送签名的摘要，绝不会发送文档。

@@ -246,6 +246,43 @@ type Snapshot = (Label, cleonpdf_cos::Document, Keys, Scope);
 
 /// Editing state of a document (absent when the document cannot be edited yet, e.g. encrypted).
 #[derive(Clone)]
+/// A document copy to sign, made by [`Session::sign_job`]. It owns what it needs, so it can run
+/// on another thread while the session goes on.
+pub struct SignJob {
+    cos: cleonpdf_cos::Document,
+    date: String,
+    generation: u64,
+}
+
+impl SignJob {
+    /// The document's [`Document::edit_generation`] when the copy was made.
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+
+    /// Sign the copy with `id`. An empty `opts.date` takes the session clock of the moment the
+    /// job was made.
+    pub fn run(self, id: &cleonpdf_sign::DigitalId, mut opts: SignOptions) -> Result<Arc<Vec<u8>>, EditError> {
+        if opts.date.is_empty() {
+            opts.date = self.date.clone();
+        }
+        Ok(Arc::new(cleonpdf_sign::sign(&self.cos, id, &opts)?))
+    }
+
+    /// [`SignJob::run`], with an RFC 3161 signature timestamp from `tsa`.
+    pub fn run_with_timestamp(
+        self,
+        id: &cleonpdf_sign::DigitalId,
+        mut opts: SignOptions,
+        tsa: &dyn cleonpdf_sign::TimestampAuthority,
+    ) -> Result<Arc<Vec<u8>>, EditError> {
+        if opts.date.is_empty() {
+            opts.date = self.date.clone();
+        }
+        Ok(Arc::new(cleonpdf_sign::sign_with_timestamp(&self.cos, id, &opts, tsa)?))
+    }
+}
+
 struct Editor {
     cos: cleonpdf_cos::Document,
     undo: Vec<Snapshot>,
@@ -4497,14 +4534,8 @@ impl Session {
     /// Sign the document's current state with `id` (Use a certificate ▸ Digitally sign). Returns
     /// the signed file; the caller saves it and then calls [`Session::mark_signed`]. An empty
     /// `opts.date` takes the session clock.
-    pub fn sign(&self, doc: DocId, id: &cleonpdf_sign::DigitalId, mut opts: SignOptions) -> Result<Arc<Vec<u8>>, EditError> {
-        let d = self.get(doc).ok_or(EditError::NoDocument)?;
-        // Encrypted documents are signed under their permissions (the signer checks them).
-        let editor = d.editor.as_ref().ok_or_else(|| EditError::ReadOnly(d.read_only_reason.clone().unwrap_or_default()))?;
-        if opts.date.is_empty() {
-            opts.date = self.signing_date();
-        }
-        Ok(Arc::new(cleonpdf_sign::sign(&editor.cos, id, &opts)?))
+    pub fn sign(&self, doc: DocId, id: &cleonpdf_sign::DigitalId, opts: SignOptions) -> Result<Arc<Vec<u8>>, EditError> {
+        self.sign_job(doc)?.run(id, opts)
     }
 
     /// [`Session::sign`], embedding an RFC 3161 signature timestamp (PAdES B-T) produced by
@@ -4513,15 +4544,21 @@ impl Session {
         &self,
         doc: DocId,
         id: &cleonpdf_sign::DigitalId,
-        mut opts: SignOptions,
+        opts: SignOptions,
         tsa: &dyn cleonpdf_sign::TimestampAuthority,
     ) -> Result<Arc<Vec<u8>>, EditError> {
+        self.sign_job(doc)?.run_with_timestamp(id, opts, tsa)
+    }
+
+    /// A copy of document `doc` as it is now, ready to be signed on another thread. A timestamp
+    /// server can take seconds to answer, so the caller can sign off its own thread and, when
+    /// the job is done, check [`Document::edit_generation`] against `generation` to see that
+    /// the document was not edited meanwhile before saving the result.
+    pub fn sign_job(&self, doc: DocId) -> Result<SignJob, EditError> {
         let d = self.get(doc).ok_or(EditError::NoDocument)?;
+        // Encrypted documents are signed under their permissions (the signer checks them).
         let editor = d.editor.as_ref().ok_or_else(|| EditError::ReadOnly(d.read_only_reason.clone().unwrap_or_default()))?;
-        if opts.date.is_empty() {
-            opts.date = self.signing_date();
-        }
-        Ok(Arc::new(cleonpdf_sign::sign_with_timestamp(&editor.cos, id, &opts, tsa)?))
+        Ok(SignJob { cos: editor.cos.clone(), date: self.signing_date(), generation: d.edit_generation() })
     }
 
     /// Append a standalone document timestamp (RFC 3161, `/ETSI.RFC3161`) covering the file's

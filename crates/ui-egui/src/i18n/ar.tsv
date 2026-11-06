@@ -2405,3 +2405,6 @@ window	Zoom	تغيير الحجم
 	The table of contents is linked and in the bookmarks	جدول المحتويات مرتبط وموجود في الإشارات المرجعية
 	The table of contents is linked	جدول المحتويات مرتبط
 	The table of contents is in the bookmarks	جدول المحتويات موجود في الإشارات المرجعية
+	Timestamp server	خادم الطابع الزمني
+	Optional: https://…	اختياري: https://…
+	Only a digest of the signature is sent to this server, never the document.	يُرسَل إلى هذا الخادم ملخّص التوقيع فقط، ولا يُرسَل المستند أبدًا.

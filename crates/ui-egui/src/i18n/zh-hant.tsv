@@ -2256,3 +2256,6 @@ window	Zoom	縮放
 	The table of contents is linked and in the bookmarks	目錄已連結並加入書籤
 	The table of contents is linked	目錄已連結
 	The table of contents is in the bookmarks	目錄已加入書籤
+	Timestamp server	時間戳記伺服器
+	Optional: https://…	選用：https://…
+	Only a digest of the signature is sent to this server, never the document.	只會向此伺服器傳送簽章的摘要，絕不會傳送文件。

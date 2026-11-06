@@ -2456,3 +2456,6 @@ window	Zoom	Změnit velikost
 	The table of contents is linked and in the bookmarks	Obsah je propojený a v záložkách
 	The table of contents is linked	Obsah je propojený
 	The table of contents is in the bookmarks	Obsah je v záložkách
+	Timestamp server	Server časových razítek
+	Optional: https://…	Volitelné: https://…
+	Only a digest of the signature is sent to this server, never the document.	Na tento server se odesílá pouze otisk podpisu, nikdy dokument.

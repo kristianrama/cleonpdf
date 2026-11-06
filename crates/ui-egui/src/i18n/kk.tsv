@@ -2380,3 +2380,6 @@ window	Zoom	Өлшемін өзгерту
 	The table of contents is linked and in the bookmarks	Мазмұн байланыстырылды және бетбелгілерде
 	The table of contents is linked	Мазмұн байланыстырылды
 	The table of contents is in the bookmarks	Мазмұн бетбелгілерде
+	Timestamp server	Уақыт белгісі сервері
+	Optional: https://…	Міндетті емес: https://…
+	Only a digest of the signature is sent to this server, never the document.	Бұл серверге тек қолтаңбаның дайджесті жіберіледі, құжат ешқашан жіберілмейді.

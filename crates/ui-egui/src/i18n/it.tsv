@@ -2393,3 +2393,6 @@ window	Zoom	Ridimensiona
 	The table of contents is linked and in the bookmarks	L'indice è collegato ed è nei segnalibri
 	The table of contents is linked	L'indice è collegato
 	The table of contents is in the bookmarks	L'indice è nei segnalibri
+	Timestamp server	Server di marca temporale
+	Optional: https://…	Facoltativo: https://…
+	Only a digest of the signature is sent to this server, never the document.	A questo server viene inviato solo un digest della firma, mai il documento.

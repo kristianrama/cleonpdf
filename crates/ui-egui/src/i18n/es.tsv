@@ -2512,3 +2512,6 @@ window	Zoom	Zoom
 	The table of contents is linked and in the bookmarks	El índice está enlazado y en los marcadores
 	The table of contents is linked	El índice está enlazado
 	The table of contents is in the bookmarks	El índice está en los marcadores
+	Timestamp server	Servidor de sellado de tiempo
+	Optional: https://…	Opcional: https://…
+	Only a digest of the signature is sent to this server, never the document.	A este servidor solo se envía un resumen (hash) de la firma, nunca el documento.
