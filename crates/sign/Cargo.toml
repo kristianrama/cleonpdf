@@ -39,6 +39,9 @@ ripemd = "0.2.0"
 ed25519-dalek = "3.0.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# PKCS #11 tokens and smart cards (Apache-2.0): loads the token vendor's library, which the
+# user chose, and calls it through the standard interface.
+cryptoki = "0.12"
 aws-lc-rs = { version = "1.18", default-features = false, features = ["aws-lc-sys", "prebuilt-nasm"] }
 getrandom = "0.4"
 
@@ -53,3 +56,7 @@ security-framework = "3.7"
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # crypto-bigint asks for randomness; in the browser it comes from Web Crypto.
 getrandom = { version = "0.4", features = ["wasm_js"] }
+
+[dev-dependencies]
+# To build a token for the PKCS #11 tests (PINs are wrapped in a secret string).
+secrecy = "0.10"
