@@ -105,6 +105,8 @@ pub struct SignDraft {
     pub password: String,
     pub reason: String,
     pub location: String,
+    /// The RFC 3161 timestamp server to ask (PAdES B-T); empty: sign without a timestamp.
+    pub timestamp_url: String,
     pub appearance: Appearance,
     pub graphic: SignGraphic,
     /// The image the dialog holds (remembered or chosen), so Image can be chosen again.
@@ -129,6 +131,7 @@ impl SignDraft {
             password: String::new(),
             reason: String::new(),
             location: String::new(),
+            timestamp_url: String::new(),
             appearance: Appearance::default(),
             graphic: SignGraphic::Name,
             image: None,
@@ -137,6 +140,17 @@ impl SignDraft {
             confirm_remove: None,
         }
     }
+}
+
+/// A signature being made on another thread while a timestamp server is asked.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) struct SigningTask {
+    rx: std::sync::mpsc::Receiver<Result<std::sync::Arc<Vec<u8>>, String>>,
+    doc_id: cleonpdf_engine::DocId,
+    path: PathBuf,
+    choice: SignGraphic,
+    /// The document's edit generation when the copy was made.
+    generation: u64,
 }
 
 /// What a page asks of the signing flow.
@@ -277,6 +291,7 @@ impl CleonPdfApp {
         if let SignGraphic::Image(image) = &self.sign_graphic {
             draft.image = Some(image.clone());
         }
+        draft.timestamp_url = self.timestamp_server.clone();
         self.sign_draft = Some(draft);
         self.dialog = Some(crate::Dialog::Sign);
     }
@@ -426,6 +441,12 @@ impl CleonPdfApp {
             _ => None,
         };
         let choice = d.graphic.clone();
+        // A timestamp server is asked only when one is typed. A bad address keeps the dialog
+        // open and says why; a good one is remembered for next time (an empty field too).
+        let url = d.timestamp_url.trim().to_string();
+        #[cfg(not(target_arch = "wasm32"))]
+        let tsa = if url.is_empty() { None } else { Some(cleonpdf_net::HttpTimestampAuthority::new(&url).map_err(|e| e.to_string())?) };
+        self.timestamp_server = url;
         let opts = SignOptions {
             field: d.field.clone(),
             page: d.page,
@@ -447,19 +468,13 @@ impl CleonPdfApp {
             if !app.commit_typing_in(doc_id) {
                 return Err(String::new());
             }
-            let signed = app.session.sign(doc_id, &id, opts).map_err(|e| e.to_string())?;
-            crate::editing::write_atomically(&path.to_string_lossy(), signed.as_slice()).map_err(|e| format!("Could not save: {e}"))?;
-            // Our own write is not a change on disk to reload (#431).
+            // A timestamp server can take seconds: sign on another thread and finish when it answers.
             #[cfg(not(target_arch = "wasm32"))]
-            app.watch.known_now(doc_id, &path.to_string_lossy());
-            app.session.mark_signed(doc_id, signed, Some(path.to_string_lossy().into_owned())).map_err(|e| e.to_string())?;
-            app.sign_graphic = choice;
-            if let Some(view) = app.views.iter_mut().find(|v| v.id == doc_id) {
-                view.invalidate_content();
+            if let Some(tsa) = tsa {
+                return app.start_timestamped_signing(doc_id, id, opts, tsa, path, choice);
             }
-            app.right = Some(crate::RightPanel::Signatures);
-            app.notify_fmt("Signed and saved to {path}", &[("path", &path.display().to_string())]);
-            Ok(())
+            let signed = app.session.sign(doc_id, &id, opts).map_err(|e| e.to_string())?;
+            app.finish_signed(doc_id, path, signed, choice)
         };
         match self.save_override.clone() {
             Some(p) => sign_and_save(self, PathBuf::from(p)),
@@ -483,6 +498,102 @@ impl CleonPdfApp {
             None => {
                 let _ = (stem, sign_and_save);
                 Err(String::new())
+            }
+        }
+    }
+
+    /// Write the signed file, tell the session and show the result (the end of every signing).
+    fn finish_signed(
+        &mut self,
+        doc_id: cleonpdf_engine::DocId,
+        path: PathBuf,
+        signed: std::sync::Arc<Vec<u8>>,
+        choice: SignGraphic,
+    ) -> Result<(), String> {
+        crate::editing::write_atomically(&path.to_string_lossy(), signed.as_slice()).map_err(|e| format!("Could not save: {e}"))?;
+        // Our own write is not a change on disk to reload (#431).
+        #[cfg(not(target_arch = "wasm32"))]
+        self.watch.known_now(doc_id, &path.to_string_lossy());
+        self.session.mark_signed(doc_id, signed, Some(path.to_string_lossy().into_owned())).map_err(|e| e.to_string())?;
+        self.sign_graphic = choice;
+        if let Some(view) = self.views.iter_mut().find(|v| v.id == doc_id) {
+            view.invalidate_content();
+        }
+        self.right = Some(crate::RightPanel::Signatures);
+        self.notify_fmt("Signed and saved to {path}", &[("path", &path.display().to_string())]);
+        Ok(())
+    }
+
+    /// Sign a copy of the document on another thread, asking `tsa` for the timestamp, and finish
+    /// in [`CleonPdfApp::poll_signing`] when it answers. One at a time.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn start_timestamped_signing(
+        &mut self,
+        doc_id: cleonpdf_engine::DocId,
+        id: DigitalId,
+        opts: SignOptions,
+        tsa: cleonpdf_net::HttpTimestampAuthority,
+        path: PathBuf,
+        choice: SignGraphic,
+    ) -> Result<(), String> {
+        if self.signing_task.is_some() {
+            return Err("A signature is already being made. Wait for it to finish.".into());
+        }
+        let job = self.session.sign_job(doc_id).map_err(|e| e.to_string())?;
+        let generation = job.generation();
+        let host = tsa.host().to_string();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let ctx = self.ctx.clone();
+        std::thread::spawn(move || {
+            let signed = job.run_with_timestamp(&id, opts, &tsa).map_err(|e| e.to_string());
+            // The receiver may be gone (the app quit): nothing to report to then.
+            let _ = tx.send(signed);
+            if let Some(ctx) = ctx {
+                ctx.request_repaint();
+            }
+        });
+        self.notify_fmt("Asking {server} for a timestamp…", &[("server", &host)]);
+        self.signing_task = Some(SigningTask { rx, doc_id, path, choice, generation });
+        Ok(())
+    }
+
+    /// A signature is being made while its timestamp is requested.
+    pub fn signing_in_progress(&self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        return self.signing_task.is_some();
+        #[cfg(target_arch = "wasm32")]
+        false
+    }
+
+    /// Nothing is being signed in the background (the opposite of [`Self::signing_in_progress`]).
+    pub fn signing_task_idle(&self) -> bool {
+        !self.signing_in_progress()
+    }
+
+    /// Pick up a signature whose timestamp was being requested (each frame).
+    pub(crate) fn poll_signing(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let Some(task) = &self.signing_task else { return };
+            let result = match task.rx.try_recv() {
+                Ok(r) => r,
+                Err(std::sync::mpsc::TryRecvError::Empty) => return,
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("the signing stopped unexpectedly".into()),
+            };
+            let Some(task) = self.signing_task.take() else { return };
+            let outcome = match result {
+                // Signed from a copy: an edit made while the server was asked is not in it, and
+                // saving it would drop that edit, so nothing is saved.
+                Ok(_) if self.session.get(task.doc_id).map(|d| d.edit_generation()) != Some(task.generation) => {
+                    Err("The document changed while the timestamp was being requested, so it was not signed. Nothing was saved.".to_string())
+                }
+                Ok(signed) => self.finish_signed(task.doc_id, task.path, signed, task.choice),
+                Err(e) => Err(e),
+            };
+            if let Err(e) = outcome
+                && !e.is_empty()
+            {
+                self.notify(e);
             }
         }
     }
@@ -937,6 +1048,18 @@ fn sign_as(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
         let l = ui.label(tl!("Location"));
         ui.add(crate::widgets::line(&mut d.location).hint_text(tl!("Optional")).desired_width(260.0)).labelled_by(l.id);
         ui.end_row();
+        // A web page can't reach a timestamp server; the desktop app asks it only when this is filled.
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let l = ui.label(tl!("Timestamp server"));
+            ui.add(crate::widgets::line(&mut d.timestamp_url).hint_text(tl!("Optional: https://…")).desired_width(260.0)).labelled_by(l.id);
+            ui.end_row();
+            ui.label("");
+            ui.label(
+                egui::RichText::new(tl!("Only a digest of the signature is sent to this server, never the document.")).small().color(t.text_muted),
+            );
+            ui.end_row();
+        }
         if in_os_key_store {
             ui.label("");
             ui.label(

@@ -2624,3 +2624,6 @@ window	Zoom	Keisti dydį
 	The table of contents is linked and in the bookmarks	Turinys susietas ir įtrauktas į žymeles
 	The table of contents is linked	Turinys susietas
 	The table of contents is in the bookmarks	Turinys įtrauktas į žymeles
+	Timestamp server	Laiko žymų serveris
+	Optional: https://…	Neprivaloma: https://…
+	Only a digest of the signature is sent to this server, never the document.	Šiam serveriui siunčiama tik parašo santrauka, niekada ne dokumentas.

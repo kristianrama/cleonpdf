@@ -2295,3 +2295,6 @@ window	Zoom	Изменить масштаб
 	The table of contents is linked and in the bookmarks	Оглавление связано и добавлено в закладки
 	The table of contents is linked	Оглавление связано
 	The table of contents is in the bookmarks	Оглавление добавлено в закладки
+	Timestamp server	Сервер меток времени
+	Optional: https://…	Необязательно: https://…
+	Only a digest of the signature is sent to this server, never the document.	На этот сервер отправляется только хеш подписи, но никогда не сам документ.

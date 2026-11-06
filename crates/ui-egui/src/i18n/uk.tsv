@@ -2406,3 +2406,6 @@ window	Zoom	Змінити масштаб
 	The table of contents is linked and in the bookmarks	Зміст зв'язано й додано до закладок
 	The table of contents is linked	Зміст зв'язано
 	The table of contents is in the bookmarks	Зміст додано до закладок
+	Timestamp server	Сервер позначок часу
+	Optional: https://…	Необов’язково: https://…
+	Only a digest of the signature is sent to this server, never the document.	На цей сервер надсилається лише хеш підпису, але ніколи сам документ.

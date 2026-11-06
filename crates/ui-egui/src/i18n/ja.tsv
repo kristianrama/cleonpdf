@@ -2382,3 +2382,6 @@ window	Zoom	拡大／縮小
 	The table of contents is linked and in the bookmarks	目次をリンクし、しおりに追加しました
 	The table of contents is linked	目次をリンクしました
 	The table of contents is in the bookmarks	目次をしおりに追加しました
+	Timestamp server	タイムスタンプサーバー
+	Optional: https://…	任意: https://…
+	Only a digest of the signature is sent to this server, never the document.	このサーバーには署名のダイジェストのみが送信され、文書は送信されません。

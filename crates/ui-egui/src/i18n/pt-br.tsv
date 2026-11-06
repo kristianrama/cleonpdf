@@ -2396,3 +2396,6 @@ window	Zoom	Zoom
 	The table of contents is linked and in the bookmarks	O sumário está vinculado e nos marcadores
 	The table of contents is linked	O sumário está vinculado
 	The table of contents is in the bookmarks	O sumário está nos marcadores
+	Timestamp server	Servidor de carimbo de data/hora
+	Optional: https://…	Opcional: https://…
+	Only a digest of the signature is sent to this server, never the document.	Somente um resumo (hash) da assinatura é enviado a este servidor, nunca o documento.

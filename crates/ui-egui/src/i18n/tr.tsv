@@ -2378,3 +2378,6 @@ window	Zoom	Boyutlandır
 	The table of contents is linked and in the bookmarks	İçindekiler bağlandı ve yer işaretlerinde
 	The table of contents is linked	İçindekiler bağlandı
 	The table of contents is in the bookmarks	İçindekiler yer işaretlerinde
+	Timestamp server	Zaman damgası sunucusu
+	Optional: https://…	İsteğe bağlı: https://…
+	Only a digest of the signature is sent to this server, never the document.	Bu sunucuya yalnızca imzanın özeti gönderilir, belge asla gönderilmez.

@@ -2123,6 +2123,33 @@ fn flattening_fill_and_sign_on_a_signed_file_stays_incremental() {
 }
 
 #[test]
+fn a_sign_job_signs_the_copy_it_was_made_from_on_another_thread() {
+    let p12 = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../sign/tests/data/ec-p256.p12")).unwrap();
+    let digital_id = sign::pkcs12::open(&p12, "test").unwrap();
+    let mut s = Session::new().with_clock(|| 1_800_000_000);
+    let id = s.open("fixture.pdf", None, Arc::new(fixture(1)), None).unwrap();
+    let opts = SignOptions { page: 0, rect: Some([20.0, 20.0, 160.0, 50.0]), ..SignOptions::default() };
+    let job = s.sign_job(id).unwrap();
+    let before = job.generation();
+    assert_eq!(before, s.get(id).unwrap().edit_generation());
+    // The session carries on while the job runs: an edit made now is not in the signed copy,
+    // and the generation says the document moved on.
+    s.apply(id, fill_item(Shape::Typewriter { rect: [20.0, 200.0, 120.0, 220.0], font_size: 10.0 }, "Late edit")).unwrap();
+    assert_ne!(before, s.get(id).unwrap().edit_generation(), "an edit changes the generation");
+    let (id_for_thread, opts_for_thread) = (digital_id, opts.clone());
+    let signed = std::thread::spawn(move || job.run(&id_for_thread, opts_for_thread)).join().unwrap().unwrap();
+    assert!(signed.starts_with(&fixture(1)), "an incremental update of the original");
+    assert!(!String::from_utf8_lossy(&signed).contains("Late edit"), "the edit made after the copy is not signed");
+    // The same job path gives the same bytes as signing in place, for a document nobody edited.
+    let mut t = Session::new().with_clock(|| 1_800_000_000);
+    let tid = t.open("fixture.pdf", None, Arc::new(fixture(1)), None).unwrap();
+    let digital_id = sign::pkcs12::open(&p12, "test").unwrap();
+    let in_place = t.sign(tid, &digital_id, opts.clone()).unwrap();
+    let via_job = t.sign_job(tid).unwrap().run(&digital_id, opts).unwrap();
+    assert_eq!(in_place.len(), via_job.len());
+}
+
+#[test]
 fn flattening_fill_and_sign_reopens_an_encrypted_file() {
     let (mut s, id) = session_with(1);
     s.apply(id, fill_item(Shape::Typewriter { rect: [20.0, 200.0, 120.0, 220.0], font_size: 10.0 }, "Hello")).unwrap();

@@ -649,6 +649,11 @@ pub struct CleonPdfApp {
     pub summary_sort: cleonpdf_engine::SummarySort,
     /// The signing dialogs' state.
     pub sign_draft: Option<SignDraft>,
+    /// The timestamp server asked when signing (empty: none), remembered between sessions.
+    pub timestamp_server: String,
+    /// A signature being made while its timestamp is requested (desktop).
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) signing_task: Option<sign_ui::SigningTask>,
     /// Digital ID files the user has created or added.
     pub digital_ids: Vec<DigitalIdEntry>,
     /// Signatures panel: expanded entries (field names).
@@ -978,6 +983,9 @@ impl CleonPdfApp {
             rotate_draft: RotateDraft::default(),
             summary_sort: Default::default(),
             sign_draft: None,
+            timestamp_server: String::new(),
+            #[cfg(not(target_arch = "wasm32"))]
+            signing_task: None,
             digital_ids: Vec::new(),
             sig_expanded: Vec::new(),
             a11y_options: a11y_ui::A11yOptions::default(),
@@ -2193,6 +2201,7 @@ impl CleonPdfApp {
         // Outside `json!`, whose expansion is at the compiler's recursion limit. The desktop app
         // reads this one before its window exists (apps/cleonpdf `saved_glass`).
         settings["window_glass"] = serde_json::Value::Bool(self.window_glass);
+        settings["timestamp_server"] = serde_json::Value::String(self.timestamp_server.clone());
         settings.to_string()
     }
 
@@ -2337,6 +2346,8 @@ impl CleonPdfApp {
         }
         // An unreadable choice (a damaged image) falls back to the name.
         self.sign_graphic = serde_json::from_value(v["sign_graphic"].clone()).unwrap_or_default();
+        // Settings are untrusted input: a server address longer than any accepted one is dropped.
+        self.timestamp_server = v["timestamp_server"].as_str().filter(|s| s.len() <= 2048).unwrap_or_default().to_string();
         if let Ok(ids) = serde_json::from_value::<Vec<DigitalIdEntry>>(v["digital_ids"].clone()) {
             self.digital_ids = ids;
         }
@@ -2956,6 +2967,7 @@ impl eframe::App for CleonPdfApp {
         }
         self.poll_updates();
         self.poll_print();
+        self.poll_signing();
         // Shortcuts deferred last frame: the text field has taken that frame's typing since.
         let deferred = std::mem::take(&mut self.deferred_commands);
         self.run_system_choices(ctx);
