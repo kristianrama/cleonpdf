@@ -47,6 +47,29 @@ pub fn aia_ocsp(url: &str) -> Vec<u8> {
     ext("1.3.6.1.5.5.7.1.1", false, &der::seq(&[&der::seq(&[&der::oid("1.3.6.1.5.5.7.48.1"), &der::tlv(tag::ctx_prim(6), url.as_bytes())])]))
 }
 
+/// Authority Information Access naming an OCSP responder and/or where the issuer's certificate
+/// is published (`caIssuers`).
+pub fn aia(ocsp: Option<&str>, ca_issuers: Option<&str>) -> Vec<u8> {
+    let access = |method: &str, url: &str| der::seq(&[&der::oid(method), &der::tlv(tag::ctx_prim(6), url.as_bytes())]);
+    let entries: Vec<Vec<u8>> =
+        [ocsp.map(|u| access("1.3.6.1.5.5.7.48.1", u)), ca_issuers.map(|u| access("1.3.6.1.5.5.7.48.2", u))].into_iter().flatten().collect();
+    let refs: Vec<&[u8]> = entries.iter().map(Vec::as_slice).collect();
+    ext("1.3.6.1.5.5.7.1.1", false, &der::seq(&refs))
+}
+
+/// A certificates-only CMS bundle (`.p7c`), as some CAs publish their issuer certificates.
+pub fn p7c(certs: &[&Certificate]) -> Vec<u8> {
+    let joined: Vec<u8> = certs.iter().flat_map(|c| c.raw.iter().copied()).collect();
+    let signed = der::seq(&[
+        &der::int(1),
+        &der::tlv(tag::SET, &[]),
+        &der::seq(&[&der::oid("1.2.840.113549.1.7.1")]),
+        &der::tlv(tag::ctx(0), &joined),
+        &der::tlv(tag::SET, &[]),
+    ]);
+    der::seq(&[&der::oid("1.2.840.113549.1.7.2"), &der::explicit(0, &signed)])
+}
+
 /// A CRL distribution point with one full-name URI.
 pub fn crl_point(url: &str) -> Vec<u8> {
     let name = der::tlv(tag::ctx(0), &der::tlv(tag::ctx_prim(6), url.as_bytes()));

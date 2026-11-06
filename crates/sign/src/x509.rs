@@ -139,6 +139,9 @@ pub struct Certificate {
     pub ocsp_urls: Vec<String>,
     /// CRL distribution point URLs (2.5.29.31).
     pub crl_urls: Vec<String>,
+    /// Where the issuer's certificate can be downloaded (`caIssuers`, in the Authority Information
+    /// Access extension).
+    pub ca_issuer_urls: Vec<String>,
     /// The `version` field: 0 for v1, 1 for v2, 2 for v3.
     pub version: u64,
     /// OIDs of extensions marked critical that CleonPDF does not process (RFC 5280 §4.2).
@@ -186,6 +189,7 @@ struct Extensions {
     extended_key_usage: Option<Vec<String>>,
     ocsp_urls: Vec<String>,
     crl_urls: Vec<String>,
+    ca_issuer_urls: Vec<String>,
 }
 
 impl Extensions {
@@ -242,8 +246,13 @@ impl Extensions {
                 let Ok(aia) = Tlv::parse_all(value.value) else { return };
                 for access in aia.children().unwrap_or_default() {
                     let Ok(a) = access.children() else { continue };
-                    if a.len() >= 2 && a[0].oid().ok().as_deref() == Some("1.3.6.1.5.5.7.48.1") && a[1].tag == tag::ctx_prim(6) {
-                        self.ocsp_urls.push(String::from_utf8_lossy(a[1].value).into_owned());
+                    if a.len() >= 2 && a[1].tag == tag::ctx_prim(6) {
+                        let url = String::from_utf8_lossy(a[1].value).into_owned();
+                        match a[0].oid().ok().as_deref() {
+                            Some("1.3.6.1.5.5.7.48.1") => self.ocsp_urls.push(url),
+                            Some("1.3.6.1.5.5.7.48.2") => self.ca_issuer_urls.push(url),
+                            _ => {}
+                        }
                     }
                 }
             }
@@ -327,6 +336,7 @@ impl Certificate {
             extended_key_usage,
             ocsp_urls,
             crl_urls,
+            ca_issuer_urls,
         } = ext;
         Ok(Certificate {
             raw: raw.to_vec(),
@@ -348,6 +358,7 @@ impl Certificate {
             extended_key_usage,
             ocsp_urls,
             crl_urls,
+            ca_issuer_urls,
             version,
             unknown_critical,
         })

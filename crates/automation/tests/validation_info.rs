@@ -208,7 +208,7 @@ fn a_document_with_no_signature_has_nothing_to_add_to() {
     assert!(matches!(&r, Err(ToolError::Failed(m)) if m.contains("no signature")), "{r:?}");
 }
 
-/// Serves one fixed answer per `POST` path, counting the requests; anything else is a 404.
+/// Serves one fixed answer per request line prefix (`"POST /ocsp"`, `"GET /ca.crt"`), counting the requests; anything else is a 404.
 fn serve_paths(listener: TcpListener, answers: Vec<(&'static str, Vec<u8>)>) -> Arc<AtomicUsize> {
     let hits = Arc::new(AtomicUsize::new(0));
     let counted = hits.clone();
@@ -232,7 +232,7 @@ fn serve_paths(listener: TcpListener, answers: Vec<(&'static str, Vec<u8>)>) -> 
                 }
             }
             counted.fetch_add(1, Ordering::SeqCst);
-            let found = answers.iter().find(|(path, _)| data.starts_with(format!("POST {path} ").as_bytes()));
+            let found = answers.iter().find(|(request, _)| data.starts_with(format!("{request} ").as_bytes()));
             let (status, body) = match found {
                 Some((_, b)) => ("200 OK", b.as_slice()),
                 None => ("404 Not Found", b"".as_slice()),
@@ -276,8 +276,8 @@ fn the_timestamp_authoritys_certificates_are_asked_about_too() {
     let tsa = end_entity("Stamping Authority", &ca, &[aia_ocsp(&format!("{base}/ocsp-tsa"))]);
     let (this, next) = (Time::from_unix(NOW - 3600), Time::from_unix(NOW + 7 * 86400));
     let answers = vec![
-        ("/ocsp-signer", ocsp_response(&ca, &signer.cert, &ca.cert, Answer::Good, this, next)),
-        ("/ocsp-tsa", ocsp_response(&ca, &tsa.cert, &ca.cert, Answer::Good, this, next)),
+        ("POST /ocsp-signer", ocsp_response(&ca, &signer.cert, &ca.cert, Answer::Good, this, next)),
+        ("POST /ocsp-tsa", ocsp_response(&ca, &tsa.cert, &ca.cert, Answer::Good, this, next)),
     ];
     let hits = serve_paths(listener, answers);
     let tsa = Stamper { party: tsa, chain: vec![ca.cert.clone()] };
@@ -293,4 +293,25 @@ fn the_timestamp_authoritys_certificates_are_asked_about_too() {
     assert_eq!(done["embedded"], json!({ "certificates": 3, "ocsp_responses": 2, "crls": 0 }), "{done}");
     let names: Vec<&str> = done["certificates"].as_array().unwrap().iter().filter_map(|c| c["subject"].as_str()).collect();
     assert!(names.contains(&"Stamping Authority") && names.contains(&"Ada Lovelace"), "{done}");
+}
+
+#[test]
+fn a_chain_without_its_root_is_completed_from_the_address_in_the_certificate() {
+    let dir = workdir("issuer");
+    let (listener, base) = bind();
+    let ca = root("Test CA");
+    // The signer's file carries no issuer: the signature's chain is the signer alone.
+    let signer = end_entity("Ada Lovelace", &ca, &[pki::aia(Some(&format!("{base}/ocsp")), Some(&format!("{base}/ca.crt")))]);
+    let (this, next) = (Time::from_unix(NOW - 3600), Time::from_unix(NOW + 7 * 86400));
+    let answers = vec![("POST /ocsp", ocsp_response(&ca, &signer.cert, &ca.cert, Answer::Good, this, next)), ("GET /ca.crt", ca.cert.raw.clone())];
+    let hits = serve_paths(listener, answers);
+    std::fs::write(dir.join("ada.p12"), pkcs12::write(&signer.into_id(&[]), "secret1").unwrap()).unwrap();
+
+    let mut a = auto(&dir);
+    let doc = sign(&mut a, &dir, "ada.p12");
+    let done = ok(&mut a, "sign_add_validation_info", json!({ "doc": doc, "out": "ltv.pdf", "allow_private_hosts": true }));
+    assert_eq!(done["issuer_certificates_fetched"], json!(1), "{done}");
+    assert_eq!(done["embedded"], json!({ "certificates": 2, "ocsp_responses": 1, "crls": 0 }), "the root went into the file: {done}");
+    assert_eq!(done["certificates"][0]["evidence"], json!("ocsp"), "{done}");
+    assert_eq!(hits.load(Ordering::SeqCst), 2, "the issuer download and the OCSP question");
 }

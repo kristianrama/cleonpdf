@@ -58,6 +58,35 @@ fn bad(what: &str) -> SignError {
     SignError::Malformed(format!("CMS: {what}"))
 }
 
+/// The most certificates read from a certificates-only message.
+const MAX_BUNDLE: usize = 32;
+
+/// The certificates in a "certs-only" `ContentInfo` (a `.p7c`/`.p7b` bundle, as some CAs publish
+/// their issuer certificates): SignedData with no signers. At most [`MAX_BUNDLE`] are read.
+pub fn certificates_only(bytes: &[u8]) -> Result<Vec<Certificate>, SignError> {
+    let (ci, _) = Tlv::parse_ber(bytes)?;
+    let ci = ci.expect(tag::SEQUENCE, "ContentInfo")?.children()?;
+    let [ct, content] = ci.as_slice() else { return Err(bad("ContentInfo")) };
+    if ct.oid()? != SIGNED_DATA {
+        return Err(bad("not SignedData"));
+    }
+    let sd = content.expect(tag::ctx(0), "content")?.inner()?.children()?;
+    let mut found = Vec::new();
+    for t in sd.iter().filter(|t| t.tag == tag::ctx(0)) {
+        for c in t.children()? {
+            if found.len() >= MAX_BUNDLE {
+                break;
+            }
+            if c.tag == tag::SEQUENCE
+                && let Ok(cert) = Certificate::parse(c.raw)
+            {
+                found.push(cert);
+            }
+        }
+    }
+    Ok(found)
+}
+
 impl SignedData {
     /// Parse a `ContentInfo` holding SignedData. Bytes after it (a PDF placeholder's zero
     /// padding) are ignored.

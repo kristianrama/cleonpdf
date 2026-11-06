@@ -61,7 +61,12 @@ for s in signatures(&doc, &bytes, &trust) {                                // li
 document timestamp), built at validation time whether or not it is trusted; hand it to `ltv::gather`
 beside the signer's `chain`, so the file also carries proof that the authority was not revoked.
 
-Not yet: fetching a missing issuer certificate (caIssuers), FieldMDP locks, certificate security, direct PKCS #11 access to tokens.
+`ltv::gather` also completes a chain that stops short of its issuer: it asks the certificate's
+`caIssuers` address (`RevocationFetcher::issuer`; a DER certificate or a certificates-only CMS bundle),
+keeps a download only if its name matches and its key verifies the certificate below, and stops at a
+self-signed root or ten certificates.
+
+Not yet: FieldMDP locks, certificate security, direct PKCS #11 access to tokens.
 macOS Keychain and Windows Current User Personal (My) store identities sign through
 `ExternalKey` without exporting private keys. Windows CNG supports RSA PKCS #1 v1.5 and
 ECDSA P-256/P-384; the store integration is tested with software-backed keys. A smart card
