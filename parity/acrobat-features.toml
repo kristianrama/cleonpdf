@@ -5923,9 +5923,9 @@ tier = "P1"
 milestone = "M9"
 status = "partial"
 commands = []
-tools = ["sign_pkcs11_tokens"]
+tools = ["sign_hardware_tokens"]
 evidence = ["crates/sign/tests/pkcs11.rs::the_token_and_its_certificates_are_listed_without_a_pin", "crates/automation/tests/pkcs11.rs::a_module_nobody_listed_is_never_loaded"]
-notes = "Reading only: cleonpdf_sign::pkcs11 loads a PKCS #11 module (cryptoki), lists its tokens (label, manufacturer, model, serial, whether a PIN is needed) and the X.509 certificates on them without a PIN; sign_pkcs11_tokens does the same headlessly. A module is code that runs in the process, so a path is accepted only from the system's known locations (OpenSC, SoftHSM) or the CLEONPDF_PKCS11_MODULES environment variable, never from a document or a tool argument that is not on that list. Tested against SoftHSM (a CI job installs it), not against real cards or tokens. Missing: signing with the token's key (PIN prompt, RSA PKCS #1 and ECDSA mechanisms), a button and a module setting in the app, certificates whose private key is absent, token removal while signing, a check on a real smart card and a CA's own middleware."
+notes = "Reading only: cleonpdf_sign::pkcs11 loads a PKCS #11 module (cryptoki), lists its tokens (label, manufacturer, model, serial, whether a PIN is needed) and the X.509 certificates on them without a PIN; sign_hardware_tokens does the same headlessly. A module is code that runs in the process, so a path is accepted only from the system's known locations (OpenSC, SoftHSM) or the CLEONPDF_PKCS11_MODULES environment variable, never from a document or a tool argument that is not on that list. Tested against SoftHSM (a CI job installs it), not against real cards or tokens. Missing: signing with the token's key (PIN prompt, RSA PKCS #1 and ECDSA mechanisms), a button and a module setting in the app, certificates whose private key is absent, token removal while signing, a check on a real smart card and a CA's own middleware."
 
 [[feature]]
 id = "sign.self-signed-id"

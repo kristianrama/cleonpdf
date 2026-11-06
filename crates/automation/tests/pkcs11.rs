@@ -1,4 +1,4 @@
-//! `sign_pkcs11_tokens` against SoftHSM: the tool lists a token and its certificates, and loads
+//! `sign_hardware_tokens` against SoftHSM: the tool lists a token and its certificates, and loads
 //! only modules the system or the user listed. Needs SoftHSM like `crates/sign/tests/pkcs11.rs`
 //! (see `softhsm.rs` for the environment); without it the tests say so and pass.
 #![cfg(not(target_arch = "wasm32"))]
@@ -26,7 +26,7 @@ fn auto() -> Automation {
 }
 
 fn call(a: &mut Automation, args: Value) -> Result<Value, ToolError> {
-    a.call("sign_pkcs11_tokens", &args).map(|mut c| match c.remove(0) {
+    a.call("sign_hardware_tokens", &args).map(|mut c| match c.remove(0) {
         Content::Json(v) => v,
         other => panic!("expected JSON, got {other:?}"),
     })
