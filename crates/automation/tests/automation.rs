@@ -5839,3 +5839,81 @@ fn the_table_of_contents_is_found_corrected_and_linked() {
     let plain = ok(&mut a, "doc_create", json!({ "from": "blank" }))["doc"].as_u64().unwrap();
     assert!(a.call("toc_find", &json!({ "doc": plain })).is_err());
 }
+
+/// A timestamp server on the loopback interface that answers one request with a token signed by
+/// `tsa.p12` in `dir`. Returns its address.
+fn one_shot_timestamp_server(dir: &std::path::Path) -> String {
+    use cleonpdf_engine::sign::{DigestAlg, Time, pkcs12, timestamp};
+    use std::io::{Read, Write};
+    let tsa = pkcs12::open(&std::fs::read(dir.join("tsa.p12")).unwrap(), "secret1").unwrap();
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}/", listener.local_addr().unwrap());
+    std::thread::spawn(move || {
+        let Ok((mut stream, _)) = listener.accept() else { return };
+        let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(10)));
+        let mut data = Vec::new();
+        let mut chunk = [0u8; 4096];
+        let (head_end, length) = loop {
+            let Ok(n) = stream.read(&mut chunk) else { return };
+            if n == 0 {
+                return;
+            }
+            data.extend_from_slice(&chunk[..n]);
+            if let Some(i) = data.windows(4).position(|w| w == b"\r\n\r\n") {
+                let head = String::from_utf8_lossy(&data[..i]).to_ascii_lowercase();
+                let length = head.lines().find_map(|l| l.strip_prefix("content-length:").and_then(|v| v.trim().parse::<usize>().ok())).unwrap_or(0);
+                break (i + 4, length);
+            }
+        };
+        while data.len() < head_end + length {
+            let Ok(n) = stream.read(&mut chunk) else { return };
+            if n == 0 {
+                return;
+            }
+            data.extend_from_slice(&chunk[..n]);
+        }
+        let Ok(query) = timestamp::parse_request(&data[head_end..head_end + length]) else { return };
+        let time = Time { year: 2026, month: 11, day: 6, hour: 9, minute: 0, second: 0 };
+        let Ok(token) = timestamp::respond(&tsa.key, &tsa.certificate, &tsa.chain, DigestAlg::Sha256, &query, "1.2.3.4", time, 1) else { return };
+        let _ = stream.write_all(
+            format!("HTTP/1.1 200 OK\r\nContent-Type: application/timestamp-reply\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", token.len())
+                .as_bytes(),
+        );
+        let _ = stream.write_all(&token);
+    });
+    url
+}
+
+#[test]
+fn sign_document_asks_a_timestamp_server_only_when_given_one() {
+    let dir = workdir("signing-timestamp");
+    let mut a = auto(&dir);
+    ok(&mut a, "sign_id_create", json!({ "name": "Ada Lovelace", "key": "p256", "password": "secret1", "path": "ada.p12" }));
+    ok(&mut a, "sign_id_create", json!({ "name": "Test TSA", "key": "p256", "password": "secret1", "path": "tsa.p12" }));
+    let doc = ok(&mut a, "doc_open", json!({ "path": "a.pdf" }))["doc"].as_u64().unwrap();
+    let args = |extra: Value, out: &str| {
+        let mut v = json!({ "doc": doc, "id": "ada.p12", "password": "secret1", "page": 1, "rect": [20, 200, 180, 250], "out": out });
+        v.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
+        v
+    };
+
+    // No server named: a plain signature, no timestamp, and no request made.
+    let plain = ok(&mut a, "sign_document", args(json!({}), "plain.pdf"));
+    assert_eq!(plain["signature"]["timestamp"], json!(false), "{plain}");
+
+    // A server named: the signature carries its token (PAdES B-T).
+    let url = one_shot_timestamp_server(&dir);
+    let stamped = ok(&mut a, "sign_document", args(json!({ "timestamp_url": url }), "stamped.pdf"));
+    assert_eq!(stamped["signature"]["timestamp"], json!(true), "{stamped}");
+
+    // Addresses that aren't http(s) are the caller's mistake and nothing is saved.
+    for bad in ["ftp://tsa.example.com", "tsa.example.com", "http://user:pw@tsa.example.com/", ""] {
+        let r = a.call("sign_document", &args(json!({ "timestamp_url": bad }), "bad.pdf"));
+        assert!(matches!(r, Err(ToolError::InvalidArgs(_))), "{bad:?}: {r:?}");
+    }
+    // A server that can't be reached fails the call, and no half-signed file is left behind.
+    let closed = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+    let r = a.call("sign_document", &args(json!({ "timestamp_url": format!("http://127.0.0.1:{closed}/") }), "bad.pdf"));
+    assert!(matches!(r, Err(ToolError::Failed(_))), "{r:?}");
+    assert!(!dir.join("bad.pdf").exists());
+}

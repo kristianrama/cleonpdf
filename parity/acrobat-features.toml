@@ -6113,11 +6113,11 @@ title = "Configure timestamp servers"
 area = "H"
 tier = "P1"
 milestone = "M9"
-status = "planned"
+status = "partial"
 commands = []
-tools = []
-evidence = []
-notes = ""
+tools = ["sign_document"]
+evidence = ["crates/net/tests/timestamp_server.rs::the_query_is_posted_and_the_token_comes_back_untouched", "crates/automation/tests/automation.rs::sign_document_asks_a_timestamp_server_only_when_given_one"]
+notes = "cleonpdf-net posts the RFC 3161 query to an http(s) server the caller names (rustls with the OS roots, 20 s limit, answer capped at 1 MiB, no user name in the address, host but never path or query in messages) and sign_document takes `timestamp_url`. There is no built-in server and nothing is requested unless one is given. Missing: the Preferences list of servers with a default and the field in the Sign dialog (the request must leave the UI thread first), server credentials, document timestamps from the UI, and a check against a real public TSA."
 
 [[feature]]
 id = "sign.pades-bt"
@@ -6129,7 +6129,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = ["crates/sign/tests/pdf.rs::signing_with_a_timestamp_embeds_a_verified_rfc3161_token"]
-notes = "Sign with an embedded RFC 3161 token (sign_with_timestamp): imprint and TSA signature verified at signing and validation time, trusted time reported. Missing: timestamp-server configuration and a fetcher (transport is caller-injected), the standalone document timestamp, automation tool."
+notes = "Sign with an embedded RFC 3161 token (sign_with_timestamp): imprint and TSA signature verified at signing and validation time, trusted time reported. The HTTP(S) fetcher and the sign_document `timestamp_url` argument exist (sign.timestamp-servers). Missing: the server list in Preferences and the Sign dialog field, the standalone document timestamp from a tool."
 
 [[feature]]
 id = "sign.ltv"

@@ -1,0 +1,25 @@
+[package]
+name = "cleonpdf-net"
+description = "Outbound network requests: the only crate that opens sockets. HTTPS over rustls with the operating system's trusted roots; an RFC 3161 timestamp client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cleonpdf-sign = { workspace = true }
+
+# Not in the browser build: a page can't open sockets, and the browser makes its own requests.
+# One HTTPS client for the whole product (the update check and timestamp servers), over rustls
+# with the OS's trusted roots. No bundled root list (webpki-roots and webpki-root-certs are
+# CDLA-licensed).
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+ureq = { version = "3.4", default-features = false, features = ["rustls-no-provider", "_ring"] }
+rustls-native-certs = "0.8"
+
+[dev-dependencies]
+cleonpdf-cos = { workspace = true }

@@ -956,6 +956,7 @@ name = "cleonpdf"
 version = "0.2.3"
 dependencies = [
  "cleonpdf-engine",
+ "cleonpdf-net",
  "cleonpdf-ui-egui",
  "eframe",
  "egui",
@@ -966,10 +967,8 @@ dependencies = [
  "objc2-app-kit 0.3.2",
  "pollster 1.0.1",
  "ron",
- "rustls-native-certs",
  "serde_json",
  "uds_windows",
- "ureq",
  "wayland-client",
  "wayland-protocols",
  "windows",
@@ -1021,6 +1020,7 @@ dependencies = [
  "cleonpdf-engine",
  "cleonpdf-fonts",
  "cleonpdf-model",
+ "cleonpdf-net",
  "cleonpdf-organize",
  "cleonpdf-platform",
  "cleonpdf-render",
@@ -1219,6 +1219,16 @@ name = "cleonpdf-model"
 version = "0.2.3"
 dependencies = [
  "cleonpdf-cos",
+]
+
+[[package]]
+name = "cleonpdf-net"
+version = "0.2.3"
+dependencies = [
+ "cleonpdf-cos",
+ "cleonpdf-sign",
+ "rustls-native-certs",
+ "ureq",
 ]
 
 [[package]]

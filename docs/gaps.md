@@ -296,8 +296,10 @@ update the numbers.
 
 ### 10. Signatures: no PKCS #11, timestamp servers or online revocation
 
-- **Missing:** PKCS #11 tokens and smart cards on macOS and Linux; timestamp-server preferences;
-  fetching OCSP/CRL online for LTV; FieldMDP and locking fields on signing; the OS trust store; EU
+- **Done so far:** `cleonpdf-net` asks an RFC 3161 server the caller names (sign_document
+  `timestamp_url`, PAdES B-T); nothing is requested unless one is given.
+- **Missing:** PKCS #11 tokens and smart cards on macOS and Linux; the timestamp-server list in
+  Preferences and a Sign dialog field; fetching OCSP/CRL online for LTV; FieldMDP and locking fields on signing; the OS trust store; EU
   Trusted Lists; signature graphics and saved appearances; compare signed version; signing in the
   browser.
 - **Evidence:** `sign.pkcs11`, `sign.timestamp-servers`, `sign.field-mdp`, `sign.os-trust`,

@@ -47,6 +47,9 @@ pub enum SignError {
     Crypto(String),
     #[error("{0}")]
     Pdf(String),
+    /// A timestamp server could not be reached or answered with something unusable.
+    #[error("timestamp server: {0}")]
+    Transport(String),
     #[error(transparent)]
     Cos(#[from] cleonpdf_cos::CosError),
 }
