@@ -132,7 +132,7 @@ impl TimestampAuthority for HttpTimestampAuthority {
     fn timestamp(&self, request: &[u8]) -> Result<Vec<u8>, SignError> {
         let host = self.host();
         let fail = |what: String| SignError::Transport(format!("{host}: {what}"));
-        let agent = agent(self.timeout).map_err(&fail)?;
+        let agent = agent(self.timeout).map_err(fail)?;
         let mut response = agent
             .post(&self.url)
             .header("Content-Type", "application/timestamp-query")
