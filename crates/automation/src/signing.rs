@@ -246,6 +246,12 @@ impl Automation {
     /// certificates on them. A module is code that runs in this process, so a path is accepted
     /// only when it is one of the system's known locations or one the user listed in
     /// `CLEONPDF_PKCS11_MODULES` (`cleonpdf_sign::pkcs11::is_allowed`).
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn sign_pkcs11_tokens(&self, _a: &Args) -> Result<Value> {
+        Err(failed("PKCS #11 tokens need the desktop app: a browser can't load a token's library"))
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn sign_pkcs11_tokens(&self, a: &Args) -> Result<Value> {
         use cleonpdf_engine::sign::pkcs11;
         let modules: Vec<std::path::PathBuf> = match a.opt_str("module")? {
