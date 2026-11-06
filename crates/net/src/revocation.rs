@@ -70,6 +70,46 @@ fn public_v6(ip: Ipv6Addr) -> bool {
         || (first == 0x2001 && ip.segments()[1] == 0x0db8))
 }
 
+/// A host written as an IPv4 address in one of the old `inet_aton` forms: `2130706433`,
+/// `0x7f.1`, `0177.0.0.1`, `127.1`. Some resolvers read these as addresses and some do not, so the
+/// guard reads them itself instead of depending on the platform. `None` for anything that is not
+/// all numbers (a name).
+fn legacy_ipv4(host: &str) -> Option<Ipv4Addr> {
+    let parts: Vec<&str> = host.split('.').collect();
+    if parts.is_empty() || parts.len() > 4 {
+        return None;
+    }
+    let mut numbers = Vec::with_capacity(parts.len());
+    for part in &parts {
+        if part.is_empty() {
+            return None;
+        }
+        let (digits, radix) = match part.get(..2) {
+            Some("0x" | "0X") => (part.get(2..)?, 16),
+            _ if part.len() > 1 && part.starts_with('0') => (part.get(1..)?, 8),
+            _ => (*part, 10),
+        };
+        // "0x" alone is zero for inet_aton; keep that reading.
+        let digits = if digits.is_empty() { "0" } else { digits };
+        numbers.push(u64::from_str_radix(digits, radix).ok()?);
+    }
+    // All but the last part are one byte; the last fills the rest.
+    let (last, head) = numbers.split_last()?;
+    let mut value: u64 = 0;
+    for n in head {
+        if *n > 0xff {
+            return None;
+        }
+        value = (value << 8) | n;
+    }
+    let free_bits = 8 * (4 - head.len() as u32);
+    if free_bits < 64 && *last >> free_bits != 0 {
+        return None;
+    }
+    value = value.checked_shl(free_bits).unwrap_or(0) | last;
+    u32::try_from(value).ok().map(Ipv4Addr::from)
+}
+
 /// The host and port of an address that passed `check_address`.
 fn host_port(url: &str) -> Option<(String, u16)> {
     let authority = host_of(url)?;
@@ -128,7 +168,7 @@ impl HttpRevocationFetcher {
         }
         let (host, port) = host_port(url).ok_or("the address has no usable host")?;
         let refused = || "is not a public address (loopback, private or link-local hosts are refused)".to_string();
-        if let Ok(ip) = host.parse::<IpAddr>() {
+        if let Some(ip) = host.parse::<IpAddr>().ok().or_else(|| legacy_ipv4(&host).map(IpAddr::V4)) {
             return if is_public(ip) { Ok(()) } else { Err(refused()) };
         }
         if host.eq_ignore_ascii_case("localhost") || host.to_ascii_lowercase().ends_with(".localhost") {
@@ -268,6 +308,24 @@ mod tests {
     }
 
     #[test]
+    fn old_style_ipv4_spellings_are_read_the_way_resolvers_read_them() {
+        let ip = |s: &str| legacy_ipv4(s);
+        assert_eq!(ip("2130706433"), Some(Ipv4Addr::new(127, 0, 0, 1)));
+        assert_eq!(ip("0x7f000001"), Some(Ipv4Addr::new(127, 0, 0, 1)));
+        assert_eq!(ip("0x7f.1"), Some(Ipv4Addr::new(127, 0, 0, 1)));
+        assert_eq!(ip("127.1"), Some(Ipv4Addr::new(127, 0, 0, 1)));
+        assert_eq!(ip("0177.0.0.1"), Some(Ipv4Addr::new(127, 0, 0, 1)));
+        assert_eq!(ip("10.0.1"), Some(Ipv4Addr::new(10, 0, 0, 1)));
+        assert_eq!(ip("169.254.43518"), Some(Ipv4Addr::new(169, 254, 169, 254)));
+        assert_eq!(ip("8.8.8.8"), Some(Ipv4Addr::new(8, 8, 8, 8)));
+        assert_eq!(ip("0"), Some(Ipv4Addr::UNSPECIFIED));
+        // Not numbers, or out of range: not an address.
+        for not in ["ocsp.example", "1.2.3.4.5", "256.1.1.1", "4294967296", "1.2.3.", "", "a.b", "08", "0xzz", "1..2"] {
+            assert_eq!(ip(not), None, "{not}");
+        }
+    }
+
+    #[test]
     fn host_and_port_are_read_from_the_address() {
         assert_eq!(host_port("http://ocsp.example/x"), Some(("ocsp.example".into(), 80)));
         assert_eq!(host_port("HTTPS://ocsp.example/x"), Some(("ocsp.example".into(), 443)));
@@ -292,6 +350,9 @@ mod tests {
             "http://[::ffff:127.0.0.1]/",
             // 127.0.0.1 written as one decimal number: the resolver reads it, so the guard does too.
             "http://2130706433/",
+            "http://0x7f.1/",
+            "http://0177.0.0.1:8080/",
+            "http://0/",
         ] {
             assert!(strict.guard(url).is_err(), "{url}");
             let err = strict.ocsp(url, b"x").expect_err("refused").to_string();
