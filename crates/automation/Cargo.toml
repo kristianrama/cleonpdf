@@ -33,4 +33,7 @@ flate2.workspace = true
 cleonpdf-model = { workspace = true }
 cleonpdf-xfa = { workspace = true }
 cleonpdf-sign = { workspace = true }
+# A SoftHSM token for the PKCS #11 tool tests.
+cryptoki = "0.12"
+secrecy = "0.10"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }

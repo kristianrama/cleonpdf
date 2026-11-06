@@ -242,6 +242,70 @@ impl Automation {
         }))
     }
 
+    /// The PKCS #11 tokens (smart cards, USB tokens, HSMs) the modules CleonPDF may use show, with the
+    /// certificates on them. A module is code that runs in this process, so a path is accepted
+    /// only when it is one of the system's known locations or one the user listed in
+    /// `CLEONPDF_PKCS11_MODULES` (`cleonpdf_sign::pkcs11::is_allowed`).
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn sign_hardware_tokens(&self, _a: &Args) -> Result<Value> {
+        Err(failed("PKCS #11 tokens need the desktop app: a browser can't load a token's library"))
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn sign_hardware_tokens(&self, a: &Args) -> Result<Value> {
+        use cleonpdf_engine::sign::pkcs11;
+        let modules: Vec<std::path::PathBuf> = match a.opt_str("module")? {
+            Some(path) => {
+                let path = std::path::PathBuf::from(path);
+                if !pkcs11::is_allowed(&path) {
+                    return Err(failed(
+                        "that is not a PKCS #11 module CleonPDF was told to use: only the system's known locations and the files listed in the CLEONPDF_PKCS11_MODULES environment variable can be loaded",
+                    ));
+                }
+                vec![path]
+            }
+            None => pkcs11::configured_modules().into_iter().chain(pkcs11::known_modules()).collect(),
+        };
+        let mut seen = Vec::new();
+        let mut listed = Vec::new();
+        for path in modules {
+            // The same library listed twice (a link, or both ways) is read once.
+            let real = std::fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
+            if seen.contains(&real) {
+                continue;
+            }
+            seen.push(real);
+            let shown = path.to_string_lossy().into_owned();
+            let loaded = pkcs11::Module::load(&path).and_then(|m| {
+                let tokens = m
+                    .tokens()?
+                    .into_iter()
+                    .map(|t| {
+                        let found = m.certificates(t.slot)?;
+                        let certificates: Vec<Value> = found
+                            .certificates
+                            .iter()
+                            .map(|c| {
+                                let id: String = c.id.iter().map(|b| format!("{b:02x}")).collect();
+                                json!({ "label": c.label, "key_id": id, "certificate": cert_json(&c.certificate) })
+                            })
+                            .collect();
+                        Ok(json!({
+                            "slot": t.slot, "label": t.label, "manufacturer": t.manufacturer, "model": t.model, "serial": t.serial,
+                            "login_required": t.login_required, "certificates": certificates, "unusable_certificates": found.skipped,
+                        }))
+                    })
+                    .collect::<std::result::Result<Vec<Value>, cleonpdf_engine::sign::SignError>>()?;
+                Ok(tokens)
+            });
+            listed.push(match loaded {
+                Ok(tokens) => json!({ "module": shown, "tokens": tokens }),
+                Err(e) => json!({ "module": shown, "error": e.to_string(), "tokens": [] }),
+            });
+        }
+        Ok(json!({ "modules": listed }))
+    }
+
     /// `{"image": path}` (PNG or JPEG), `{"text": name}` (typed in the script font) or
     /// `{"strokes": [[[x, y], …], …]}` (y up; the drawing pad is 1 wide).
     fn signature_graphic(&self, g: &Value) -> Result<sign::Graphic> {

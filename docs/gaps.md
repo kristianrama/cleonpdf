@@ -301,12 +301,12 @@ update the numbers.
   requested unless one is given. `sign_add_validation_info` fetches OCSP responses and CRLs for
   the signers' chains and embeds them (PAdES B-LT), refusing non-public hosts unless told otherwise, for the timestamp authority's chain too, and completing a chain from the caIssuers address. The Signatures panel has an Add validation
   information button for it (desktop).
-- **Missing:** PKCS #11 tokens and smart cards on macOS and Linux; a timestamp-server list in
+- **Missing:** signing with PKCS #11 tokens and smart cards on macOS and Linux (they can be listed, `sign_hardware_tokens`, tested against SoftHSM only); a timestamp-server list in
   Preferences; FieldMDP and locking fields on signing; the OS trust store; EU
   Trusted Lists; signature graphics and saved appearances; compare signed version; signing in the
   browser.
-- **Evidence:** `sign.pkcs11`, `sign.timestamp-servers`, `sign.field-mdp`, `sign.os-trust`,
-  `sign.eutl` planned; `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial (evidence fetched in
+- **Evidence:** `sign.timestamp-servers`, `sign.field-mdp`, `sign.os-trust`,
+  `sign.eutl` planned; `sign.pkcs11`, `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial (evidence fetched in
   tests against a loopback CA only). Users ask for Acrobat-like validation
   ([#824](https://github.com/storytold/pdfcraft/issues/824),
   [#775](https://github.com/storytold/pdfcraft/issues/775),

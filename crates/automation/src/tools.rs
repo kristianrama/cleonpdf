@@ -699,6 +699,14 @@ pub fn tools() -> Vec<ToolDef> {
             .ro()
             .cmd("sign.digital")
             .with(schema(json!({}), &[])),
+        t("sign_hardware_tokens", "List hardware tokens (PKCS #11)", "List the smart cards, USB tokens and HSM partitions that PKCS #11 modules show, with the certificates on them (label, key id, subject, issuer, validity). Reading needs no PIN and changes nothing on the token. A PKCS #11 module is a library that runs inside this process, so `module` must be one of the system's known locations (OpenSC, SoftHSM) or a file listed in the CLEONPDF_PKCS11_MODULES environment variable of the process that started CleonPDF; any other path is refused. Without `module`, every such module that exists is read. A module that fails to load is reported with its error and the others still answer. This does not sign yet.")
+            .ro()
+            .with(schema(
+                json!({
+                    "module": { "type": "string", "description": "The module file to read. Default: all known and configured modules." },
+                }),
+                &[],
+            )),
         t("sign_keychain_ids", "List Keychain digital IDs", "macOS: the signing identities in the user's keychains (certificate details and the keychain: reference sign_document takes). The private keys stay in the Keychain, which may ask the user to allow their use.")
             .ro()
             .cmd("sign.digital")

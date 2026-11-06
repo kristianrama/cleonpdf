@@ -66,7 +66,13 @@ beside the signer's `chain`, so the file also carries proof that the authority w
 keeps a download only if its name matches and its key verifies the certificate below, and stops at a
 self-signed root or ten certificates.
 
-Not yet: FieldMDP locks, certificate security, direct PKCS #11 access to tokens.
+`pkcs11` (not on wasm) loads a PKCS #11 module with `cryptoki` and lists the tokens it shows and the
+certificates on them, with no PIN. A module is code that runs in the process, so its path comes only
+from the user or from the system's known locations (`is_allowed`, `known_modules`,
+`configured_modules` / `CLEONPDF_PKCS11_MODULES`), never from a document. Tested against SoftHSM
+(`tests/pkcs11.rs`, which runs when `CLEONPDF_TEST_PKCS11_MODULE` and `SOFTHSM2_CONF` are set; CI sets them).
+
+Not yet: signing with a token's key, FieldMDP locks, certificate security.
 macOS Keychain and Windows Current User Personal (My) store identities sign through
 `ExternalKey` without exporting private keys. Windows CNG supports RSA PKCS #1 v1.5 and
 ECDSA P-256/P-384; the store integration is tested with software-backed keys. A smart card

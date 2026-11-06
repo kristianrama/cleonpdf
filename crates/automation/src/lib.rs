@@ -770,6 +770,7 @@ impl Automation {
             "sign_id_create" => self.sign_id_create(&a)?,
             "sign_document" => self.sign_document(&a)?,
             "sign_add_validation_info" => self.sign_add_validation_info(&a)?,
+            "sign_hardware_tokens" => self.sign_hardware_tokens(&a)?,
             "sign_keychain_ids" => {
                 #[cfg(target_os = "macos")]
                 let ids: Vec<Value> = cleonpdf_engine::sign::keychain::identities(None)

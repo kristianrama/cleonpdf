@@ -154,6 +154,37 @@ jobs:
             render-oracle-out
           if-no-files-found: ignore
 
+  pkcs11:
+    name: PKCS #11 (SoftHSM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: pkcs11
+      # SoftHSM is a software token with the real PKCS #11 interface; it is loaded by the tests
+      # as a user would load a card's library, and never linked.
+      - name: Install SoftHSM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends softhsm2
+      - name: Give the tests a token directory of their own
+        run: |
+          mkdir -p "$RUNNER_TEMP/softhsm/tokens"
+          printf 'directories.tokendir = %s/softhsm/tokens\nobjectstore.backend = file\nlog.level = ERROR\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/softhsm/softhsm2.conf"
+          module="$(find /usr/lib -name libsofthsm2.so | head -n 1)"
+          test -n "$module"
+          {
+            echo "SOFTHSM2_CONF=$RUNNER_TEMP/softhsm/softhsm2.conf"
+            echo "CLEONPDF_TEST_PKCS11_MODULE=$module"
+            echo "CLEONPDF_REQUIRE_PKCS11=1"
+          } >> "$GITHUB_ENV"
+      - name: PKCS #11 tests
+        run: cargo test -p cleonpdf-sign -p cleonpdf-automation --test pkcs11 -- --test-threads=1
+
   interop-macos:
     name: interop (macOS)
     runs-on: macos-latest
