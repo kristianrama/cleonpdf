@@ -7,6 +7,9 @@
 //!
 //! - [`agent`]: the HTTPS client, over rustls with the operating system's trusted roots.
 //! - [`HttpTimestampAuthority`]: an RFC 3161 client for [`cleonpdf_sign::TimestampAuthority`].
+//! - [`HttpRevocationFetcher`]: OCSP and CRL downloads for [`cleonpdf_sign::ltv`]. Unlike a
+//!   timestamp server, these addresses come from certificates (so from whoever made them), and
+//!   the fetcher refuses loopback, private and link-local hosts unless told otherwise.
 //!
 //! Everything a server answers is untrusted: bodies are size-capped, requests time out, and
 //! errors name the host but never the path or query (which may carry a token).
@@ -17,6 +20,9 @@
 use std::time::Duration;
 
 use cleonpdf_sign::{SignError, TimestampAuthority};
+
+mod revocation;
+pub use revocation::{HttpRevocationFetcher, MAX_EVIDENCE, is_public};
 
 /// The most bytes read from a timestamp server's answer. A token with its certificate chain is a
 /// few kilobytes.
@@ -32,15 +38,20 @@ const MAX_REDIRECTS: u32 = 3;
 /// or password in it, no spaces or control characters, at most 2,048 bytes. Returned without
 /// surrounding whitespace.
 pub fn check_url(url: &str) -> Result<String, String> {
+    check_address("the timestamp server address", url)
+}
+
+/// [`check_url`] for any kind of server; `what` starts the messages ("the OCSP address").
+pub(crate) fn check_address(what: &str, url: &str) -> Result<String, String> {
     let url = url.trim();
     if url.is_empty() {
-        return Err("the timestamp server address is empty".into());
+        return Err(format!("{what} is empty"));
     }
     if url.len() > MAX_URL {
-        return Err(format!("the timestamp server address is longer than {MAX_URL} bytes"));
+        return Err(format!("{what} is longer than {MAX_URL} bytes"));
     }
     if url.chars().any(|c| c.is_control() || c.is_whitespace()) {
-        return Err("the timestamp server address has spaces or control characters".into());
+        return Err(format!("{what} has spaces or control characters"));
     }
     let rest = ["http://", "https://"]
         .iter()
@@ -48,19 +59,19 @@ pub fn check_url(url: &str) -> Result<String, String> {
             let head = url.get(..scheme.len())?;
             head.eq_ignore_ascii_case(scheme).then(|| url.get(scheme.len()..))?
         })
-        .ok_or("the timestamp server address must start with http:// or https://")?;
+        .ok_or_else(|| format!("{what} must start with http:// or https://"))?;
     let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
     if authority.contains('@') {
-        return Err("the timestamp server address can't carry a user name or password".into());
+        return Err(format!("{what} can't carry a user name or password"));
     }
     if host_of(url).is_none() {
-        return Err("the timestamp server address has no host".into());
+        return Err(format!("{what} has no host"));
     }
     Ok(url.to_string())
 }
 
 /// The host (and port) of an address that passed [`check_url`], for messages.
-fn host_of(url: &str) -> Option<&str> {
+pub(crate) fn host_of(url: &str) -> Option<&str> {
     let rest = url.split_once("://")?.1;
     let authority = rest.split(['/', '?', '#']).next()?;
     (!authority.is_empty() && !authority.starts_with(':')).then_some(authority)
@@ -70,9 +81,17 @@ fn host_of(url: &str) -> Option<&str> {
 /// global timeout, and a short redirect limit. There is no bundled root list.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn agent(timeout: Duration) -> Result<ureq::Agent, String> {
+    client(timeout, MAX_REDIRECTS, true)
+}
+
+/// The same client with `redirects` followed by it (0: the caller reads a 3xx itself, so it can
+/// check where it points before going there).
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn client(timeout: Duration, redirects: u32, redirects_error: bool) -> Result<ureq::Agent, String> {
     Ok(ureq::Agent::config_builder()
         .timeout_global(Some(timeout))
-        .max_redirects(MAX_REDIRECTS)
+        .max_redirects(redirects)
+        .max_redirects_will_error(redirects_error)
         .tls_config(ureq::tls::TlsConfig::builder().root_certs(os_roots()?).build())
         .build()
         .new_agent())
@@ -131,7 +150,7 @@ impl HttpTimestampAuthority {
 impl TimestampAuthority for HttpTimestampAuthority {
     fn timestamp(&self, request: &[u8]) -> Result<Vec<u8>, SignError> {
         let host = self.host();
-        let fail = |what: String| SignError::Transport(format!("{host}: {what}"));
+        let fail = |what: String| SignError::Transport(format!("timestamp server {host}: {what}"));
         let agent = agent(self.timeout).map_err(fail)?;
         let mut response = agent
             .post(&self.url)

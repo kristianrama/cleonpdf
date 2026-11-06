@@ -15,6 +15,7 @@ pub mod graphic;
 #[cfg(target_os = "macos")]
 pub mod keychain;
 pub mod keys;
+pub mod ltv;
 pub mod pdf;
 pub mod pkcs12;
 pub mod revocation;
@@ -47,8 +48,9 @@ pub enum SignError {
     Crypto(String),
     #[error("{0}")]
     Pdf(String),
-    /// A timestamp server could not be reached or answered with something unusable.
-    #[error("timestamp server: {0}")]
+    /// A timestamp, OCSP or CRL server could not be reached or answered with something unusable;
+    /// the message says which and names its host.
+    #[error("{0}")]
     Transport(String),
     #[error(transparent)]
     Cos(#[from] cleonpdf_cos::CosError),

@@ -1,8 +1,8 @@
 //! Revocation evidence (RFC 5280 CRLs, RFC 6960 OCSP): parsing, signature verification and
 //! status lookup for evidence embedded in a DSS or supplied by the caller. Never fetches:
-//! the transport and the choice of evidence stay with the caller.
+//! the transport and the choice of evidence stay with the caller (see [`crate::ltv`]).
 
-use crate::der::{Tlv, tag};
+use crate::der::{self, Tlv, tag};
 use crate::keys::{self, DigestAlg, PublicKey};
 use crate::x509::Certificate;
 use crate::{SignError, Time};
@@ -143,6 +143,17 @@ impl CertId {
     }
 }
 
+/// The DER of an OCSP request (RFC 6960 §4.1.1) asking for the status of `cert`, issued by
+/// `issuer`: one `CertID` hashed with SHA-1 (the hash every responder supports), no extensions
+/// and no signature, so nothing but the certificate's issuer and serial number is sent.
+pub fn ocsp_request(cert: &Certificate, issuer: &Certificate) -> Vec<u8> {
+    let id = CertId::build(cert, issuer, DigestAlg::Sha1);
+    let cert_id =
+        der::seq(&[&DigestAlg::Sha1.algorithm(), &der::octets(&id.issuer_name_hash), &der::octets(&id.issuer_key_hash), &der::uint(&id.serial)]);
+    let request = der::seq(&[&cert_id]);
+    der::seq(&[&der::seq(&[&der::seq(&[&request])])])
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum CertStatus {
     Good,
@@ -198,12 +209,18 @@ impl OcspResponse {
         let signature = it.next().ok_or_else(|| bad("BasicOCSPResponse"))?.expect(tag::BIT_STRING, "signature")?.bits()?.to_vec();
         let mut responder_cert = None;
         for t in it {
+            // certs [0] EXPLICIT SEQUENCE OF Certificate (RFC 6960 §4.2.1): the certificates are
+            // inside the SEQUENCE. A bare run of certificates, without it, is read too.
             if t.tag == tag::ctx(0) {
                 for c in t.children()? {
-                    if c.tag == tag::SEQUENCE
-                        && let Ok(cert) = Certificate::parse(c.raw)
-                    {
+                    if let Ok(cert) = Certificate::parse(c.raw) {
                         responder_cert.get_or_insert(cert);
+                    } else if c.tag == tag::SEQUENCE {
+                        for inner in c.children()? {
+                            if let Ok(cert) = Certificate::parse(inner.raw) {
+                                responder_cert.get_or_insert(cert);
+                            }
+                        }
                     }
                 }
             }
@@ -251,6 +268,11 @@ impl OcspResponse {
             responses.push(SingleResponse { cert_id, status, this_update, next_update });
         }
         Ok(OcspResponse { tbs: tbs.raw.to_vec(), sig_alg: alg.raw.to_vec(), signature, responder_id, responses, responder_cert })
+    }
+
+    /// The delegated responder's certificate, when the response carries one.
+    pub fn responder_certificate(&self) -> Option<&Certificate> {
+        self.responder_cert.as_ref()
     }
 
     /// Check `cert` (issued by `issuer`) at `at`. The responder must be the issuer itself, or

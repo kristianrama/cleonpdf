@@ -212,6 +212,35 @@ impl Automation {
         Ok(json!({ "path": path, "bytes": signed.len(), "signature": newest.map(|s| self.sig_json(a, &s)).transpose()? }))
     }
 
+    pub(crate) fn sign_add_validation_info(&mut self, a: &Args) -> Result<Value> {
+        use cleonpdf_engine::sign::ltv::{Outcome, Source};
+        let doc_id = self.doc(a)?.id;
+        let out = self.resolve(a.str("out")?, true)?;
+        let fetcher = cleonpdf_net::HttpRevocationFetcher::new().allow_private_hosts(a.opt_bool("allow_private_hosts")?.unwrap_or(false));
+        let info = self.session.add_validation_info(doc_id, &fetcher).map_err(failed)?;
+        write_atomic(&out, &info.bytes)?;
+        let path = out.to_string_lossy().into_owned();
+        self.session.mark_signed(doc_id, info.bytes.clone(), Some(path.clone())).map_err(failed)?;
+        let certificates: Vec<Value> = info
+            .gathered
+            .notes
+            .iter()
+            .map(|n| match &n.outcome {
+                Outcome::Fetched(Source::Ocsp) => json!({ "subject": n.subject, "evidence": "ocsp" }),
+                Outcome::Fetched(Source::Crl) => json!({ "subject": n.subject, "evidence": "crl" }),
+                Outcome::Revoked { .. } => json!({ "subject": n.subject, "evidence": "revoked" }),
+                Outcome::Missing(why) => json!({ "subject": n.subject, "evidence": "none", "reason": why }),
+            })
+            .collect();
+        let ev = &info.gathered.evidence;
+        Ok(json!({
+            "path": path,
+            "bytes": info.bytes.len(),
+            "embedded": { "certificates": ev.certs.len(), "ocsp_responses": ev.ocsps.len(), "crls": ev.crls.len() },
+            "certificates": certificates,
+        }))
+    }
+
     /// `{"image": path}` (PNG or JPEG), `{"text": name}` (typed in the script font) or
     /// `{"strokes": [[[x, y], …], …]}` (y up; the drawing pad is 1 wide).
     fn signature_graphic(&self, g: &Value) -> Result<sign::Graphic> {

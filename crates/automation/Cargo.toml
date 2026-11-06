@@ -32,4 +32,5 @@ cleonpdf-fonts = { workspace = true }
 flate2.workspace = true
 cleonpdf-model = { workspace = true }
 cleonpdf-xfa = { workspace = true }
+cleonpdf-sign = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["jpeg"] }

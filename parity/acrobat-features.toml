@@ -6139,9 +6139,9 @@ tier = "P1"
 milestone = "M9"
 status = "partial"
 commands = []
-tools = []
-evidence = ["crates/sign/tests/pdf.rs::embedding_ltv_evidence_adds_a_dss_and_keeps_signatures_valid", "crates/sign/tests/pdf.rs::an_embedded_verified_revocation_invalidates_the_signature"]
-notes = "dss::embed merges caller-supplied evidence into the catalog /DSS with /VRI entries per signature, deduplicating blobs, as a permitted incremental change; revocation.rs verifies the embedded CRLs and OCSP responses (signature, responder identity, CertID, window) and a verified revocation invalidates the signature. Missing: fetching evidence, automation tool."
+tools = ["sign_add_validation_info"]
+evidence = ["crates/sign/tests/pdf.rs::embedding_ltv_evidence_adds_a_dss_and_keeps_signatures_valid", "crates/sign/tests/pdf.rs::an_embedded_verified_revocation_invalidates_the_signature", "crates/automation/tests/validation_info.rs::a_signed_document_gets_its_ocsp_response_and_chain_embedded", "crates/automation/tests/validation_info.rs::a_revoked_certificate_and_an_empty_handed_run_save_nothing"]
+notes = "dss::embed merges evidence into the catalog /DSS with /VRI entries per signature, deduplicating blobs, as a permitted incremental change; revocation.rs verifies the embedded CRLs and OCSP responses (signature, responder identity, CertID, window) and a verified revocation invalidates the signature. sign_add_validation_info fetches the evidence itself (ltv::gather: for each certificate below the root, the OCSP responders it names, then its CRL addresses; an answer is kept only if it verifies and is current), embeds it with the chain and saves; it saves nothing when a certificate is revoked or nothing could be had. Tested against a CA and responder on the loopback interface, not against a real public responder. Missing: a button in the Signatures panel, fetching the signature timestamp's TSA chain, caIssuers (a chain missing its issuer is reported, not completed), CRLs over 2 MiB, ldap:// addresses, a check against real CAs."
 
 [[feature]]
 id = "sign.pades-blta"
@@ -6151,9 +6151,9 @@ tier = "P1"
 milestone = "M9"
 status = "partial"
 commands = []
-tools = []
-evidence = ["crates/sign/tests/pdf.rs::sign_then_ltv_then_timestamp_makes_a_b_lta_file"]
-notes = "The B-LT/B-LTA chain works with caller-supplied evidence: sign, embed DSS (B-LT), then append a document timestamp over the result (B-LTA); earlier signatures stay valid with the store classified as a permitted change. Missing: OCSP/CRL verification of the evidence, re-timestamping automation."
+tools = ["sign_add_validation_info"]
+evidence = ["crates/sign/tests/pdf.rs::sign_then_ltv_then_timestamp_makes_a_b_lta_file", "crates/automation/tests/validation_info.rs::a_crl_is_embedded_when_the_responder_has_nothing"]
+notes = "B-LT: sign_document with timestamp_url (B-T), then sign_add_validation_info fetches and embeds the OCSP/CRL evidence. B-LTA: a document timestamp over the result (timestamp_document in the engine; there is no automation tool for it yet); earlier signatures stay valid with the store classified as a permitted change. Missing: an automation tool and a button for the document timestamp, re-timestamping before the last timestamp's certificate expires, evidence for the timestamp token's own chain."
 
 [[feature]]
 id = "sign.ocsp-crl"
@@ -6164,8 +6164,8 @@ milestone = "M9"
 status = "partial"
 commands = []
 tools = []
-evidence = ["crates/sign/tests/crypto.rs::crls_verify_and_report_revocation", "crates/sign/tests/crypto.rs::ocsp_responses_verify_and_match_the_certificate", "crates/sign/tests/pdf.rs::an_embedded_verified_revocation_invalidates_the_signature"]
-notes = "RFC 5280 CRLs and RFC 6960 OCSP responses are parsed and verified (issuer/responder signature, delegated responder's OCSP-signing EKU, CertID hash match, validity window) and checked against the DSS during validation. Missing: network fetching of fresh evidence and the OS trust store."
+evidence = ["crates/sign/tests/crypto.rs::crls_verify_and_report_revocation", "crates/sign/tests/crypto.rs::ocsp_responses_verify_and_match_the_certificate", "crates/sign/tests/pdf.rs::an_embedded_verified_revocation_invalidates_the_signature", "crates/sign/tests/ltv.rs::a_delegated_responders_certificate_is_kept_with_its_answer", "crates/net/tests/revocation_server.rs::the_default_fetcher_does_not_reach_the_loopback_server_at_all"]
+notes = "RFC 5280 CRLs and RFC 6960 OCSP responses are parsed and verified (issuer/responder signature, delegated responder's OCSP-signing EKU, CertID hash match, validity window) and checked against the DSS during validation. The OCSP response's certificates [0] EXPLICIT SEQUENCE OF Certificate are now read as RFC 6960 writes them (before, a delegated responder's certificate was never found, so such responses did not verify). Fresh evidence is fetched on request (sign_add_validation_info), never during validation: opening a document makes no request. The addresses come from the certificates, so non-public hosts are refused unless the caller opts in. Missing: the OS trust store, checking revocation live when a document is opened (by design not done), OCSP stapling and nonces."
 
 [[feature]]
 id = "sign.validate-all"

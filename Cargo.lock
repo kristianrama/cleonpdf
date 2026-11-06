@@ -1024,6 +1024,7 @@ dependencies = [
  "cleonpdf-organize",
  "cleonpdf-platform",
  "cleonpdf-render",
+ "cleonpdf-sign",
  "cleonpdf-xfa",
  "flate2",
  "image",
