@@ -332,4 +332,21 @@ mod tests {
         assert!(toast.contains("internal error"), "the user is told: {toast:?}");
         assert!(!app.pickers.showing.load(Ordering::SeqCst));
     }
+
+    /// The refusal comes before the file picker: a document that cannot be asked about never
+    /// shows a dialog (with a picker already up, the request would otherwise be refused as "another
+    /// dialog" instead, and the user told the wrong thing).
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn validation_information_is_refused_before_any_file_picker() {
+        let mut app = CleonPdfApp::new();
+        app.set_option("language", "en").unwrap();
+        let unsigned = b"%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF";
+        app.open_bytes("plain.pdf", None, unsigned.to_vec()).expect("opens");
+        app.pickers.showing.store(true, Ordering::SeqCst);
+        app.execute("sign.add_validation_info");
+        let said = app.toast.as_ref().map(|(m, _)| m.clone()).unwrap_or_default();
+        assert!(said.contains("no signature"), "{said:?}");
+        assert!(app.validation_task.is_none());
+    }
 }

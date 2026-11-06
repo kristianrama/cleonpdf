@@ -2396,3 +2396,11 @@ window	Zoom	Ridimensiona
 	Timestamp server	Server di marca temporale
 	Optional: https://…	Facoltativo: https://…
 	Only a digest of the signature is sent to this server, never the document.	A questo server viene inviato solo un digest della firma, mai il documento.
+	Add validation information	Aggiungi informazioni di validazione
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Chiede ai server OCSP e CRL indicati nei certificati dei firmatari se sono stati revocati e conserva le risposte nel file. Di ogni certificato vengono inviati solo l'emittente e il numero di serie, mai il documento.
+	Asking the certificate servers for validation information…	Richiesta delle informazioni di validazione ai server dei certificati…
+	Validation information added and saved to {path}	Informazioni di validazione aggiunte e salvate in {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Informazioni di validazione aggiunte e salvate in {path}. Certificati senza risposta: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Il documento è cambiato mentre si recuperavano le informazioni di validazione, quindi non è stato salvato nulla.
+	Validation information is already being fetched. Wait for it to finish.	Le informazioni di validazione sono già in corso di recupero. Attendi che finiscano.
+	Validation information needs the desktop app	Le informazioni di validazione richiedono l'app desktop

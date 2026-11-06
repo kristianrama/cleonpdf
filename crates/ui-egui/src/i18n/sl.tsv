@@ -2390,3 +2390,11 @@ window	Zoom	Spremeni velikost
 	Timestamp server	Strežnik časovnih žigov
 	Optional: https://…	Neobvezno: https://…
 	Only a digest of the signature is sent to this server, never the document.	Temu strežniku se pošlje samo povzetek podpisa, nikoli dokument.
+	Add validation information	Dodaj podatke za preverjanje
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Vpraša strežnike OCSP in CRL, navedene v potrdilih podpisnikov, ali so potrdila preklicana, in odgovore shrani v datoteko. Pošljeta se samo izdajatelj in serijska številka vsakega potrdila, nikoli dokument.
+	Asking the certificate servers for validation information…	Zahtevam podatke za preverjanje od strežnikov potrdil …
+	Validation information added and saved to {path}	Podatki za preverjanje so dodani in shranjeni v {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Podatki za preverjanje so dodani in shranjeni v {path}. Potrdila brez odgovora: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Dokument se je med pridobivanjem podatkov za preverjanje spremenil, zato ni bilo nič shranjeno.
+	Validation information is already being fetched. Wait for it to finish.	Podatki za preverjanje se že pridobivajo. Počakajte, da se konča.
+	Validation information needs the desktop app	Podatki za preverjanje zahtevajo namizno aplikacijo

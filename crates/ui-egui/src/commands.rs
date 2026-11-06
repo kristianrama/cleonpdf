@@ -488,6 +488,7 @@ impl CleonPdfApp {
                 self.session.set_trusted_certificates(certs);
                 self.choose_right_panel(Some(RightPanel::Signatures));
             }
+            "sign.add_validation_info" => self.add_validation_info(),
             "sign.panel" => self.choose_right_panel(Some(RightPanel::Signatures)),
             "optimize.advanced" => self.dialog = Some(Dialog::Optimize),
             "view.fit_visible" => {

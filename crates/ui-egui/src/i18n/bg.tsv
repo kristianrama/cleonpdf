@@ -2348,3 +2348,11 @@ window	Zoom	Мащабиране
 	Timestamp server	Сървър за времеви печат
 	Optional: https://…	По избор: https://…
 	Only a digest of the signature is sent to this server, never the document.	Към този сървър се изпраща само резюме (хеш) на подписа, никога документът.
+	Add validation information	Добавяне на информация за валидиране
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Пита OCSP и CRL сървърите, посочени в сертификатите на подписалите, дали сертификатите са отменени, и запазва отговорите във файла. Изпращат се само издателят и серийният номер на всеки сертификат, никога документът.
+	Asking the certificate servers for validation information…	Заявяване на информация за валидиране от сървърите на сертификатите…
+	Validation information added and saved to {path}	Информацията за валидиране е добавена и запазена в {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Информацията за валидиране е добавена и запазена в {path}. Сертификати без отговор: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Документът е променен, докато се извличаше информацията за валидиране, затова нищо не е запазено.
+	Validation information is already being fetched. Wait for it to finish.	Информацията за валидиране вече се извлича. Изчакайте да приключи.
+	Validation information needs the desktop app	Информацията за валидиране изисква настолното приложение

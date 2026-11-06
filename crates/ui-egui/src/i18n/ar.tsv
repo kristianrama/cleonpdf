@@ -2408,3 +2408,11 @@ window	Zoom	تغيير الحجم
 	Timestamp server	خادم الطابع الزمني
 	Optional: https://…	اختياري: https://…
 	Only a digest of the signature is sent to this server, never the document.	يُرسَل إلى هذا الخادم ملخّص التوقيع فقط، ولا يُرسَل المستند أبدًا.
+	Add validation information	إضافة معلومات التحقق
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	يسأل خوادم OCSP وCRL المذكورة في شهادات الموقّعين عمّا إذا كانت الشهادات قد أُلغيت، ويحفظ الإجابات في الملف. لا يُرسل سوى جهة الإصدار والرقم التسلسلي لكل شهادة، ولا يُرسل المستند أبدًا.
+	Asking the certificate servers for validation information…	جارٍ طلب معلومات التحقق من خوادم الشهادات…
+	Validation information added and saved to {path}	تمت إضافة معلومات التحقق وحُفظت في {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	تمت إضافة معلومات التحقق وحُفظت في {path}. شهادات بلا إجابة: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	تغيّر المستند أثناء جلب معلومات التحقق، لذلك لم يُحفظ شيء.
+	Validation information is already being fetched. Wait for it to finish.	يجري جلب معلومات التحقق بالفعل. انتظر حتى ينتهي.
+	Validation information needs the desktop app	تتطلب معلومات التحقق تطبيق سطح المكتب

@@ -2259,3 +2259,11 @@ window	Zoom	縮放
 	Timestamp server	時間戳記伺服器
 	Optional: https://…	選用：https://…
 	Only a digest of the signature is sent to this server, never the document.	只會向此伺服器傳送簽章的摘要，絕不會傳送文件。
+	Add validation information	新增驗證資訊
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	向簽署者憑證中列出的 OCSP 與 CRL 伺服器查詢憑證是否已被撤銷，並將回覆儲存在檔案中。只會傳送每張憑證的簽發者與序號，絕不傳送文件。
+	Asking the certificate servers for validation information…	正在向憑證伺服器要求驗證資訊…
+	Validation information added and saved to {path}	已新增驗證資訊並儲存到 {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	已新增驗證資訊並儲存到 {path}。沒有回覆的憑證：{n}
+	The document changed while the validation information was being fetched, so nothing was saved.	取得驗證資訊期間文件已變更，因此未儲存任何內容。
+	Validation information is already being fetched. Wait for it to finish.	正在取得驗證資訊，請等待完成。
+	Validation information needs the desktop app	驗證資訊需要桌面應用程式
