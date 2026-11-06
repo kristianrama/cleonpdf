@@ -207,3 +207,90 @@ fn a_document_with_no_signature_has_nothing_to_add_to() {
     let r = a.call("sign_add_validation_info", &json!({ "doc": doc, "out": "ltv.pdf" }));
     assert!(matches!(&r, Err(ToolError::Failed(m)) if m.contains("no signature")), "{r:?}");
 }
+
+/// Serves one fixed answer per `POST` path, counting the requests; anything else is a 404.
+fn serve_paths(listener: TcpListener, answers: Vec<(&'static str, Vec<u8>)>) -> Arc<AtomicUsize> {
+    let hits = Arc::new(AtomicUsize::new(0));
+    let counted = hits.clone();
+    std::thread::spawn(move || {
+        while let Ok((mut stream, _)) = listener.accept() {
+            let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(10)));
+            let mut data = Vec::new();
+            let mut chunk = [0u8; 4096];
+            while let Ok(n) = stream.read(&mut chunk) {
+                if n == 0 {
+                    break;
+                }
+                data.extend_from_slice(&chunk[..n]);
+                if let Some(i) = data.windows(4).position(|w| w == b"\r\n\r\n") {
+                    let head = String::from_utf8_lossy(&data[..i]).to_ascii_lowercase();
+                    let length =
+                        head.lines().find_map(|l| l.strip_prefix("content-length:").and_then(|v| v.trim().parse::<usize>().ok())).unwrap_or(0);
+                    if data.len() >= i + 4 + length {
+                        break;
+                    }
+                }
+            }
+            counted.fetch_add(1, Ordering::SeqCst);
+            let found = answers.iter().find(|(path, _)| data.starts_with(format!("POST {path} ").as_bytes()));
+            let (status, body) = match found {
+                Some((_, b)) => ("200 OK", b.as_slice()),
+                None => ("404 Not Found", b"".as_slice()),
+            };
+            let head = format!("HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len());
+            let _ = stream.write_all(head.as_bytes());
+            let _ = stream.write_all(body);
+        }
+    });
+    hits
+}
+
+/// A fixed-time RFC 3161 authority signing with `party`.
+struct Stamper {
+    party: Party,
+    chain: Vec<cleonpdf_sign::Certificate>,
+}
+
+impl cleonpdf_sign::TimestampAuthority for Stamper {
+    fn timestamp(&self, request: &[u8]) -> Result<Vec<u8>, cleonpdf_sign::SignError> {
+        let q = cleonpdf_sign::timestamp::parse_request(request)?;
+        cleonpdf_sign::timestamp::respond(
+            &self.party.key,
+            &self.party.cert,
+            &self.chain,
+            cleonpdf_sign::DigestAlg::Sha256,
+            &q,
+            "1.2.3.4",
+            Time::from_unix(NOW),
+            3,
+        )
+    }
+}
+
+#[test]
+fn the_timestamp_authoritys_certificates_are_asked_about_too() {
+    let dir = workdir("tsa");
+    let (listener, base) = bind();
+    let ca = root("Test CA");
+    let signer = end_entity("Ada Lovelace", &ca, &[aia_ocsp(&format!("{base}/ocsp-signer"))]);
+    let tsa = end_entity("Stamping Authority", &ca, &[aia_ocsp(&format!("{base}/ocsp-tsa"))]);
+    let (this, next) = (Time::from_unix(NOW - 3600), Time::from_unix(NOW + 7 * 86400));
+    let answers = vec![
+        ("/ocsp-signer", ocsp_response(&ca, &signer.cert, &ca.cert, Answer::Good, this, next)),
+        ("/ocsp-tsa", ocsp_response(&ca, &tsa.cert, &ca.cert, Answer::Good, this, next)),
+    ];
+    let hits = serve_paths(listener, answers);
+    let tsa = Stamper { party: tsa, chain: vec![ca.cert.clone()] };
+    let id = signer.into_id(&[&ca]);
+    let doc = cleonpdf_cos::Document::open(Arc::new(fixture())).unwrap();
+    let opts = cleonpdf_sign::SignOptions { date: "D:20231114120000Z".into(), ..Default::default() };
+    std::fs::write(dir.join("stamped.pdf"), cleonpdf_sign::sign_with_timestamp(&doc, &id, &opts, &tsa).unwrap()).unwrap();
+
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "doc_open", json!({ "path": "stamped.pdf" }))["doc"].as_u64().unwrap();
+    let done = ok(&mut a, "sign_add_validation_info", json!({ "doc": doc, "out": "ltv.pdf", "allow_private_hosts": true }));
+    assert_eq!(hits.load(Ordering::SeqCst), 2, "one question for the signer and one for the authority: {done}");
+    assert_eq!(done["embedded"], json!({ "certificates": 3, "ocsp_responses": 2, "crls": 0 }), "{done}");
+    let names: Vec<&str> = done["certificates"].as_array().unwrap().iter().filter_map(|c| c["subject"].as_str()).collect();
+    assert!(names.contains(&"Stamping Authority") && names.contains(&"Ada Lovelace"), "{done}");
+}

@@ -4625,8 +4625,10 @@ impl Session {
                 "save the document first: its unsaved changes would be written along with the validation information".into(),
             ));
         }
+        // Each signer's chain, and the chain of the timestamp authority that stamped it: a
+        // timestamp is only checkable offline with the same evidence as the signature.
         let chains: Vec<Vec<cleonpdf_sign::Certificate>> =
-            d.signatures.iter().filter(|s| s.signed && !s.chain.is_empty()).map(|s| s.chain.clone()).collect();
+            d.signatures.iter().filter(|s| s.signed).flat_map(|s| [s.chain.clone(), s.timestamp_chain.clone()]).filter(|c| !c.is_empty()).collect();
         if chains.is_empty() {
             return Err(EditError::Sign("the document has no signature to add validation information to".into()));
         }

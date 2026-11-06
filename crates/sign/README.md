@@ -57,8 +57,11 @@ for s in signatures(&doc, &bytes, &trust) {                                // li
   issuer hash and serial number. The addresses come from the certificates, which is why the
   transport, not this crate, decides which hosts to talk to.
 
-Not yet: fetching a missing issuer certificate (caIssuers), evidence for a signature timestamp's
-own chain, FieldMDP locks, certificate security, direct PKCS #11 access to tokens.
+`SignatureInfo::timestamp_chain` is the timestamp authority's chain (of a signature's token or of a
+document timestamp), built at validation time whether or not it is trusted; hand it to `ltv::gather`
+beside the signer's `chain`, so the file also carries proof that the authority was not revoked.
+
+Not yet: fetching a missing issuer certificate (caIssuers), FieldMDP locks, certificate security, direct PKCS #11 access to tokens.
 macOS Keychain and Windows Current User Personal (My) store identities sign through
 `ExternalKey` without exporting private keys. Windows CNG supports RSA PKCS #1 v1.5 and
 ECDSA P-256/P-384; the store integration is tested with software-backed keys. A smart card
