@@ -134,7 +134,7 @@ pub fn fixture() -> Option<&'static Fixture> {
             keys.create_object(&object("P-521", P521_ID[0], cert.subject.raw.clone(), cert.raw.clone())).unwrap();
             // RSA 2048.
             let mut rsa_public = public_id(&RSA_ID, "RSA signer");
-            rsa_public.extend([Attribute::ModulusBits(Ulong::from(2048u64)), Attribute::PublicExponent(vec![1, 0, 1])]);
+            rsa_public.extend([Attribute::ModulusBits(Ulong::try_from(2048usize).unwrap()), Attribute::PublicExponent(vec![1, 0, 1])]);
             let (public, _) = keys.generate_key_pair(&Mechanism::RsaPkcsKeyPairGen, &rsa_public, &private(&RSA_ID, "RSA signer")).unwrap();
             let got = keys.get_attributes(public, &[AttributeType::Modulus, AttributeType::PublicExponent]).unwrap();
             let (mut n, mut e) = (Vec::new(), Vec::new());
