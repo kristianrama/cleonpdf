@@ -2383,3 +2383,11 @@ window	Zoom	Өлшемін өзгерту
 	Timestamp server	Уақыт белгісі сервері
 	Optional: https://…	Міндетті емес: https://…
 	Only a digest of the signature is sent to this server, never the document.	Бұл серверге тек қолтаңбаның дайджесті жіберіледі, құжат ешқашан жіберілмейді.
+	Add validation information	Тексеру ақпаратын қосу
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Қол қоюшылардың сертификаттарында көрсетілген OCSP және CRL серверлерінен сертификаттардың күші жойылғанын сұрайды және жауаптарды файлда сақтайды. Әр сертификаттың тек шығарушысы мен сериялық нөмірі жіберіледі, құжат ешқашан жіберілмейді.
+	Asking the certificate servers for validation information…	Сертификат серверлерінен тексеру ақпараты сұралуда…
+	Validation information added and saved to {path}	Тексеру ақпараты қосылып, {path} ішіне сақталды
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Тексеру ақпараты қосылып, {path} ішіне сақталды. Жауабы жоқ сертификаттар: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Тексеру ақпаратын алу кезінде құжат өзгерді, сондықтан ештеңе сақталмады.
+	Validation information is already being fetched. Wait for it to finish.	Тексеру ақпараты қазірдің өзінде алынуда. Аяқталғанша күтіңіз.
+	Validation information needs the desktop app	Тексеру ақпараты үшін жұмыс үстелі қолданбасы қажет

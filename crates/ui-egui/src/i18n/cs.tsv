@@ -2459,3 +2459,11 @@ window	Zoom	Změnit velikost
 	Timestamp server	Server časových razítek
 	Optional: https://…	Volitelné: https://…
 	Only a digest of the signature is sent to this server, never the document.	Na tento server se odesílá pouze otisk podpisu, nikdy dokument.
+	Add validation information	Přidat informace o ověření
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Zeptá se serverů OCSP a CRL uvedených v certifikátech podepisujících, zda nebyly odvolány, a odpovědi uloží do souboru. Odesílá se jen vydavatel a sériové číslo každého certifikátu, nikdy dokument.
+	Asking the certificate servers for validation information…	Žádám servery certifikátů o informace o ověření…
+	Validation information added and saved to {path}	Informace o ověření byly přidány a uloženy do {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Informace o ověření byly přidány a uloženy do {path}. Certifikáty bez odpovědi: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Dokument se změnil během načítání informací o ověření, proto nebylo nic uloženo.
+	Validation information is already being fetched. Wait for it to finish.	Informace o ověření se již načítají. Počkejte, až skončí.
+	Validation information needs the desktop app	Informace o ověření vyžadují desktopovou aplikaci

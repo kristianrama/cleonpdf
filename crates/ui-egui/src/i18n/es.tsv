@@ -2515,3 +2515,11 @@ window	Zoom	Zoom
 	Timestamp server	Servidor de sellado de tiempo
 	Optional: https://…	Opcional: https://…
 	Only a digest of the signature is sent to this server, never the document.	A este servidor solo se envía un resumen (hash) de la firma, nunca el documento.
+	Add validation information	Añadir información de validación
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Pregunta a los servidores OCSP y CRL indicados en los certificados de los firmantes si han sido revocados y guarda las respuestas en el archivo. Solo se envían el emisor y el número de serie de cada certificado, nunca el documento.
+	Asking the certificate servers for validation information…	Solicitando información de validación a los servidores de certificados…
+	Validation information added and saved to {path}	Información de validación añadida y guardada en {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Información de validación añadida y guardada en {path}. Certificados sin respuesta: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	El documento cambió mientras se obtenía la información de validación, así que no se guardó nada.
+	Validation information is already being fetched. Wait for it to finish.	Ya se está obteniendo información de validación. Espere a que termine.
+	Validation information needs the desktop app	La información de validación requiere la aplicación de escritorio

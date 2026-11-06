@@ -299,9 +299,10 @@ update the numbers.
 - **Done so far:** `cleonpdf-net` asks an RFC 3161 server the caller names (sign_document
   `timestamp_url` and a Timestamp server field in the Sign dialog, PAdES B-T); nothing is
   requested unless one is given. `sign_add_validation_info` fetches OCSP responses and CRLs for
-  the signers' chains and embeds them (PAdES B-LT), refusing non-public hosts unless told otherwise.
+  the signers' chains and embeds them (PAdES B-LT), refusing non-public hosts unless told otherwise. The Signatures panel has an Add validation
+  information button for it (desktop).
 - **Missing:** PKCS #11 tokens and smart cards on macOS and Linux; a timestamp-server list in
-  Preferences; a button for validation information in the Signatures panel; FieldMDP and locking fields on signing; the OS trust store; EU
+  Preferences; FieldMDP and locking fields on signing; the OS trust store; EU
   Trusted Lists; signature graphics and saved appearances; compare signed version; signing in the
   browser.
 - **Evidence:** `sign.pkcs11`, `sign.timestamp-servers`, `sign.field-mdp`, `sign.os-trust`,

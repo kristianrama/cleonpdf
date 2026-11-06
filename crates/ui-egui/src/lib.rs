@@ -654,6 +654,12 @@ pub struct CleonPdfApp {
     /// A signature being made while its timestamp is requested (desktop).
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) signing_task: Option<sign_ui::SigningTask>,
+    /// Validation information (OCSP and CRL answers) being fetched on another thread (desktop).
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) validation_task: Option<sign_ui::ValidationTask>,
+    /// Also reach OCSP and CRL servers on private networks when adding validation information
+    /// (a company's own PKI). Off by default: the addresses come from the document's certificates.
+    pub validation_private_hosts: bool,
     /// Digital ID files the user has created or added.
     pub digital_ids: Vec<DigitalIdEntry>,
     /// Signatures panel: expanded entries (field names).
@@ -986,6 +992,9 @@ impl CleonPdfApp {
             timestamp_server: String::new(),
             #[cfg(not(target_arch = "wasm32"))]
             signing_task: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            validation_task: None,
+            validation_private_hosts: false,
             digital_ids: Vec::new(),
             sig_expanded: Vec::new(),
             a11y_options: a11y_ui::A11yOptions::default(),
@@ -2202,6 +2211,7 @@ impl CleonPdfApp {
         // reads this one before its window exists (apps/cleonpdf `saved_glass`).
         settings["window_glass"] = serde_json::Value::Bool(self.window_glass);
         settings["timestamp_server"] = serde_json::Value::String(self.timestamp_server.clone());
+        settings["validation_private_hosts"] = serde_json::Value::Bool(self.validation_private_hosts);
         settings.to_string()
     }
 
@@ -2348,6 +2358,7 @@ impl CleonPdfApp {
         self.sign_graphic = serde_json::from_value(v["sign_graphic"].clone()).unwrap_or_default();
         // Settings are untrusted input: a server address longer than any accepted one is dropped.
         self.timestamp_server = v["timestamp_server"].as_str().filter(|s| s.len() <= 2048).unwrap_or_default().to_string();
+        self.validation_private_hosts = v["validation_private_hosts"].as_bool().unwrap_or(false);
         if let Ok(ids) = serde_json::from_value::<Vec<DigitalIdEntry>>(v["digital_ids"].clone()) {
             self.digital_ids = ids;
         }
@@ -2425,6 +2436,13 @@ impl CleonPdfApp {
             ("tool", _) => {
                 let g = cleonpdf_engine::catalog::group(value).ok_or_else(|| format!("unknown tool {value}"))?;
                 self.select_tool(g.id);
+            }
+            ("validation-private-hosts", _) => {
+                self.validation_private_hosts = match value {
+                    "on" => true,
+                    "off" => false,
+                    _ => return Err("validation-private-hosts must be on or off".into()),
+                };
             }
             ("left", _) => self.left_open = value != "closed",
             ("home", _) => self.active = None,
@@ -2968,6 +2986,7 @@ impl eframe::App for CleonPdfApp {
         self.poll_updates();
         self.poll_print();
         self.poll_signing();
+        self.poll_validation();
         // Shortcuts deferred last frame: the text field has taken that frame's typing since.
         let deferred = std::mem::take(&mut self.deferred_commands);
         self.run_system_choices(ctx);

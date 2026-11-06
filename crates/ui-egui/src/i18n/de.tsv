@@ -2386,3 +2386,11 @@ window	Zoom	Zoomen
 	Timestamp server	Zeitstempelserver
 	Optional: https://…	Optional: https://…
 	Only a digest of the signature is sent to this server, never the document.	An diesen Server wird nur ein Hashwert der Signatur gesendet, nie das Dokument.
+	Add validation information	Validierungsinformationen hinzufügen
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Fragt die in den Zertifikaten der Unterzeichner genannten OCSP- und CRL-Server, ob die Zertifikate gesperrt sind, und speichert die Antworten in der Datei. Gesendet werden nur Aussteller und Seriennummer jedes Zertifikats, nie das Dokument.
+	Asking the certificate servers for validation information…	Validierungsinformationen werden bei den Zertifikatsservern angefragt…
+	Validation information added and saved to {path}	Validierungsinformationen hinzugefügt und gespeichert unter {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Validierungsinformationen hinzugefügt und gespeichert unter {path}. Zertifikate ohne Antwort: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Das Dokument wurde geändert, während die Validierungsinformationen abgerufen wurden. Es wurde nichts gespeichert.
+	Validation information is already being fetched. Wait for it to finish.	Die Validierungsinformationen werden bereits abgerufen. Warten Sie, bis der Vorgang abgeschlossen ist.
+	Validation information needs the desktop app	Validierungsinformationen erfordern die Desktop-App

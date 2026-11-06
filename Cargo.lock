@@ -1374,6 +1374,7 @@ dependencies = [
  "cleonpdf-net",
  "cleonpdf-platform",
  "cleonpdf-render",
+ "cleonpdf-sign",
  "cleonpdf-xfa",
  "craft-ui",
  "eframe",

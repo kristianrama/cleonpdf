@@ -153,6 +153,16 @@ pub(crate) struct SigningTask {
     generation: u64,
 }
 
+/// Validation information being fetched on another thread while OCSP and CRL servers answer.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) struct ValidationTask {
+    rx: std::sync::mpsc::Receiver<Result<cleonpdf_engine::ValidationInfo, String>>,
+    doc_id: cleonpdf_engine::DocId,
+    path: PathBuf,
+    /// The document's edit generation when the copy was made.
+    generation: u64,
+}
+
 /// What a page asks of the signing flow.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SignView {
@@ -510,18 +520,132 @@ impl CleonPdfApp {
         signed: std::sync::Arc<Vec<u8>>,
         choice: SignGraphic,
     ) -> Result<(), String> {
-        crate::editing::write_atomically(&path.to_string_lossy(), signed.as_slice()).map_err(|e| format!("Could not save: {e}"))?;
+        self.save_signed_file(doc_id, &path, signed)?;
+        self.sign_graphic = choice;
+        self.notify_fmt("Signed and saved to {path}", &[("path", &path.display().to_string())]);
+        Ok(())
+    }
+
+    /// Write a signed document's new bytes to `path` and make them the document (a signature, or
+    /// validation information added to the signatures), and show the Signatures panel.
+    fn save_signed_file(&mut self, doc_id: cleonpdf_engine::DocId, path: &std::path::Path, bytes: std::sync::Arc<Vec<u8>>) -> Result<(), String> {
+        crate::editing::write_atomically(&path.to_string_lossy(), bytes.as_slice()).map_err(|e| format!("Could not save: {e}"))?;
         // Our own write is not a change on disk to reload (#431).
         #[cfg(not(target_arch = "wasm32"))]
         self.watch.known_now(doc_id, &path.to_string_lossy());
-        self.session.mark_signed(doc_id, signed, Some(path.to_string_lossy().into_owned())).map_err(|e| e.to_string())?;
-        self.sign_graphic = choice;
+        self.session.mark_signed(doc_id, bytes, Some(path.to_string_lossy().into_owned())).map_err(|e| e.to_string())?;
         if let Some(view) = self.views.iter_mut().find(|v| v.id == doc_id) {
             view.invalidate_content();
         }
         self.right = Some(crate::RightPanel::Signatures);
-        self.notify_fmt("Signed and saved to {path}", &[("path", &path.display().to_string())]);
         Ok(())
+    }
+
+    /// Add validation information (OCSP responses and CRLs, PAdES B-LT) to the active document's
+    /// signatures: choose where to save, then ask the servers the signers' certificates name, on
+    /// another thread.
+    pub fn add_validation_info(&mut self) {
+        #[cfg(target_arch = "wasm32")]
+        self.notify_tr("Validation information needs the desktop app");
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let Some((_, doc_id)) = self.active_ids() else { return };
+            if self.validation_task.is_some() || self.signing_task.is_some() {
+                self.notify_tr("Validation information is already being fetched. Wait for it to finish.");
+                return;
+            }
+            // Refused up front (no signatures, unsaved changes) rather than after the file picker.
+            if let Err(e) = self.session.validation_job(doc_id) {
+                self.notify(e.to_string());
+                return;
+            }
+            let name = self.session.get(doc_id).map(|d| d.name.clone()).unwrap_or_default();
+            let stem = name.trim_end_matches(".pdf").trim_end_matches(".PDF").to_string();
+            match self.save_override.clone() {
+                Some(p) => self.start_validation(doc_id, PathBuf::from(p)),
+                None => {
+                    let dialog = rfd::AsyncFileDialog::new().add_filter("PDF", &["pdf"]).set_file_name(format!("{stem}_validated.pdf"));
+                    // Dropped, with a notice, if the document is edited or switched away from
+                    // while the picker shows.
+                    self.ask_one(crate::pickers::Ask::Save(dialog), Some(doc_id), move |app, path| app.start_validation(doc_id, path));
+                }
+            }
+        }
+    }
+
+    /// Fetch the validation information for `doc_id` on another thread and finish in
+    /// [`CleonPdfApp::poll_validation`].
+    #[cfg(not(target_arch = "wasm32"))]
+    fn start_validation(&mut self, doc_id: cleonpdf_engine::DocId, path: PathBuf) {
+        if self.validation_task.is_some() || self.signing_task.is_some() {
+            self.notify_tr("Validation information is already being fetched. Wait for it to finish.");
+            return;
+        }
+        let job = match self.session.validation_job(doc_id) {
+            Ok(job) => job,
+            Err(e) => {
+                self.notify(e.to_string());
+                return;
+            }
+        };
+        let generation = job.generation();
+        let fetcher = cleonpdf_net::HttpRevocationFetcher::new().allow_private_hosts(self.validation_private_hosts);
+        let (tx, rx) = std::sync::mpsc::channel();
+        let ctx = self.ctx.clone();
+        std::thread::spawn(move || {
+            let result = job.run(&fetcher).map_err(|e| e.to_string());
+            // The receiver may be gone (the app quit): nothing to report to then.
+            let _ = tx.send(result);
+            if let Some(ctx) = ctx {
+                ctx.request_repaint();
+            }
+        });
+        self.notify_tr("Asking the certificate servers for validation information…");
+        self.validation_task = Some(ValidationTask { rx, doc_id, path, generation });
+    }
+
+    /// Validation information is being fetched.
+    pub fn validation_in_progress(&self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        return self.validation_task.is_some();
+        #[cfg(target_arch = "wasm32")]
+        false
+    }
+
+    /// Pick up validation information whose servers were being asked (each frame).
+    pub(crate) fn poll_validation(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let Some(task) = &self.validation_task else { return };
+            let result = match task.rx.try_recv() {
+                Ok(r) => r,
+                Err(std::sync::mpsc::TryRecvError::Empty) => return,
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("fetching the validation information stopped unexpectedly".into()),
+            };
+            let Some(task) = self.validation_task.take() else { return };
+            match result {
+                // Made from a copy: an edit made meanwhile is not in it, and saving it would
+                // drop that edit, so nothing is saved.
+                Ok(_) if self.session.get(task.doc_id).map(|d| d.edit_generation()) != Some(task.generation) => {
+                    self.notify_tr("The document changed while the validation information was being fetched, so nothing was saved.");
+                }
+                Ok(info) => {
+                    use cleonpdf_engine::sign::ltv::Outcome;
+                    let missing = info.gathered.notes.iter().filter(|n| matches!(n.outcome, Outcome::Missing(_))).count();
+                    match self.save_signed_file(task.doc_id, &task.path, info.bytes) {
+                        Ok(()) if missing == 0 => {
+                            self.notify_fmt("Validation information added and saved to {path}", &[("path", &task.path.display().to_string())])
+                        }
+                        Ok(()) => self.notify_fmt(
+                            "Validation information added and saved to {path}. Certificates with no answer: {n}",
+                            &[("path", &task.path.display().to_string()), ("n", &missing.to_string())],
+                        ),
+                        Err(e) => self.notify(e),
+                    }
+                }
+                Err(e) => self.notify(e),
+            }
+        }
     }
 
     /// Sign a copy of the document on another thread, asking `tsa` for the timestamp, and finish
@@ -1166,6 +1290,8 @@ pub enum PanelAction {
     GoTo(usize),
     Trust(Box<Certificate>),
     ViewSigned(usize),
+    /// Fetch OCSP and CRL answers for the signers and keep them in the file (PAdES B-LT).
+    AddValidationInfo,
     Sign(String),
     ExportCertificate(Box<Certificate>),
     /// Certificate Viewer for the signer's chain (signer first).
@@ -1173,12 +1299,26 @@ pub enum PanelAction {
 }
 
 /// The Signatures panel body.
-pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, sigs: &[SignatureInfo], expanded: &mut Vec<String>) -> Option<PanelAction> {
+pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, sigs: &[SignatureInfo], expanded: &mut Vec<String>, busy: bool) -> Option<PanelAction> {
     let mut action = None;
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         if widgets::pill_button(ui, tl!("Validate all"), false).clicked() {
             action = Some(PanelAction::Validate);
         }
+        // The browser can't reach OCSP and CRL servers.
+        #[cfg(not(target_arch = "wasm32"))]
+        if sigs.iter().any(|s| s.signed) {
+            let add = ui.add_enabled_ui(!busy, |ui| widgets::pill_button(ui, tl!("Add validation information"), false));
+            if add
+                .inner
+                .on_hover_text(tl!("Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document."))
+                .clicked()
+            {
+                action = Some(PanelAction::AddValidationInfo);
+            }
+        }
+        #[cfg(target_arch = "wasm32")]
+        let _ = busy;
     });
     ui.add_space(6.0);
     if sigs.is_empty() {

@@ -2385,3 +2385,11 @@ window	Zoom	拡大／縮小
 	Timestamp server	タイムスタンプサーバー
 	Optional: https://…	任意: https://…
 	Only a digest of the signature is sent to this server, never the document.	このサーバーには署名のダイジェストのみが送信され、文書は送信されません。
+	Add validation information	検証情報を追加
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	署名者の証明書に記載された OCSP・CRL サーバーに失効しているかどうかを問い合わせ、回答をファイルに保存します。送信するのは各証明書の発行者とシリアル番号だけで、文書は送信しません。
+	Asking the certificate servers for validation information…	証明書サーバーに検証情報を問い合わせています…
+	Validation information added and saved to {path}	検証情報を追加して {path} に保存しました
+	Validation information added and saved to {path}. Certificates with no answer: {n}	検証情報を追加して {path} に保存しました。回答のない証明書: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	検証情報の取得中に文書が変更されたため、何も保存されませんでした。
+	Validation information is already being fetched. Wait for it to finish.	検証情報はすでに取得中です。完了するまでお待ちください。
+	Validation information needs the desktop app	検証情報にはデスクトップアプリが必要です

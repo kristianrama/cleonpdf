@@ -474,6 +474,7 @@ pub fn right_panel(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
     let mut field_properties = None;
     let mut panel_command: Option<&'static str> = None;
     let mut sig_action: Option<crate::sign_ui::PanelAction> = None;
+    let validating = app.validation_in_progress() || app.signing_in_progress();
     let mut a11y_action: Option<crate::a11y_ui::PanelAction> = None;
     let mut compare_action: Option<crate::compare_ui::PanelAction> = None;
     let mut bm_rename = app.bookmark_rename.clone();
@@ -664,7 +665,7 @@ pub fn right_panel(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
                         }
                     }
                     RightPanel::Signatures => {
-                        sig_action = crate::sign_ui::panel(ui, &t, &doc.signatures, sig_expanded);
+                        sig_action = crate::sign_ui::panel(ui, &t, &doc.signatures, sig_expanded, validating);
                     }
                     RightPanel::Accessibility => {
                         a11y_action = crate::a11y_ui::panel(ui, &t, a11y, id);
@@ -747,6 +748,7 @@ pub fn right_panel(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
             app.dialog = Some(crate::Dialog::CertificateViewer);
         }
         Some(crate::sign_ui::PanelAction::ViewSigned(len)) => app.view_signed_version(len),
+        Some(crate::sign_ui::PanelAction::AddValidationInfo) => app.run_command("sign.add_validation_info"),
         Some(crate::sign_ui::PanelAction::Sign(field)) => {
             let page = app.views[index].current;
             app.start_signing(page, None, Some(field), None);

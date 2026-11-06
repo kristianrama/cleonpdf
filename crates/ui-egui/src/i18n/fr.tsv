@@ -2385,3 +2385,11 @@ window	Zoom	Réduire/agrandir
 	Timestamp server	Serveur d’horodatage
 	Optional: https://…	Facultatif : https://…
 	Only a digest of the signature is sent to this server, never the document.	Seule une empreinte de la signature est envoyée à ce serveur, jamais le document.
+	Add validation information	Ajouter des informations de validation
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Interroge les serveurs OCSP et CRL indiqués dans les certificats des signataires pour savoir s'ils sont révoqués, et conserve les réponses dans le fichier. Seuls l'émetteur et le numéro de série de chaque certificat sont envoyés, jamais le document.
+	Asking the certificate servers for validation information…	Demande des informations de validation aux serveurs de certificats…
+	Validation information added and saved to {path}	Informations de validation ajoutées et enregistrées dans {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Informations de validation ajoutées et enregistrées dans {path}. Certificats sans réponse : {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Le document a changé pendant la récupération des informations de validation ; rien n'a été enregistré.
+	Validation information is already being fetched. Wait for it to finish.	Les informations de validation sont déjà en cours de récupération. Attendez la fin de l'opération.
+	Validation information needs the desktop app	Les informations de validation nécessitent l'application de bureau

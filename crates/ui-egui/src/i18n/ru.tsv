@@ -2298,3 +2298,11 @@ window	Zoom	Изменить масштаб
 	Timestamp server	Сервер меток времени
 	Optional: https://…	Необязательно: https://…
 	Only a digest of the signature is sent to this server, never the document.	На этот сервер отправляется только хеш подписи, но никогда не сам документ.
+	Add validation information	Добавить сведения для проверки
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Запрашивает у серверов OCSP и CRL, указанных в сертификатах подписавших, не отозваны ли сертификаты, и сохраняет ответы в файле. Отправляются только издатель и серийный номер каждого сертификата, но никогда не сам документ.
+	Asking the certificate servers for validation information…	Запрос сведений для проверки у серверов сертификатов…
+	Validation information added and saved to {path}	Сведения для проверки добавлены и сохранены в {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Сведения для проверки добавлены и сохранены в {path}. Сертификаты без ответа: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Документ изменился во время получения сведений для проверки, поэтому ничего не сохранено.
+	Validation information is already being fetched. Wait for it to finish.	Сведения для проверки уже запрашиваются. Дождитесь завершения.
+	Validation information needs the desktop app	Для сведений проверки нужно настольное приложение

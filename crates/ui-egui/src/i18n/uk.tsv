@@ -2409,3 +2409,11 @@ window	Zoom	Змінити масштаб
 	Timestamp server	Сервер позначок часу
 	Optional: https://…	Необов’язково: https://…
 	Only a digest of the signature is sent to this server, never the document.	На цей сервер надсилається лише хеш підпису, але ніколи сам документ.
+	Add validation information	Додати відомості для перевірки
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Запитує в серверів OCSP і CRL, указаних у сертифікатах підписувачів, чи не відкликано сертифікати, і зберігає відповіді у файлі. Надсилаються лише видавець і серійний номер кожного сертифіката, але ніколи сам документ.
+	Asking the certificate servers for validation information…	Запит відомостей для перевірки в серверів сертифікатів…
+	Validation information added and saved to {path}	Відомості для перевірки додано й збережено в {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Відомості для перевірки додано й збережено в {path}. Сертифікати без відповіді: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Документ змінився під час отримання відомостей для перевірки, тому нічого не збережено.
+	Validation information is already being fetched. Wait for it to finish.	Відомості для перевірки вже отримуються. Дочекайтеся завершення.
+	Validation information needs the desktop app	Для відомостей перевірки потрібен настільний застосунок

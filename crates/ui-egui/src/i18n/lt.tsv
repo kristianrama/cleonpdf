@@ -2627,3 +2627,11 @@ window	Zoom	Keisti dydį
 	Timestamp server	Laiko žymų serveris
 	Optional: https://…	Neprivaloma: https://…
 	Only a digest of the signature is sent to this server, never the document.	Šiam serveriui siunčiama tik parašo santrauka, niekada ne dokumentas.
+	Add validation information	Pridėti patvirtinimo informaciją
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Paklausia parašo davėjų sertifikatuose nurodytų OCSP ir CRL serverių, ar sertifikatai neatšaukti, ir išsaugo atsakymus faile. Siunčiamas tik kiekvieno sertifikato išdavėjas ir serijos numeris, niekada dokumentas.
+	Asking the certificate servers for validation information…	Prašoma patvirtinimo informacijos iš sertifikatų serverių…
+	Validation information added and saved to {path}	Patvirtinimo informacija pridėta ir išsaugota: {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Patvirtinimo informacija pridėta ir išsaugota: {path}. Sertifikatai be atsakymo: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Gaunant patvirtinimo informaciją dokumentas pasikeitė, todėl nieko neišsaugota.
+	Validation information is already being fetched. Wait for it to finish.	Patvirtinimo informacija jau gaunama. Palaukite, kol baigsis.
+	Validation information needs the desktop app	Patvirtinimo informacijai reikalinga staliniams kompiuteriams skirta programa

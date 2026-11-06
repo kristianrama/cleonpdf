@@ -2384,3 +2384,11 @@ window	Zoom	Méretezés
 	Timestamp server	Időbélyegző szerver
 	Optional: https://…	Nem kötelező: https://…
 	Only a digest of the signature is sent to this server, never the document.	Ennek a szervernek csak az aláírás lenyomata kerül elküldésre, a dokumentum soha.
+	Add validation information	Érvényesítési információk hozzáadása
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	Megkérdezi az aláírók tanúsítványaiban megnevezett OCSP- és CRL-kiszolgálókat, hogy a tanúsítványok vissza lettek-e vonva, és a válaszokat a fájlban tárolja. Minden tanúsítványból csak a kiállító és a sorozatszám kerül elküldésre, a dokumentum soha.
+	Asking the certificate servers for validation information…	Érvényesítési információk lekérése a tanúsítványkiszolgálóktól…
+	Validation information added and saved to {path}	Az érvényesítési információk hozzáadva és mentve ide: {path}
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Az érvényesítési információk hozzáadva és mentve ide: {path}. Válasz nélküli tanúsítványok: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	A dokumentum megváltozott az érvényesítési információk lekérése közben, ezért semmi nem lett mentve.
+	Validation information is already being fetched. Wait for it to finish.	Az érvényesítési információk lekérése már folyamatban van. Várja meg a végét.
+	Validation information needs the desktop app	Az érvényesítési információkhoz az asztali alkalmazás szükséges

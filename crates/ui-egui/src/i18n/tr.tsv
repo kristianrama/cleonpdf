@@ -2381,3 +2381,11 @@ window	Zoom	Boyutlandır
 	Timestamp server	Zaman damgası sunucusu
 	Optional: https://…	İsteğe bağlı: https://…
 	Only a digest of the signature is sent to this server, never the document.	Bu sunucuya yalnızca imzanın özeti gönderilir, belge asla gönderilmez.
+	Add validation information	Doğrulama bilgisi ekle
+	Asks the OCSP and CRL servers named in the signers' certificates whether they are revoked, and keeps the answers in the file. Only the issuer and serial number of each certificate are sent, never the document.	İmzalayanların sertifikalarında belirtilen OCSP ve CRL sunucularına sertifikaların iptal edilip edilmediğini sorar ve yanıtları dosyada saklar. Her sertifikanın yalnızca vereni ve seri numarası gönderilir, belge asla gönderilmez.
+	Asking the certificate servers for validation information…	Sertifika sunucularından doğrulama bilgisi isteniyor…
+	Validation information added and saved to {path}	Doğrulama bilgisi eklendi ve {path} konumuna kaydedildi
+	Validation information added and saved to {path}. Certificates with no answer: {n}	Doğrulama bilgisi eklendi ve {path} konumuna kaydedildi. Yanıtsız sertifikalar: {n}
+	The document changed while the validation information was being fetched, so nothing was saved.	Doğrulama bilgisi alınırken belge değişti, bu yüzden hiçbir şey kaydedilmedi.
+	Validation information is already being fetched. Wait for it to finish.	Doğrulama bilgisi zaten alınıyor. Bitmesini bekleyin.
+	Validation information needs the desktop app	Doğrulama bilgisi için masaüstü uygulaması gerekir
