@@ -260,6 +260,10 @@ impl RevocationFetcher for HttpRevocationFetcher {
     fn ocsp(&self, url: &str, request: &[u8]) -> Result<Vec<u8>, SignError> {
         self.fetch("the OCSP address", url, Some(request))
     }
+
+    fn issuer(&self, url: &str) -> Result<Vec<u8>, SignError> {
+        self.fetch("the issuer certificate address", url, None)
+    }
 }
 
 #[cfg(test)]

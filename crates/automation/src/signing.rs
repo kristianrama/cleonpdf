@@ -237,6 +237,7 @@ impl Automation {
             "path": path,
             "bytes": info.bytes.len(),
             "embedded": { "certificates": ev.certs.len(), "ocsp_responses": ev.ocsps.len(), "crls": ev.crls.len() },
+            "issuer_certificates_fetched": info.gathered.issuers_fetched,
             "certificates": certificates,
         }))
     }

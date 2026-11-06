@@ -10,7 +10,7 @@ use cleonpdf_sign::SignError;
 use cleonpdf_sign::der::{Time, Tlv, tag};
 use cleonpdf_sign::ltv::{Outcome, RevocationFetcher, Source, gather};
 use cleonpdf_sign::revocation::ocsp_request;
-use pki::{Answer, Party, aia_ocsp, crl, crl_point, end_entity, ocsp_response, root, time};
+use pki::{Answer, Party, aia, aia_ocsp, ca, crl, crl_point, end_entity, ocsp_response, p7c, root, time};
 
 /// Asked on this date; the answers below are valid around it.
 fn now() -> Time {
@@ -22,17 +22,24 @@ fn window() -> (Time, Time) {
 
 type OcspFn<'a> = Box<dyn Fn(&str, &[u8]) -> Result<Vec<u8>, SignError> + 'a>;
 type CrlFn<'a> = Box<dyn Fn(&str) -> Result<Vec<u8>, SignError> + 'a>;
+type IssuerFn<'a> = Box<dyn Fn(&str) -> Result<Vec<u8>, SignError> + 'a>;
 
 /// A scripted pair of servers that logs every address it is asked for.
 struct Servers<'a> {
     ocsp: OcspFn<'a>,
     crl: CrlFn<'a>,
+    issuer: IssuerFn<'a>,
     asked: RefCell<Vec<String>>,
 }
 
 impl<'a> Servers<'a> {
     fn new(ocsp: impl Fn(&str, &[u8]) -> Result<Vec<u8>, SignError> + 'a, crl: impl Fn(&str) -> Result<Vec<u8>, SignError> + 'a) -> Self {
-        Servers { ocsp: Box::new(ocsp), crl: Box::new(crl), asked: RefCell::default() }
+        Servers { ocsp: Box::new(ocsp), crl: Box::new(crl), issuer: Box::new(|u| Err(pki::unreachable(u))), asked: RefCell::default() }
+    }
+    /// Serve issuer certificates with `issuer`.
+    fn with_issuer(mut self, issuer: impl Fn(&str) -> Result<Vec<u8>, SignError> + 'a) -> Self {
+        self.issuer = Box::new(issuer);
+        self
     }
     fn silent() -> Servers<'static> {
         Servers::new(|u, _| Err(pki::unreachable(u)), |u| Err(pki::unreachable(u)))
@@ -47,6 +54,10 @@ impl RevocationFetcher for Servers<'_> {
     fn ocsp(&self, url: &str, request: &[u8]) -> Result<Vec<u8>, SignError> {
         self.asked.borrow_mut().push(url.to_string());
         (self.ocsp)(url, request)
+    }
+    fn issuer(&self, url: &str) -> Result<Vec<u8>, SignError> {
+        self.asked.borrow_mut().push(url.to_string());
+        (self.issuer)(url)
     }
 }
 
@@ -222,4 +233,125 @@ fn a_certificate_with_nowhere_to_ask_is_missing_not_an_error() {
     );
     let Outcome::Missing(m) = &got.notes[0].outcome else { panic!("{:?}", got.notes) };
     assert!(m.contains("ocsp.example") && !m.contains("SECRET"), "{m}");
+}
+
+/// A root, an intermediate that names where the root is published, and a leaf under it. The
+/// chain handed to `gather` stops at the intermediate: the root is not in it.
+fn chain_without_its_root() -> (Party, Party, Party) {
+    let root = root("Root");
+    let inter = ca("Intermediate", &root, &[aia(Some("http://ocsp.example/inter"), Some("http://pki.example/root.crt"))]);
+    let leaf = end_entity("Leaf", &inter, &[aia_ocsp("http://ocsp.example/leaf")]);
+    (root, inter, leaf)
+}
+
+/// OCSP answers from whoever issued the certificate asked about.
+fn ocsp_from<'a>(issuers: &'a [&'a Party], certs: &'a [&'a Party]) -> impl Fn(&str, &[u8]) -> Result<Vec<u8>, SignError> + 'a {
+    let (this, next) = window();
+    move |url, _| {
+        let cert = certs.iter().find(|c| c.cert.ocsp_urls.iter().any(|u| u == url)).ok_or_else(|| pki::unreachable(url))?;
+        let issuer = issuers.iter().find(|i| i.cert.subject.raw == cert.cert.issuer.raw).ok_or_else(|| pki::unreachable(url))?;
+        Ok(ocsp_response(issuer, &cert.cert, &issuer.cert, Answer::Good, this, next))
+    }
+}
+
+#[test]
+fn a_chain_missing_its_root_is_completed_from_the_address_the_certificate_names() {
+    let (root, inter, leaf) = chain_without_its_root();
+    let root_der = root.cert.raw.clone();
+    let issuers = [&root, &inter];
+    let certs = [&inter, &leaf];
+    let servers = Servers::new(ocsp_from(&issuers, &certs), |u| Err(pki::unreachable(u))).with_issuer(move |_| Ok(root_der.clone()));
+    let got = gather(&[chain(&leaf, &[&inter])], now(), &servers);
+    assert_eq!(got.issuers_fetched, 1);
+    assert!(got.evidence.certs.iter().any(|c| c.as_slice() == root.cert.raw.as_slice()), "the root is kept with the chain");
+    assert!(got.notes.iter().all(|n| matches!(n.outcome, Outcome::Fetched(Source::Ocsp))), "both certificates have an answer: {:?}", got.notes);
+    assert_eq!(got.evidence.ocsps.len(), 2);
+    assert_eq!(servers.asked.borrow().iter().filter(|u| *u == "http://pki.example/root.crt").count(), 1);
+}
+
+#[test]
+fn without_a_way_to_fetch_the_issuer_the_certificate_is_missing_with_the_reason() {
+    let (_root, inter, leaf) = chain_without_its_root();
+    // The default transport cannot fetch issuers.
+    struct NoIssuers;
+    impl RevocationFetcher for NoIssuers {
+        fn crl(&self, url: &str) -> Result<Vec<u8>, SignError> {
+            Err(pki::unreachable(url))
+        }
+        fn ocsp(&self, url: &str, _: &[u8]) -> Result<Vec<u8>, SignError> {
+            Err(pki::unreachable(url))
+        }
+    }
+    let got = gather(&[chain(&leaf, &[&inter])], now(), &NoIssuers);
+    assert_eq!(got.issuers_fetched, 0);
+    let inter_note = got.notes.iter().find(|n| n.subject == "Intermediate").unwrap();
+    assert!(
+        matches!(&inter_note.outcome, Outcome::Missing(m) if m.contains("could not be fetched") && m.contains("not supported")),
+        "{inter_note:?}"
+    );
+}
+
+#[test]
+fn a_certificates_only_bundle_is_read_for_the_issuer() {
+    let (root, inter, leaf) = chain_without_its_root();
+    let other = self::root("Unrelated");
+    let bundle = p7c(&[&other.cert, &root.cert]);
+    let (issuers, certs) = ([&root, &inter], [&inter, &leaf]);
+    let servers = Servers::new(ocsp_from(&issuers, &certs), |u| Err(pki::unreachable(u))).with_issuer(move |_| Ok(bundle.clone()));
+    let got = gather(&[chain(&leaf, &[&inter])], now(), &servers);
+    assert_eq!(got.issuers_fetched, 1);
+    assert!(got.evidence.certs.iter().any(|c| c.as_slice() == root.cert.raw.as_slice()));
+    assert!(!got.evidence.certs.iter().any(|c| c.as_slice() == other.cert.raw.as_slice()), "only the issuer is kept, not the rest of the bundle");
+}
+
+#[test]
+fn a_download_that_is_not_the_issuer_is_not_kept() {
+    let (root, inter, leaf) = chain_without_its_root();
+    // Same name as the real root, different key: it cannot have signed the intermediate.
+    let impostor = self::root("Root");
+    let bad = impostor.cert.raw.clone();
+    let (issuers, certs) = ([&root, &inter], [&inter, &leaf]);
+    let servers = Servers::new(ocsp_from(&issuers, &certs), |u| Err(pki::unreachable(u))).with_issuer(move |_| Ok(bad.clone()));
+    let got = gather(&[chain(&leaf, &[&inter])], now(), &servers);
+    assert_eq!(got.issuers_fetched, 0);
+    assert!(!got.evidence.certs.iter().any(|c| c.as_slice() == impostor.cert.raw.as_slice()));
+    let inter_note = got.notes.iter().find(|n| n.subject == "Intermediate").unwrap();
+    assert!(matches!(&inter_note.outcome, Outcome::Missing(m) if m.contains("not this certificate's issuer")), "{inter_note:?}");
+    // Garbage is no certificate either, and a server error is reported as such.
+    let servers = Servers::silent().with_issuer(|_| Ok(b"<html>not found</html>".to_vec()));
+    let got = gather(&[chain(&leaf, &[&inter])], now(), &servers);
+    let inter_note = got.notes.iter().find(|n| n.subject == "Intermediate").unwrap();
+    assert!(matches!(&inter_note.outcome, Outcome::Missing(m) if m.contains("neither a certificate nor a certificate bundle")), "{inter_note:?}");
+}
+
+#[test]
+fn chains_that_stop_at_the_same_certificate_download_its_issuer_once() {
+    let (root, inter, leaf) = chain_without_its_root();
+    let second = end_entity("Second", &inter, &[aia_ocsp("http://ocsp.example/second")]);
+    let root_der = root.cert.raw.clone();
+    let (issuers, certs) = ([&root, &inter], [&inter, &leaf, &second]);
+    let servers = Servers::new(ocsp_from(&issuers, &certs), |u| Err(pki::unreachable(u))).with_issuer(move |_| Ok(root_der.clone()));
+    let got = gather(&[chain(&leaf, &[&inter]), chain(&second, &[&inter])], now(), &servers);
+    assert_eq!(servers.asked.borrow().iter().filter(|u| *u == "http://pki.example/root.crt").count(), 1);
+    assert_eq!(got.issuers_fetched, 1);
+}
+
+#[test]
+fn completing_a_chain_stops_at_the_length_limit() {
+    // Fourteen CAs, each naming where the one above it is published: `CA n` is at `.../n.crt`.
+    let mut parties = vec![root("CA 0")];
+    for i in 1..14 {
+        let under = parties.last().unwrap();
+        let next = ca(&format!("CA {i}"), under, &[aia(None, Some(&format!("http://pki.example/{}.crt", i - 1)))]);
+        parties.push(next);
+    }
+    let servers = Servers::silent().with_issuer(|url| {
+        let n: usize =
+            url.rsplit('/').next().and_then(|f| f.strip_suffix(".crt")).and_then(|n| n.parse().ok()).ok_or_else(|| pki::unreachable(url))?;
+        parties.get(n).map(|p| p.cert.raw.clone()).ok_or_else(|| pki::unreachable(url))
+    });
+    // A chain of one, the bottom CA, would need thirteen downloads to reach the root.
+    let got = gather(&[vec![parties[13].cert.clone()]], now(), &servers);
+    assert_eq!(got.issuers_fetched, 9, "the chain is completed up to ten certificates and no further");
+    assert!(!got.evidence.certs.iter().any(|c| c.as_slice() == parties[0].cert.raw.as_slice()), "the root was out of reach");
 }

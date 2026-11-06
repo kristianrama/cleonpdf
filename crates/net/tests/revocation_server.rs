@@ -89,6 +89,19 @@ fn a_crl_is_fetched_with_get_and_sends_no_body() {
 }
 
 #[test]
+fn an_issuer_certificate_is_fetched_with_get_and_comes_back_untouched() {
+    let (base, seen) = serve(1, |_| ("200 OK", "Content-Type: application/pkix-cert\r\n".into(), vec![0x30, 0x03, 1, 2, 3]));
+    assert_eq!(local().issuer(&format!("{base}/ca.crt")).unwrap(), [0x30, 0x03, 1, 2, 3]);
+    let seen = seen.recv().unwrap();
+    assert!(seen.request_line.starts_with("GET /ca.crt "), "{}", seen.request_line);
+    assert!(seen.body.is_empty());
+    // A missing file is an error naming the host, not an empty certificate.
+    let (base, _seen) = serve(1, |_| ("404 Not Found", String::new(), Vec::new()));
+    let err = local().issuer(&format!("{base}/gone.crt")).unwrap_err().to_string();
+    assert!(err.contains("http status 404") && !err.contains("gone.crt"), "{err}");
+}
+
+#[test]
 fn a_redirect_is_followed_for_a_crl_and_only_a_few_times() {
     let (base, seen) = serve(2, |req| {
         if req.request_line.starts_with("GET /old ") {
@@ -143,7 +156,11 @@ fn a_closed_port_is_an_error_not_a_hang() {
 #[test]
 fn the_default_fetcher_does_not_reach_the_loopback_server_at_all() {
     let (base, seen) = serve(1, |_| ("200 OK", String::new(), b"should not be sent".to_vec()));
-    for result in [HttpRevocationFetcher::new().crl(&format!("{base}/ca.crl")), HttpRevocationFetcher::new().ocsp(&format!("{base}/ocsp"), b"x")] {
+    for result in [
+        HttpRevocationFetcher::new().crl(&format!("{base}/ca.crl")),
+        HttpRevocationFetcher::new().ocsp(&format!("{base}/ocsp"), b"x"),
+        HttpRevocationFetcher::new().issuer(&format!("{base}/ca.crt")),
+    ] {
         let err = result.unwrap_err().to_string();
         assert!(err.contains("not a public address"), "{err}");
     }

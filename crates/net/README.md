@@ -10,7 +10,7 @@ Layer L5: outbound network requests, in one crate. It is the only crate that ope
   answer is only bytes here, and the signer checks the token (imprint, the TSA's signature)
   before embedding it, so a server that lies is refused there.
 
-- `HttpRevocationFetcher`: OCSP (POST, `application/ocsp-request`) and CRL (GET) downloads for
+- `HttpRevocationFetcher`: OCSP (POST, `application/ocsp-request`) and CRL (GET) downloads, and the issuer certificate a `caIssuers` address names (GET), for
   `cleonpdf_sign::ltv`. Their addresses are written in certificates, so whoever made a
   certificate chooses where the request goes. By default a host that is, or resolves to, a
   loopback, private, link-local, shared (CGNAT) or other non-public address is refused, on every
