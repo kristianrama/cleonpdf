@@ -7,9 +7,15 @@
 //! places a system package puts one ([`known_modules`]); never from a document and never from a
 //! tool argument that is not checked against those ([`is_allowed`]).
 //!
-//! This module reads: it lists the tokens a module shows and the certificates on them. Reading
-//! needs no PIN. What a token or module says about itself is untrusted text and is cleaned and
-//! capped before it is returned.
+//! It lists the tokens a module shows and the certificates on them (no PIN needed), and signs
+//! with a token's key: [`Module::identity`] logs in with the PIN, finds the private key that
+//! shares a certificate's identifier and returns a [`DigitalId`] whose key signs on the token.
+//! The key never leaves it. What a token or module says about itself is untrusted text and is
+//! cleaned and capped before it is returned.
+//!
+//! A PIN is held only to log in: it is wrapped in a secret string that is wiped when dropped,
+//! never stored, never put in a message. The session stays logged in for as long as the
+//! identity lives and ends with it.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -17,9 +23,14 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use cryptoki::context::{CInitializeArgs, CInitializeFlags, Pkcs11};
 use cryptoki::error::{Error as P11Error, RvError};
-use cryptoki::object::{Attribute, AttributeType, CertificateType, ObjectClass};
+use cryptoki::mechanism::Mechanism;
+use cryptoki::object::{Attribute, AttributeType, CertificateType, ObjectClass, ObjectHandle};
+use cryptoki::session::{Session, UserType};
 use cryptoki::slot::Slot;
+use cryptoki::types::AuthPin;
 
+use crate::keys::{DigestAlg, ExternalKey, PrivateKey, PublicKey, Scheme};
+use crate::pkcs12::DigitalId;
 use crate::{Certificate, SignError};
 
 /// The most slots, certificates per token and bytes per certificate looked at; a module that
@@ -49,6 +60,8 @@ pub struct TokenInfo {
     pub serial: String,
     /// True when the user has to enter a PIN before the token's private keys can be used.
     pub login_required: bool,
+    /// True when the token takes the PIN itself (a reader with a PIN pad): none is passed to it.
+    pub protected_authentication_path: bool,
 }
 
 /// A certificate on a token, with the identifier its private key shares.
@@ -135,6 +148,7 @@ impl Module {
                 model: clean(info.model()),
                 serial: clean(info.serial_number()),
                 login_required: info.login_required(),
+                protected_authentication_path: info.protected_authentication_path(),
             });
         }
         Ok(tokens)
@@ -172,6 +186,148 @@ impl Module {
         }
         Ok(out)
     }
+}
+
+/// A private key on a token. It signs there; the PIN is not kept, only the logged-in session.
+struct TokenKey {
+    /// The session is `Send` but not `Sync`: one signature at a time.
+    session: Mutex<Session>,
+    key: ObjectHandle,
+    public: PublicKey,
+    module: PathBuf,
+}
+
+impl ExternalKey for TokenKey {
+    fn sign(&self, alg: DigestAlg, msg: &[u8]) -> Result<Vec<u8>, SignError> {
+        let digest = alg.digest(&[msg]);
+        // RSA: the token pads (PKCS #1 v1.5) what it is given, so it is given the DigestInfo.
+        // ECDSA: the token signs the hash as it is.
+        let (mechanism, data, scheme) = match &self.public {
+            PublicKey::Rsa { .. } => (Mechanism::RsaPkcs, crate::rsa_pad::digest_info(alg, &digest, true), Scheme::RsaPkcs1),
+            _ => (Mechanism::Ecdsa, digest.clone(), Scheme::Ecdsa),
+        };
+        let raw = {
+            let session = self.session.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+            session
+                .sign(&mechanism, self.key, &data)
+                .map_err(|e| describe(&self.module, format!("didn't sign (is the token still connected?) ({e})")))?
+        };
+        let signature = self.public.store_signature_der(&raw)?;
+        // What comes back from a token is checked against the certificate's key before it goes
+        // into a file: a token that signs with another key, or badly, is caught here.
+        match self.public.verify(scheme, alg, &digest, &signature) {
+            Ok(true) => Ok(signature),
+            _ => Err(describe(&self.module, "returned a signature that doesn't match the certificate's key")),
+        }
+    }
+}
+
+/// The PIN problems a user can act on, said plainly; anything else is the module's own error.
+fn login_error(path: &Path, e: P11Error) -> SignError {
+    match e {
+        P11Error::Pkcs11(RvError::PinIncorrect, _) => describe(path, "the PIN is not correct (a token locks after a few wrong tries)"),
+        P11Error::Pkcs11(RvError::PinLocked, _) => describe(path, "the PIN is locked; the token's issuer has to unlock it"),
+        P11Error::Pkcs11(RvError::PinLenRange, _) => describe(path, "the PIN has a length this token doesn't accept"),
+        P11Error::Pkcs11(RvError::PinExpired, _) => describe(path, "the PIN has expired; change it with the token's own software"),
+        other => describe(path, format!("couldn't log in ({other})")),
+    }
+}
+
+impl Module {
+    /// The identity on the token in `slot` whose certificate has `key_id`: log in with `pin`,
+    /// find the private key with the same identifier and return a [`DigitalId`] that signs on
+    /// the token. `chain` holds the issuers found among the token's other certificates.
+    ///
+    /// `pin` is needed when the token [`TokenInfo::login_required`] and has no
+    /// [`TokenInfo::protected_authentication_path`]. It is used to log in and not kept; callers
+    /// should wipe their own copy. RSA, P-256 and P-384 keys sign; other key types are refused.
+    pub fn identity(&self, slot: u64, key_id: &[u8], pin: Option<&str>) -> Result<DigitalId, SignError> {
+        let slot_handle = Slot::try_from(slot).map_err(|_| describe(&self.path, "no such slot"))?;
+        let info = self.context.get_token_info(slot_handle).map_err(|e| describe(&self.path, format!("couldn't read the token ({e})")))?;
+        let pin: Option<AuthPin> = match pin {
+            Some(p) => Some(AuthPin::from(p)),
+            None if info.login_required() && !info.protected_authentication_path() => {
+                return Err(describe(&self.path, "this token needs a PIN to sign"));
+            }
+            None => None,
+        };
+        let found = self.certificates(slot)?;
+        let certificate = found
+            .certificates
+            .iter()
+            .find(|c| c.id == key_id)
+            .ok_or_else(|| describe(&self.path, "the token has no certificate with that identifier"))?
+            .certificate
+            .clone();
+        // Refuse a key type that can't sign before asking the token anything.
+        if certificate.public_key.store_signing_key().is_none() {
+            return Err(SignError::Unsupported(format!("signing with {} keys on a token", certificate.public_key.describe())));
+        }
+        let session = self.context.open_ro_session(slot_handle).map_err(|e| describe(&self.path, format!("couldn't open the token ({e})")))?;
+        if info.login_required() {
+            match session.login(UserType::User, pin.as_ref()) {
+                Ok(()) => {}
+                // Another session of this process logged in already: the login holds token-wide.
+                Err(P11Error::Pkcs11(RvError::UserAlreadyLoggedIn, _)) => {}
+                Err(e) => return Err(login_error(&self.path, e)),
+            }
+        }
+        let template = [Attribute::Class(ObjectClass::PRIVATE_KEY), Attribute::Id(key_id.to_vec())];
+        let key = session
+            .find_objects(&template)
+            .map_err(|e| describe(&self.path, format!("couldn't look for the private key ({e})")))?
+            .into_iter()
+            .next()
+            .ok_or_else(|| describe(&self.path, "the token holds no private key for that certificate"))?;
+        let pool: Vec<Certificate> = found.certificates.iter().map(|c| c.certificate.clone()).collect();
+        let chain: Vec<Certificate> =
+            crate::x509::build_chain(&certificate, &pool, None).into_iter().skip(1).filter(|c| !c.is_self_signed()).cloned().collect();
+        let label = found.certificates.iter().find(|c| c.id == key_id).map(|c| c.label.clone()).filter(|l| !l.is_empty());
+        let token_key = TokenKey { session: Mutex::new(session), key, public: certificate.public_key.clone(), module: self.path.clone() };
+        Ok(DigitalId { key: PrivateKey::external(certificate.public_key.clone(), Arc::new(token_key)), certificate, chain, friendly_name: label })
+    }
+}
+
+/// The `pkcs11:<SHA-256 of the certificate>` reference CleonPDF keeps for a token identity.
+pub fn reference(c: &Certificate) -> String {
+    let d = DigestAlg::Sha256.digest(&[&c.raw]);
+    format!("pkcs11:{}", d.iter().map(|b| format!("{b:02x}")).collect::<String>())
+}
+
+/// The token identity a reference (or a certificate common name) names, searched in the modules
+/// [`configured_modules`] and [`known_modules`] give, and opened with `pin`. A module that fails
+/// to load is skipped; if nothing matches, the error says which could not be read.
+pub fn find(reference_or_name: &str, pin: Option<&str>) -> Result<DigitalId, SignError> {
+    let name = reference_or_name.strip_prefix("pkcs11:").unwrap_or(reference_or_name);
+    let mut seen = Vec::new();
+    let mut unreadable = Vec::new();
+    for path in configured_modules().into_iter().chain(known_modules()) {
+        let real = std::fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
+        if seen.contains(&real) {
+            continue;
+        }
+        seen.push(real);
+        let module = match Module::load(&path) {
+            Ok(m) => m,
+            Err(e) => {
+                unreadable.push(e.to_string());
+                continue;
+            }
+        };
+        let Ok(tokens) = module.tokens() else { continue };
+        for token in tokens {
+            let Ok(found) = module.certificates(token.slot) else { continue };
+            if let Some(c) = found
+                .certificates
+                .iter()
+                .find(|c| reference(&c.certificate) == reference_or_name || c.certificate.subject.common_name() == Some(name))
+            {
+                return module.identity(token.slot, &c.id, pin);
+            }
+        }
+    }
+    let note = if unreadable.is_empty() { String::new() } else { format!(" ({})", unreadable.join("; ")) };
+    Err(SignError::Crypto(format!("no PKCS #11 identity {reference_or_name} on the tokens of the modules CleonPDF may use{note}")))
 }
 
 /// Where system packages put PKCS #11 modules, that exist on this machine. These are the only
