@@ -228,7 +228,7 @@ mod tests {
 
     #[test]
     fn a_dictionary_round_trips_and_an_unreadable_one_locks_everything() {
-        let doc = Document::new();
+        let doc = Document::new_empty();
         for l in [FieldLock::All, FieldLock::Include(names(&["x", "y.z"])), FieldLock::Exclude(names(&["x"])), FieldLock::Include(Vec::new())] {
             for ty in ["SigFieldLock", "TransformParams"] {
                 assert_eq!(FieldLock::from_dict(&doc, &l.to_dict(ty)), l);
@@ -247,10 +247,10 @@ mod tests {
         assert!(FieldLock::Include(vec!["a".repeat(MAX_NAME_LEN + 1)]).check_size().is_err());
         assert!(FieldLock::Exclude(vec!["a".to_string(); MAX_NAMES + 1]).check_size().is_err());
         // A hostile list is cut when read.
-        let doc = Document::new();
+        let doc = Document::new_empty();
         let mut d = Dict::new();
         d.set(b"Action".to_vec(), Object::name("Include"));
-        d.set(b"Fields".to_vec(), Object::Array((0..MAX_NAMES + 50).map(|i| PdfString::text(&i.to_string())).collect()));
+        d.set(b"Fields".to_vec(), Object::Array((0..MAX_NAMES + 50).map(|i| Object::String(PdfString::text(&i.to_string()))).collect()));
         assert_eq!(FieldLock::from_dict(&doc, &d).names().len(), MAX_NAMES);
     }
 }
