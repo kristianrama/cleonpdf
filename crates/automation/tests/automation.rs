@@ -1697,10 +1697,12 @@ fn signing_can_lock_form_fields() {
     let after = |edit: Option<(&str, &str)>| {
         let mut c = auto(&dir);
         ok(&mut c, "sign_trust", json!({ "paths": ["ada.p12"], "password": "secret1" }));
-        let d = ok(&mut c, "doc_open", json!({ "path": "signed.pdf" }))["doc"].as_u64().unwrap();
+        // Saving in place is the incremental update that keeps the signature.
+        std::fs::copy(dir.join("signed.pdf"), dir.join("edited.pdf")).unwrap();
+        let d = ok(&mut c, "doc_open", json!({ "path": if edit.is_some() { "edited.pdf" } else { "signed.pdf" } }))["doc"].as_u64().unwrap();
         if let Some((field, value)) = edit {
             ok(&mut c, "form_fill", json!({ "doc": d, "values": { field: value } }));
-            ok(&mut c, "doc_save", json!({ "doc": d, "path": "edited.pdf" }));
+            ok(&mut c, "doc_save", json!({ "doc": d }));
             let e = ok(&mut c, "doc_open", json!({ "path": "edited.pdf" }))["doc"].as_u64().unwrap();
             ok(&mut c, "sign_list", json!({ "doc": e }))["signatures"][0].clone()
         } else {
