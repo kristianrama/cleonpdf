@@ -123,7 +123,7 @@ fn a_key_on_the_token_signs_and_the_signature_validates() {
         let signed = sign_with(&identity).unwrap();
         let ca = cleonpdf_sign::Certificate::parse(&f.ca).unwrap();
         let doc = Document::open(Arc::new(signed.clone())).unwrap();
-        let found = signatures(&doc, &signed, &TrustStore { certs: vec![ca] }).into_iter().find(|s| s.signed).unwrap();
+        let found = signatures(&doc, &signed, &TrustStore { certs: vec![ca], ..TrustStore::default() }).into_iter().find(|s| s.signed).unwrap();
         assert_eq!(found.status, Status::Valid, "{signer}: {:?}", found.details);
         assert_eq!(found.signer.as_deref(), Some(signer));
     }

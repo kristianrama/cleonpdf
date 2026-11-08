@@ -2492,6 +2492,33 @@ fn signing_saving_trusting_and_commenting_afterwards() {
     assert!(!s.get(id).unwrap().dirty && s.get(id).unwrap().can_undo().map(str::to_owned) == before);
 }
 
+/// The system's roots are a list of their own: they make signatures valid without joining the
+/// user's trusted certificates, survive the user changing those, and go when withdrawn.
+#[test]
+fn the_systems_roots_trust_signers_apart_from_the_users_list() {
+    let p12 = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../sign/tests/data/ec-p256.p12")).unwrap();
+    let digital_id = sign::pkcs12::open(&p12, "test").unwrap();
+    let mut s = Session::new().with_clock(|| 1_800_000_000);
+    let id = s.open("fixture.pdf", None, Arc::new(fixture(2)), None).unwrap();
+    let opts = SignOptions { page: 1, rect: Some([20.0, 20.0, 180.0, 60.0]), ..SignOptions::default() };
+    let signed = s.sign(id, &digital_id, opts).unwrap();
+    s.mark_signed(id, signed, Some("/tmp/signed.pdf".into())).unwrap();
+    let status = |s: &Session| s.get(id).unwrap().signatures[0].status;
+    assert_eq!(status(&s), SignatureStatus::Unknown);
+    s.set_system_certificates(vec![digital_id.certificate.clone()]);
+    assert_eq!(status(&s), SignatureStatus::Valid, "open documents are validated again");
+    assert!(s.trusted_certificates().is_empty() && s.system_certificates().len() == 1);
+    // Changing the user's list leaves the system's alone.
+    s.set_trusted_certificates(Vec::new());
+    assert_eq!(status(&s), SignatureStatus::Valid);
+    // Withdrawing them withdraws the trust, and the user's own list is untouched.
+    s.set_trusted_certificates(vec![digital_id.certificate.clone()]);
+    s.set_system_certificates(Vec::new());
+    assert_eq!((status(&s), s.trusted_certificates().len()), (SignatureStatus::Valid, 1));
+    s.set_trusted_certificates(Vec::new());
+    assert_eq!(status(&s), SignatureStatus::Unknown);
+}
+
 #[test]
 #[ignore = "timing probe"]
 fn probe_edit_latency_on_a_large_signed_document() {

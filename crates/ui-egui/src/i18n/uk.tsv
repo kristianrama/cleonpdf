@@ -2428,5 +2428,9 @@ window	Zoom	Змінити масштаб
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Виберіть модуль смарт-картки або токена (бібліотеку PKCS #11). Він виконується всередині CleonPDF, тож обирайте лише той, якому довіряєте.
 	Saved servers	Збережені сервери
 	Timestamp servers	Сервери позначок часу
+	Signature trust	Довіра до підписів
+	Trust the operating system's root certificates	Довіряти кореневим сертифікатам операційної системи
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Підписувачі, чий сертифікат веде до кореня, якому довіряє ваша система, показуються як дійсні. Це сховище призначене для вебсайтів, тож вмикайте параметр, лише якщо погоджуєтеся, що його центри сертифікації ручаються за людей, які підписують документи.
+	Couldn't read the system's trusted certificates: {e}	Не вдалося прочитати довірені сертифікати системи: {e}
 	Server address (https://…)	Адреса сервера (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Сервери, які можна вибрати під час підписання. Нічого не надсилається на сервер, доки підпис його не використає, і тоді надсилається лише хеш, а не документ.

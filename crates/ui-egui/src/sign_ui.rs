@@ -500,6 +500,16 @@ impl CleonPdfApp {
         Ok(())
     }
 
+    /// Count the operating system's root certificates as trusted for signatures, or stop doing
+    /// so, and validate every open document again. Turning it on reads the system's store; when
+    /// that fails nothing changes and the reason is returned.
+    pub fn set_trust_system_roots(&mut self, on: bool) -> Result<(), String> {
+        let certs = if on { cleonpdf_net::system_certificates()?.0 } else { Vec::new() };
+        self.session.set_system_certificates(certs);
+        self.trust_system_roots = on;
+        Ok(())
+    }
+
     /// Forget a saved timestamp server (one that isn't saved is ignored).
     pub fn remove_timestamp_server(&mut self, url: &str) {
         self.timestamp_servers.retain(|u| u != url.trim());

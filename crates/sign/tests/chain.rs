@@ -189,7 +189,7 @@ fn verdict(leaf: Party, embedded: Vec<Certificate>, anchor: &Certificate) -> (St
     let doc = Document::open(Arc::new(fixture())).unwrap();
     let opts = SignOptions { page: 0, rect: None, date: "D:20260601120000Z".into(), ..SignOptions::default() };
     let signed = cleonpdf_sign::sign(&doc, &id, &opts).unwrap();
-    let trust = TrustStore { certs: vec![anchor.clone()] };
+    let trust = TrustStore { certs: vec![anchor.clone()], ..TrustStore::default() };
     let s = signatures(&Document::open(Arc::new(signed.clone())).unwrap(), &signed, &trust).into_iter().rfind(|s| s.signed).unwrap();
     // The details as they read in English; what an interface says in another language is checked in
     // `tests/pdf.rs`.
@@ -211,6 +211,43 @@ fn a_signature_chaining_through_an_ordinary_certificate_is_not_trusted() {
     let (status, details) = verdict(forged, vec![subscriber.cert.clone()], &r.cert);
     assert_eq!(status, Status::Unknown, "{details:?}");
     assert!(details.iter().any(|d| d.contains("not a CA")), "{details:?}");
+}
+
+/// A signature by `leaf` (with `embedded`), validated against `trust`: status and English details.
+fn verdict_with(leaf: Party, embedded: Vec<Certificate>, trust: &TrustStore) -> (Status, Vec<String>) {
+    let id = DigitalId { key: leaf.key, certificate: leaf.cert, chain: embedded, friendly_name: None };
+    let doc = Document::open(Arc::new(fixture())).unwrap();
+    let opts = SignOptions { page: 0, rect: None, date: "D:20260601120000Z".into(), ..SignOptions::default() };
+    let signed = cleonpdf_sign::sign(&doc, &id, &opts).unwrap();
+    let s = signatures(&Document::open(Arc::new(signed.clone())).unwrap(), &signed, trust).into_iter().rfind(|s| s.signed).unwrap();
+    (s.status, s.details.iter().map(|d| d.message.clone()).collect())
+}
+
+/// The roots the operating system trusts count only when handed over, and the signature says so.
+#[test]
+fn a_root_the_system_trusts_vouches_for_a_signer_and_the_signature_says_why() {
+    let r = root();
+    let i = ca("Issuing CA", &r, None);
+    let embedded = vec![i.cert.clone()];
+    let said = "The signer's identity is valid: it chains to Test Root, a certificate the operating system trusts.";
+    // Neither list holds the root: the identity is unknown.
+    let (status, details) = verdict_with(end_entity("Signer", &i), embedded.clone(), &TrustStore::default());
+    assert_eq!(status, Status::Unknown, "{details:?}");
+    // The system's roots hold it: valid, and the detail names where the trust comes from.
+    let system = TrustStore { system: vec![r.cert.clone()], ..TrustStore::default() };
+    let (status, details) = verdict_with(end_entity("Signer", &i), embedded.clone(), &system);
+    assert_eq!(status, Status::Valid, "{details:?}");
+    assert!(details.iter().any(|d| d == said), "{details:?}");
+    assert!(!details.iter().any(|d| d == "The signer's identity is valid."), "{details:?}");
+    // The user's own list needs no such excuse: it is the plain sentence, whatever the system holds.
+    let both = TrustStore { certs: vec![r.cert.clone()], system: vec![r.cert.clone()] };
+    let (status, details) = verdict_with(end_entity("Signer", &i), embedded.clone(), &both);
+    assert_eq!(status, Status::Valid, "{details:?}");
+    assert!(details.iter().any(|d| d == "The signer's identity is valid.") && !details.iter().any(|d| d == said), "{details:?}");
+    // A root that did not issue the chain vouches for nothing.
+    let other = issue("Other Root", None, FOREVER, &[basic_constraints(true, None), key_usage(KEY_CERT_SIGN)]);
+    let elsewhere = TrustStore { system: vec![other.cert], ..TrustStore::default() };
+    assert_eq!(verdict_with(end_entity("Signer", &i), embedded, &elsewhere).0, Status::Unknown);
 }
 
 #[test]

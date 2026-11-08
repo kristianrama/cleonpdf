@@ -193,10 +193,18 @@ impl DigestCache {
 #[derive(Clone, Debug, Default)]
 pub struct TrustStore {
     pub certs: Vec<Certificate>,
+    /// Root certificates the operating system trusts, when the user asked for them to count
+    /// (Acrobat: Windows Integration). Kept apart from `certs` so the signature can say that a
+    /// signer is trusted because of them.
+    pub system: Vec<Certificate>,
 }
 
 impl TrustStore {
     fn trusts(&self, c: &Certificate) -> bool {
+        self.trusts_by_user(c) || self.system.iter().any(|t| t.raw == c.raw)
+    }
+
+    fn trusts_by_user(&self, c: &Certificate) -> bool {
         self.certs.iter().any(|t| t.raw == c.raw)
     }
 }
@@ -381,6 +389,7 @@ pub const WORDINGS: &[&str] = &[
     "The certificate of {} was not valid at the time of signing, so it is not used to vouch for {}.",
     "The signer's identity is unknown because it has not been included in your list of trusted certificates and none of its parent certificates are trusted certificates.",
     "The signer's identity is valid.",
+    "The signer's identity is valid: it chains to {}, a certificate the operating system trusts.",
     "The signature includes an embedded timestamp.",
     "Signing time is from the clock on the signer's computer.",
     // What the signature's own timestamp token proves, if it carries one.
@@ -850,12 +859,15 @@ fn finish_validation(
 ) {
     info.signing_time = cms_time.or_else(|| info.date.as_deref().and_then(Time::from_pdf));
     let mut pool = embedded.to_vec();
-    pool.extend(trust.certs.iter().cloned());
+    pool.extend(trust.certs.iter().chain(&trust.system).cloned());
     // The time the chain is judged at: trusted timestamp, else the signer's claimed time.
     let at = info.timestamp_time.or(info.signing_time);
     let (chain, refused) = build_chain_noted(&cert, &pool, at);
     let chain: Vec<Certificate> = chain.into_iter().cloned().collect();
     let trusted = chain.iter().any(|c| trust.trusts(c));
+    // The certificate the system vouches with, when nothing the user trusts is in the chain.
+    let by_system =
+        if chain.iter().any(|c| trust.trusts_by_user(c)) { None } else { chain.iter().find(|c| trust.trusts(c)).map(Certificate::display_name) };
     info.chain = chain;
     info.certificate = Some(cert.clone());
     if let Some(why) = refused
@@ -917,7 +929,12 @@ fn finish_validation(
             info.status = Status::Unknown;
         }
     } else {
-        info.details.push(Detail::plain("The signer's identity is valid."));
+        match by_system {
+            Some(root) => info
+                .details
+                .push(Detail::of("The signer's identity is valid: it chains to {}, a certificate the operating system trusts.", Fill::Value(root))),
+            None => info.details.push(Detail::plain("The signer's identity is valid.")),
+        }
         if !problems && !revoked {
             info.status = Status::Valid;
         }

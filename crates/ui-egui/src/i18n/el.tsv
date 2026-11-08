@@ -2404,5 +2404,9 @@ window	Zoom	Αλλαγή μεγέθους
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Επιλέξτε τη μονάδα μιας έξυπνης κάρτας ή διακριτικού (μια βιβλιοθήκη PKCS #11). Εκτελείται μέσα στο CleonPDF, επομένως επιλέξτε μόνο μία που εμπιστεύεστε.
 	Saved servers	Αποθηκευμένοι διακομιστές
 	Timestamp servers	Διακομιστές χρονοσήμανσης
+	Signature trust	Εμπιστοσύνη υπογραφών
+	Trust the operating system's root certificates	Εμπιστοσύνη στα ριζικά πιστοποιητικά του λειτουργικού συστήματος
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Οι υπογράφοντες των οποίων το πιστοποιητικό καταλήγει σε ρίζα που εμπιστεύεται το σύστημά σας εμφανίζονται ως έγκυροι. Αυτός ο χώρος αποθήκευσης προορίζεται για ιστότοπους, γι' αυτό ενεργοποιήστε την επιλογή μόνο αν δέχεστε οι αρχές του να εγγυώνται για όσους υπογράφουν έγγραφα.
+	Couldn't read the system's trusted certificates: {e}	Δεν ήταν δυνατή η ανάγνωση των αξιόπιστων πιστοποιητικών του συστήματος: {e}
 	Server address (https://…)	Διεύθυνση διακομιστή (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Διακομιστές που μπορείτε να επιλέξετε κατά την υπογραφή. Δεν στέλνεται τίποτα σε κανέναν διακομιστή αν δεν τον χρησιμοποιήσει μια υπογραφή, και τότε μόνο ένα συνοπτικό αποτύπωμα, ποτέ το έγγραφο.

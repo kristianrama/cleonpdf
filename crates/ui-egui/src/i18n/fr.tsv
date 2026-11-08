@@ -2404,5 +2404,9 @@ window	Zoom	Réduire/agrandir
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Choisissez le module d'une carte à puce ou d'un jeton (une bibliothèque PKCS #11). Il s'exécute dans CleonPDF : n'en choisissez qu'un en qui vous avez confiance.
 	Saved servers	Serveurs enregistrés
 	Timestamp servers	Serveurs d'horodatage
+	Signature trust	Confiance dans les signatures
+	Trust the operating system's root certificates	Faire confiance aux certificats racines du système d'exploitation
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Les signataires dont le certificat remonte à une racine à laquelle votre système fait confiance sont affichés comme valides. Ce magasin est conçu pour les sites web : n'activez cette option que si vous acceptez que ses autorités se portent garantes des personnes qui signent des documents.
+	Couldn't read the system's trusted certificates: {e}	Impossible de lire les certificats de confiance du système : {e}
 	Server address (https://…)	Adresse du serveur (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Serveurs à choisir lors de la signature. Rien n'est envoyé à un serveur, sauf si une signature l'utilise, et alors seulement une empreinte, jamais le document.

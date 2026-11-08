@@ -2427,5 +2427,9 @@ window	Zoom	تغيير الحجم
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	اختر وحدة بطاقة ذكية أو رمز (مكتبة PKCS #11). تعمل داخل CleonPDF، لذا اختر فقط وحدة تثق بها.
 	Saved servers	الخوادم المحفوظة
 	Timestamp servers	خوادم الختم الزمني
+	Signature trust	الثقة بالتوقيعات
+	Trust the operating system's root certificates	الوثوق بالشهادات الجذرية لنظام التشغيل
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	يُعرض الموقّعون الذين ترتبط شهاداتهم بجذر يثق به نظامك على أنهم صالحون. هذا المخزن مخصص لمواقع الويب، لذا فعّل هذا الخيار فقط إذا كنت تقبل أن تضمن جهاته الموقّعين على المستندات.
+	Couldn't read the system's trusted certificates: {e}	تعذّرت قراءة الشهادات الموثوقة في النظام: {e}
 	Server address (https://…)	عنوان الخادم (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	خوادم يمكنك اختيارها عند التوقيع. لا يُرسل أي شيء إلى أي خادم ما لم يستخدمه توقيع، وعندها يُرسل بصمة فقط، وليس المستند أبدًا.

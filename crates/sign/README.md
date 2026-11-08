@@ -29,7 +29,9 @@ for s in signatures(&doc, &bytes, &trust) {                                // li
   responses and TSTInfo tokens (size-capped, imprint- and signature-checked). `sign_with_timestamp`
   attaches the TSA's token as an unsigned attribute over the signature value; the transport is
   the caller's (`TimestampAuthority` — this crate never opens a socket). Validation verifies
-  embedded tokens; when the TSA chains to the trust store it reports the trusted time in
+  embedded tokens; `TrustStore::system` holds root certificates the operating system trusts (the
+  caller reads them; `cleonpdf-net::system_certificates`), kept apart from the user's `certs`: a signer
+  chaining to one is valid, and the signature says which system root vouched for it. When the TSA chains to the trust store it reports the trusted time in
   `SignatureInfo::timestamp_time`, which then anchors certificate-validity and revocation
   checks. An untrusted TSA's time is reported as an unverified timestamp and never used as the
   validation time (the signer's claimed time is). `timestamp::respond` is the TSA-side signer behind the

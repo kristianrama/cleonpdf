@@ -671,6 +671,9 @@ pub struct CleonPdfApp {
     /// Also reach OCSP and CRL servers on private networks when adding validation information
     /// (a company's own PKI). Off by default: the addresses come from the document's certificates.
     pub validation_private_hosts: bool,
+    /// Preferences ▸ Signatures: the operating system's root certificates count as trusted for
+    /// validating signatures (Acrobat: Windows Integration). Off until the user turns it on.
+    pub trust_system_roots: bool,
     /// Digital ID files the user has created or added.
     pub digital_ids: Vec<DigitalIdEntry>,
     /// Signatures panel: expanded entries (field names).
@@ -1011,6 +1014,7 @@ impl CleonPdfApp {
             token_scan: None,
             pkcs11_modules: Vec::new(),
             validation_private_hosts: false,
+            trust_system_roots: false,
             digital_ids: Vec::new(),
             sig_expanded: Vec::new(),
             a11y_options: a11y_ui::A11yOptions::default(),
@@ -2229,6 +2233,7 @@ impl CleonPdfApp {
         settings["timestamp_server"] = serde_json::Value::String(self.timestamp_server.clone());
         settings["timestamp_servers"] = serde_json::json!(self.timestamp_servers);
         settings["validation_private_hosts"] = serde_json::Value::Bool(self.validation_private_hosts);
+        settings["trust_system_roots"] = serde_json::Value::Bool(self.trust_system_roots);
         settings["pkcs11_modules"] = serde_json::json!(self.pkcs11_modules);
         settings.to_string()
     }
@@ -2378,6 +2383,11 @@ impl CleonPdfApp {
         self.timestamp_server = v["timestamp_server"].as_str().filter(|s| s.len() <= 2048).unwrap_or_default().to_string();
         self.timestamp_servers = sign_ui::restore_timestamp_servers(&v["timestamp_servers"]);
         self.validation_private_hosts = v["validation_private_hosts"].as_bool().unwrap_or(false);
+        // Read the system's roots only when asked to; a system that can't give them leaves it off.
+        self.trust_system_roots = false;
+        if v["trust_system_roots"].as_bool() == Some(true) {
+            let _ = self.set_trust_system_roots(true);
+        }
         self.pkcs11_modules = sign_ui::restore_modules(&v["pkcs11_modules"]);
         if let Ok(ids) = serde_json::from_value::<Vec<DigitalIdEntry>>(v["digital_ids"].clone()) {
             self.digital_ids = ids;
@@ -2460,6 +2470,14 @@ impl CleonPdfApp {
             ("pkcs11-module", _) => self.add_pkcs11_module(value)?,
             ("timestamp-server", _) => self.add_timestamp_server(value)?,
             ("timestamp-server-remove", _) => self.remove_timestamp_server(value),
+            ("trust-system-roots", _) => {
+                let on = match value {
+                    "on" => true,
+                    "off" => false,
+                    _ => return Err("trust-system-roots must be on or off".into()),
+                };
+                self.set_trust_system_roots(on)?;
+            }
             ("validation-private-hosts", _) => {
                 self.validation_private_hosts = match value {
                     "on" => true,

@@ -2403,5 +2403,9 @@ window	Zoom	Méretezés
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Válassza ki egy intelligens kártya vagy token modulját (PKCS #11 könyvtár). A CleonPDF-en belül fut, ezért csak olyat válasszon, amelyben megbízik.
 	Saved servers	Mentett kiszolgálók
 	Timestamp servers	Időbélyegző-kiszolgálók
+	Signature trust	Aláírások megbízhatósága
+	Trust the operating system's root certificates	Az operációs rendszer főtanúsítványainak megbízhatónak tekintése
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Azok az aláírók, akiknek a tanúsítványa olyan főtanúsítványhoz vezet, amelyben a rendszere megbízik, érvényesként jelennek meg. Ez a tároló weboldalakhoz készült, ezért csak akkor kapcsolja be, ha elfogadja, hogy a hatóságai kezeskedjenek a dokumentumokat aláírókért.
+	Couldn't read the system's trusted certificates: {e}	A rendszer megbízható tanúsítványait nem sikerült beolvasni: {e}
 	Server address (https://…)	Kiszolgáló címe (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Aláíráskor választható kiszolgálók. Semmi sem kerül elküldésre egyik kiszolgálónak sem, hacsak egy aláírás nem használja, és akkor is csak egy lenyomat, soha nem a dokumentum.

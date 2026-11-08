@@ -1719,6 +1719,28 @@ fn signing_can_lock_form_fields() {
     assert_eq!(locked["changes"], json!(["locked form fields"]));
 }
 
+/// `sign_trust` with `system` counts the operating system's roots apart from the trusted list;
+/// without it they are never read, and a system that has none changes nothing.
+#[test]
+fn the_systems_roots_are_asked_for_and_kept_apart_from_the_trusted_list() {
+    let dir = workdir("sign-system-roots");
+    let mut a = auto(&dir);
+    let none = ok(&mut a, "sign_trust", json!({}));
+    assert_eq!(none["system_roots"], 0, "nothing is read unless asked");
+    match a.call("sign_trust", &json!({ "system": true })) {
+        Ok(mut c) => {
+            let Content::Json(v) = c.remove(0) else { panic!("expected JSON") };
+            assert!(v["system_roots"].as_u64().unwrap() > 0 && v["trusted"].as_array().unwrap().is_empty(), "{v}");
+            // Clearing the user's list leaves the system's alone; asking for false withdraws them.
+            assert!(ok(&mut a, "sign_trust", json!({ "clear": true }))["system_roots"].as_u64().unwrap() > 0);
+        }
+        Err(ToolError::Failed(_)) => assert_eq!(ok(&mut a, "sign_trust", json!({}))["system_roots"], 0, "a failed read changes nothing"),
+        Err(other) => panic!("{other:?}"),
+    }
+    assert_eq!(ok(&mut a, "sign_trust", json!({ "system": false }))["system_roots"], 0);
+    assert!(matches!(a.call("sign_trust", &json!({ "system": "yes" })), Err(ToolError::InvalidArgs(_))));
+}
+
 #[test]
 fn combine_opens_protected_files_with_their_passwords() {
     let dir = workdir("combine-passwords");
