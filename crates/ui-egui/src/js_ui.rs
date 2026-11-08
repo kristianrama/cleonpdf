@@ -641,7 +641,7 @@ mod timestamp_server_tests {
     use super::*;
 
     fn field<'a>(h: &'a Harness<'static, CleonPdfApp>) -> egui_kittest::Node<'a> {
-        h.get_all_by_label("Server address (https://…)").last().expect("the address field")
+        h.get_all_by_label("Server address (https://…)").last().unwrap()
     }
 
     /// An address typed in Preferences is saved with Add and forgotten with Remove; a bad one is
