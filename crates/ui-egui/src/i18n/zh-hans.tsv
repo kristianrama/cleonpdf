@@ -2366,3 +2366,7 @@ window	Zoom	缩放
 	Smart card module	智能卡模块
 	Smart card module added: {name}	已添加智能卡模块：{name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	选择智能卡或令牌的模块（PKCS #11 库）。它在 CleonPDF 内运行，请只选择您信任的模块。
+	Saved servers	已保存的服务器
+	Timestamp servers	时间戳服务器
+	Server address (https://…)	服务器地址 (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	签名时可选择的服务器。除非签名使用，否则不会向任何服务器发送任何内容；使用时也只发送摘要，绝不发送文档。

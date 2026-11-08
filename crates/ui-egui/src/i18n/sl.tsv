@@ -2407,3 +2407,7 @@ window	Zoom	Spremeni velikost
 	Smart card module	Modul pametne kartice
 	Smart card module added: {name}	Modul pametne kartice dodan: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Izberite modul pametne kartice ali žetona (knjižnico PKCS #11). Izvaja se znotraj CleonPDF, zato izberite samo takega, ki mu zaupate.
+	Saved servers	Shranjeni strežniki
+	Timestamp servers	Strežniki za časovne žige
+	Server address (https://…)	Naslov strežnika (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Strežniki za izbiro pri podpisovanju. Nič se ne pošlje nobenemu strežniku, razen če ga podpis uporabi, in takrat le izvleček, nikoli dokument.

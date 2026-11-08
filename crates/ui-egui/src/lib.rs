@@ -651,6 +651,11 @@ pub struct CleonPdfApp {
     pub sign_draft: Option<SignDraft>,
     /// The timestamp server asked when signing (empty: none), remembered between sessions.
     pub timestamp_server: String,
+    /// Timestamp servers the user saved in Preferences, to pick from when signing. Empty to begin
+    /// with: nothing is sent to any server the user did not add.
+    pub timestamp_servers: Vec<String>,
+    /// The address being typed in Preferences ▸ Timestamp servers.
+    pub(crate) timestamp_server_draft: String,
     /// A signature being made while its timestamp is requested (desktop).
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) signing_task: Option<sign_ui::SigningTask>,
@@ -996,6 +1001,8 @@ impl CleonPdfApp {
             summary_sort: Default::default(),
             sign_draft: None,
             timestamp_server: String::new(),
+            timestamp_servers: Vec::new(),
+            timestamp_server_draft: String::new(),
             #[cfg(not(target_arch = "wasm32"))]
             signing_task: None,
             #[cfg(not(target_arch = "wasm32"))]
@@ -2220,6 +2227,7 @@ impl CleonPdfApp {
         // reads this one before its window exists (apps/cleonpdf `saved_glass`).
         settings["window_glass"] = serde_json::Value::Bool(self.window_glass);
         settings["timestamp_server"] = serde_json::Value::String(self.timestamp_server.clone());
+        settings["timestamp_servers"] = serde_json::json!(self.timestamp_servers);
         settings["validation_private_hosts"] = serde_json::Value::Bool(self.validation_private_hosts);
         settings["pkcs11_modules"] = serde_json::json!(self.pkcs11_modules);
         settings.to_string()
@@ -2368,6 +2376,7 @@ impl CleonPdfApp {
         self.sign_graphic = serde_json::from_value(v["sign_graphic"].clone()).unwrap_or_default();
         // Settings are untrusted input: a server address longer than any accepted one is dropped.
         self.timestamp_server = v["timestamp_server"].as_str().filter(|s| s.len() <= 2048).unwrap_or_default().to_string();
+        self.timestamp_servers = sign_ui::restore_timestamp_servers(&v["timestamp_servers"]);
         self.validation_private_hosts = v["validation_private_hosts"].as_bool().unwrap_or(false);
         self.pkcs11_modules = sign_ui::restore_modules(&v["pkcs11_modules"]);
         if let Ok(ids) = serde_json::from_value::<Vec<DigitalIdEntry>>(v["digital_ids"].clone()) {
@@ -2449,6 +2458,8 @@ impl CleonPdfApp {
                 self.select_tool(g.id);
             }
             ("pkcs11-module", _) => self.add_pkcs11_module(value)?,
+            ("timestamp-server", _) => self.add_timestamp_server(value)?,
+            ("timestamp-server-remove", _) => self.remove_timestamp_server(value),
             ("validation-private-hosts", _) => {
                 self.validation_private_hosts = match value {
                     "on" => true,

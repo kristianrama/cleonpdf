@@ -2476,3 +2476,7 @@ window	Zoom	Změnit velikost
 	Smart card module	Modul čipové karty
 	Smart card module added: {name}	Modul čipové karty přidán: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Vyberte modul čipové karty nebo tokenu (knihovnu PKCS #11). Běží uvnitř CleonPDF, vyberte proto jen takový, kterému důvěřujete.
+	Saved servers	Uložené servery
+	Timestamp servers	Servery časových razítek
+	Server address (https://…)	Adresa serveru (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Servery, ze kterých lze při podepisování vybírat. Na žádný server se nic neposílá, dokud ho podpis nepoužije, a pak jen otisk, nikdy dokument.

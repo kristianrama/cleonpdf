@@ -2413,3 +2413,7 @@ window	Zoom	Ridimensiona
 	Smart card module	Modulo smart card
 	Smart card module added: {name}	Modulo smart card aggiunto: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Scegli il modulo di una smart card o di un token (una libreria PKCS #11). Viene eseguito dentro CleonPDF, quindi scegline solo uno di cui ti fidi.
+	Saved servers	Server salvati
+	Timestamp servers	Server di marca temporale
+	Server address (https://…)	Indirizzo del server (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Server tra cui scegliere quando firmi. Non viene inviato nulla a nessun server a meno che una firma lo usi, e in quel caso solo un'impronta, mai il documento.

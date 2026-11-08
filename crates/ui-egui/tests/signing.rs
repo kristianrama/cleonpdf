@@ -103,6 +103,16 @@ fn drawing_a_signature_creating_an_id_signing_and_trusting() {
     h.run_steps(3);
     h.get_by_label("The password is incorrect.");
     h.state_mut().sign_draft.as_mut().unwrap().password = "secret1".into();
+    // A server saved in Preferences can be picked here; with none saved there is nothing to pick.
+    assert!(h.query_by_role(egui::accesskit::Role::ComboBox).is_none());
+    h.state_mut().add_timestamp_server("https://tsa.example.org/tsr").unwrap();
+    h.run_steps(2);
+    h.get_by_role(egui::accesskit::Role::ComboBox).click();
+    h.run_steps(2);
+    h.get_by_label("https://tsa.example.org/tsr").click();
+    h.run_steps(2);
+    assert_eq!(h.state().sign_draft.as_ref().unwrap().timestamp_url, "https://tsa.example.org/tsr");
+    h.state_mut().sign_draft.as_mut().unwrap().timestamp_url.clear();
     field(&h, "Reason").click();
     h.run_steps(1);
     field(&h, "Reason").type_text("I approve");

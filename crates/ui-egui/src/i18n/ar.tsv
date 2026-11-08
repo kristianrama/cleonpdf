@@ -2425,3 +2425,7 @@ window	Zoom	تغيير الحجم
 	Smart card module	وحدة البطاقة الذكية
 	Smart card module added: {name}	تمت إضافة وحدة البطاقة الذكية: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	اختر وحدة بطاقة ذكية أو رمز (مكتبة PKCS #11). تعمل داخل CleonPDF، لذا اختر فقط وحدة تثق بها.
+	Saved servers	الخوادم المحفوظة
+	Timestamp servers	خوادم الختم الزمني
+	Server address (https://…)	عنوان الخادم (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	خوادم يمكنك اختيارها عند التوقيع. لا يُرسل أي شيء إلى أي خادم ما لم يستخدمه توقيع، وعندها يُرسل بصمة فقط، وليس المستند أبدًا.

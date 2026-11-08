@@ -482,6 +482,8 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tok
     ui.add_space(8.0);
     date_format(ui, app, t);
     ui.add_space(8.0);
+    #[cfg(not(target_arch = "wasm32"))]
+    timestamp_servers(ui, app, t);
     ui.label(egui::RichText::new("JavaScript").font(theme::semibold(13.0)));
     egui::Frame::new().fill(t.hover).corner_radius(egui::CornerRadius::same(6)).inner_margin(egui::Margin::same(10)).show(ui, |ui| {
         ui.set_width(ui.available_width());
@@ -588,4 +590,101 @@ fn date_format(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) {
         .small()
         .color(t.text_muted),
     );
+}
+
+/// Signatures ▸ Timestamp servers: addresses to pick from in the Sign dialog. None is asked unless
+/// a signature picks it.
+#[cfg(not(target_arch = "wasm32"))]
+fn timestamp_servers(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) {
+    ui.label(egui::RichText::new(tl!("Timestamp servers")).font(theme::semibold(13.0)));
+    let mut remove = None;
+    for url in &app.timestamp_servers {
+        ui.horizontal(|ui| {
+            ui.label(url);
+            if widgets::pill_button(ui, tl!("Remove"), false).clicked() {
+                remove = Some(url.clone());
+            }
+        });
+    }
+    if let Some(url) = remove {
+        app.remove_timestamp_server(&url);
+    }
+    let mut draft = std::mem::take(&mut app.timestamp_server_draft);
+    let mut add = false;
+    ui.horizontal(|ui| {
+        let label = ui.label(tl!("Server address (https://…)"));
+        let r = ui.add(widgets::line(&mut draft).desired_width(300.0)).labelled_by(label.id);
+        add = widgets::pill_button(ui, tl!("Add"), false).clicked() || (r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)));
+    });
+    if add && !draft.trim().is_empty() {
+        match app.add_timestamp_server(&draft) {
+            Ok(()) => draft.clear(),
+            Err(e) => app.notify(e),
+        }
+    }
+    app.timestamp_server_draft = draft;
+    ui.label(
+        egui::RichText::new(tl!(
+            "Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document."
+        ))
+        .small()
+        .color(t.text_muted),
+    );
+    ui.add_space(8.0);
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
+mod timestamp_server_tests {
+    use egui_kittest::Harness;
+    use egui_kittest::kittest::Queryable;
+
+    use super::*;
+
+    fn field<'a>(h: &'a Harness<'static, CleonPdfApp>) -> egui_kittest::Node<'a> {
+        h.get_all_by_label("Server address (https://…)").last().unwrap()
+    }
+
+    /// An address typed in Preferences is saved with Add and forgotten with Remove; a bad one is
+    /// refused and nothing is saved.
+    #[test]
+    fn preferences_add_and_remove_a_timestamp_server() {
+        let mut app = CleonPdfApp::new();
+        app.set_option("language", "en").unwrap();
+        let mut fonts = false;
+        let mut h = Harness::builder().with_size(egui::vec2(700.0, 300.0)).build_ui_state(
+            move |ui, app: &mut CleonPdfApp| {
+                // The app's fonts (the semibold headings) take effect from the next frame.
+                if !fonts {
+                    ui.ctx().set_fonts(theme::font_definitions());
+                    fonts = true;
+                    return;
+                }
+                let t = Tokens::get(ui.ctx());
+                timestamp_servers(ui, app, &t);
+            },
+            app,
+        );
+        h.run();
+        h.get_by_label("Timestamp servers");
+        h.get_by_label_contains("Nothing is sent to any server unless");
+        field(&h).click();
+        h.run_steps(2);
+        field(&h).type_text("https://tsa.example.org/tsr");
+        h.run_steps(2);
+        h.get_by_label("Add").click();
+        h.run_steps(3);
+        assert_eq!(h.state().timestamp_servers, ["https://tsa.example.org/tsr"]);
+        h.get_by_label("https://tsa.example.org/tsr");
+        h.get_by_label("Remove").click();
+        h.run_steps(3);
+        assert!(h.state().timestamp_servers.is_empty());
+        field(&h).click();
+        h.run_steps(2);
+        field(&h).type_text("ftp://nope");
+        h.run_steps(2);
+        h.get_by_label("Add").click();
+        h.run_steps(3);
+        assert!(h.state().timestamp_servers.is_empty());
+    }
 }

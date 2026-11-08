@@ -189,6 +189,24 @@ pub(crate) fn restore_modules(v: &serde_json::Value) -> Vec<String> {
     out
 }
 
+/// How many timestamp servers Preferences keeps.
+pub(crate) const MAX_TIMESTAMP_SERVERS: usize = 16;
+
+/// The timestamp servers in the settings: addresses [`cleonpdf_net::check_url`] accepts, each
+/// once, at most [`MAX_TIMESTAMP_SERVERS`]. (The settings file is untrusted input.)
+pub(crate) fn restore_timestamp_servers(v: &serde_json::Value) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for url in v.as_array().into_iter().flatten().filter_map(|u| u.as_str()) {
+        if let Ok(url) = cleonpdf_net::check_url(url)
+            && !out.contains(&url)
+            && out.len() < MAX_TIMESTAMP_SERVERS
+        {
+            out.push(url);
+        }
+    }
+    out
+}
+
 /// An identity from the OS key store or a smart card: listed again at every signing, never saved.
 pub(crate) fn is_os_store(path: &str) -> bool {
     path.starts_with("keychain:") || path.starts_with("windows:") || path.starts_with("pkcs11:")
@@ -466,6 +484,25 @@ impl CleonPdfApp {
                 }
             }
         }
+    }
+
+    /// Save a timestamp server to pick from when signing. Nothing is sent to it until a
+    /// signature asks for it.
+    pub fn add_timestamp_server(&mut self, url: &str) -> Result<(), String> {
+        let url = cleonpdf_net::check_url(url)?;
+        if self.timestamp_servers.contains(&url) {
+            return Ok(());
+        }
+        if self.timestamp_servers.len() >= MAX_TIMESTAMP_SERVERS {
+            return Err(format!("at most {MAX_TIMESTAMP_SERVERS} timestamp servers can be saved"));
+        }
+        self.timestamp_servers.push(url);
+        Ok(())
+    }
+
+    /// Forget a saved timestamp server (one that isn't saved is ignored).
+    pub fn remove_timestamp_server(&mut self, url: &str) {
+        self.timestamp_servers.retain(|u| u != url.trim());
     }
 
     /// Remember a smart card module the user chose (a PKCS #11 library) and look again.
@@ -1278,6 +1315,8 @@ fn preview(
 
 fn sign_as(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
     let ids = app.digital_ids.clone();
+    #[cfg(not(target_arch = "wasm32"))]
+    let servers = app.timestamp_servers.clone();
     let Some(d) = app.sign_draft.as_mut() else { return true };
     let Some(entry) = d.selected.and_then(|i| ids.get(i)).cloned() else {
         d.step = SignStep::Choose;
@@ -1361,7 +1400,19 @@ fn sign_as(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
         #[cfg(not(target_arch = "wasm32"))]
         {
             let l = ui.label(tl!("Timestamp server"));
-            ui.add(crate::widgets::line(&mut d.timestamp_url).hint_text(tl!("Optional: https://…")).desired_width(260.0)).labelled_by(l.id);
+            ui.horizontal(|ui| {
+                ui.add(crate::widgets::line(&mut d.timestamp_url).hint_text(tl!("Optional: https://…")).desired_width(260.0)).labelled_by(l.id);
+                if !servers.is_empty() {
+                    egui::ComboBox::from_id_salt("saved-timestamp-servers").selected_text(tl!("Saved servers")).width(120.0).show_ui(ui, |ui| {
+                        for s in &servers {
+                            if ui.selectable_label(d.timestamp_url == *s, s).clicked() {
+                                d.timestamp_url = s.clone();
+                                ui.close();
+                            }
+                        }
+                    });
+                }
+            });
             ui.end_row();
             ui.label("");
             ui.label(

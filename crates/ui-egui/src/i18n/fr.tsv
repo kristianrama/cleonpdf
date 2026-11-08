@@ -2402,3 +2402,7 @@ window	Zoom	Réduire/agrandir
 	Smart card module	Module de carte à puce
 	Smart card module added: {name}	Module de carte à puce ajouté : {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Choisissez le module d'une carte à puce ou d'un jeton (une bibliothèque PKCS #11). Il s'exécute dans CleonPDF : n'en choisissez qu'un en qui vous avez confiance.
+	Saved servers	Serveurs enregistrés
+	Timestamp servers	Serveurs d'horodatage
+	Server address (https://…)	Adresse du serveur (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Serveurs à choisir lors de la signature. Rien n'est envoyé à un serveur, sauf si une signature l'utilise, et alors seulement une empreinte, jamais le document.

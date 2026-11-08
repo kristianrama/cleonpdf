@@ -2402,3 +2402,7 @@ window	Zoom	Αλλαγή μεγέθους
 	Smart card module	Μονάδα έξυπνης κάρτας
 	Smart card module added: {name}	Προστέθηκε μονάδα έξυπνης κάρτας: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Επιλέξτε τη μονάδα μιας έξυπνης κάρτας ή διακριτικού (μια βιβλιοθήκη PKCS #11). Εκτελείται μέσα στο CleonPDF, επομένως επιλέξτε μόνο μία που εμπιστεύεστε.
+	Saved servers	Αποθηκευμένοι διακομιστές
+	Timestamp servers	Διακομιστές χρονοσήμανσης
+	Server address (https://…)	Διεύθυνση διακομιστή (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Διακομιστές που μπορείτε να επιλέξετε κατά την υπογραφή. Δεν στέλνεται τίποτα σε κανέναν διακομιστή αν δεν τον χρησιμοποιήσει μια υπογραφή, και τότε μόνο ένα συνοπτικό αποτύπωμα, ποτέ το έγγραφο.

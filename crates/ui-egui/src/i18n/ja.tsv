@@ -2402,3 +2402,7 @@ window	Zoom	拡大／縮小
 	Smart card module	スマートカードモジュール
 	Smart card module added: {name}	スマートカードモジュールを追加しました: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	スマートカードまたはトークンのモジュール (PKCS #11 ライブラリ) を選択してください。CleonPDF 内で実行されるため、信頼できるものだけを選んでください。
+	Saved servers	保存済みのサーバー
+	Timestamp servers	タイムスタンプサーバー
+	Server address (https://…)	サーバーのアドレス (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	署名時に選べるサーバーです。署名が使用しない限り、どのサーバーにも何も送信されません。使用する場合も送られるのはダイジェストのみで、文書そのものは送られません。
