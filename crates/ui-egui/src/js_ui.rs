@@ -634,6 +634,7 @@ fn timestamp_servers(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) {
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
+#[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 mod timestamp_server_tests {
     use egui_kittest::Harness;
     use egui_kittest::kittest::Queryable;
