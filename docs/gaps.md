@@ -301,7 +301,7 @@ update the numbers.
   requested unless one is given. `sign_add_validation_info` fetches OCSP responses and CRLs for
   the signers' chains and embeds them (PAdES B-LT), refusing non-public hosts unless told otherwise, for the timestamp authority's chain too, and completing a chain from the caIssuers address. The Signatures panel has an Add validation
   information button for it (desktop).
-- **Missing:** a check of PKCS #11 tokens and smart cards on real cards (the Sign dialog lists them, asks for the PIN and signs, and `sign_document` takes `pkcs11:…`; all tested against SoftHSM only), RSA-PSS and keypad readers; choosing fields to lock in the Sign dialog (signing and validating locks work, headless); the OS trust store on Linux/Windows/macOS is read but not compared with Acrobat's Windows Integration (no purpose or trust-setting filtering of roots); EU
+- **Missing:** a check of PKCS #11 tokens and smart cards on real cards (the Sign dialog lists them, asks for the PIN and signs, and `sign_document` takes `pkcs11:…`; all tested against SoftHSM only), RSA-PSS and keypad readers; setting a field's own lock in Prepare Form and showing what a signature locked in the Signatures panel (signing with a lock and validating it work, in the Sign dialog and headless); the OS trust store on Linux/Windows/macOS is read but not compared with Acrobat's Windows Integration (no purpose or trust-setting filtering of roots); EU
   Trusted Lists; signature graphics and saved appearances; compare signed version; signing in the
   browser.
 - **Evidence:** `sign.eutl` planned; `sign.os-trust`, `sign.field-mdp`, `sign.pkcs11`, `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial (evidence fetched in

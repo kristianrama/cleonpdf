@@ -856,6 +856,11 @@
 	Fill & Sign signature	Unterschrift aus „Ausfüllen und unterschreiben“
 	Choose image…	Bild auswählen…
 	Permitted actions after certifying	Erlaubte Aktionen nach dem Zertifizieren
+	Lock form fields	Formularfelder sperren
+	Don't lock	Nicht sperren
+	All fields	Alle Felder
+	Only the fields chosen	Nur die ausgewählten Felder
+	All fields except the ones chosen	Alle Felder außer den ausgewählten
 	No changes allowed	Keine Änderungen erlaubt
 	Annotations, form fill-in, and digital signatures	Anmerkungen, Ausfüllen von Formularen und digitale Signaturen
 	Form fill-in and digital signatures	Ausfüllen von Formularen und digitale Signaturen

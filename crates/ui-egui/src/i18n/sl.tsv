@@ -1308,6 +1308,11 @@
 	Percentage	Odstotek
 	Perimeter	Obseg
 	Permitted actions after certifying	Dovoljena dejanja po overitvi
+	Lock form fields	Zakleni polja obrazca
+	Don't lock	Ne zakleni
+	All fields	Vsa polja
+	Only the fields chosen	Samo izbrana polja
+	All fields except the ones chosen	Vsa polja razen izbranih
 	Phone Number	Telefonska številka
 	Phone Numbers	Telefonske številke
 	Pick a tool in the quick bar, or type above.	Izberite orodje v hitri vrstici ali tipkajte zgoraj.

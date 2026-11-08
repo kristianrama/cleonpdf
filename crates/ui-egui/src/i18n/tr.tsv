@@ -829,6 +829,11 @@
 	Distinguished name	Ayırt edici ad
 	Labels	Etiketler
 	Permitted actions after certifying	Sertifikalandırma sonrası izin verilen eylemler
+	Lock form fields	Form alanlarını kilitle
+	Don't lock	Kilitleme
+	All fields	Tüm alanlar
+	Only the fields chosen	Yalnızca seçilen alanlar
+	All fields except the ones chosen	Seçilenler dışındaki tüm alanlar
 	No changes allowed	Değişikliğe izin verilmez
 	Annotations, form fill-in, and digital signatures	Açıklamalar, form doldurma ve dijital imzalar
 	Form fill-in and digital signatures	Form doldurma ve dijital imzalar

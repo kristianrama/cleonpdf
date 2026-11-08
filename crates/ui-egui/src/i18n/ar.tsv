@@ -878,6 +878,11 @@
 	Fill & Sign signature	توقيع «تعبئة وتوقيع»
 	Choose image…	اختيار صورة…
 	Permitted actions after certifying	الإجراءات المسموح بها بعد التصديق
+	Lock form fields	قفل حقول النموذج
+	Don't lock	عدم القفل
+	All fields	جميع الحقول
+	Only the fields chosen	الحقول المحددة فقط
+	All fields except the ones chosen	جميع الحقول باستثناء المحددة
 	No changes allowed	لا يُسمح بأي تغييرات
 	Annotations, form fill-in, and digital signatures	التعليقات وتعبئة النماذج والتوقيعات الرقمية
 	Form fill-in and digital signatures	تعبئة النماذج والتوقيعات الرقمية

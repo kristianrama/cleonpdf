@@ -559,6 +559,11 @@
 	Fill & Sign signature	Подпис от „Попълни и подпиши“
 	Choose image…	Избор на изображение…
 	Permitted actions after certifying	Разрешени действия след сертифициране
+	Lock form fields	Заключване на полетата на формуляра
+	Don't lock	Без заключване
+	All fields	Всички полета
+	Only the fields chosen	Само избраните полета
+	All fields except the ones chosen	Всички полета освен избраните
 	No changes allowed	Не се разрешават промени
 	Annotations, form fill-in, and digital signatures	Анотации, попълване на формуляри и цифрови подписи
 	Form fill-in and digital signatures	Попълване на формуляри и цифрови подписи

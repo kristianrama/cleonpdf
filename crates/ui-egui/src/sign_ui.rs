@@ -90,6 +90,19 @@ pub enum SignGraphic {
     Image(#[serde(with = "crate::fill_sign::image_data")] SignatureImage),
 }
 
+/// Which form fields signing locks (FieldMDP), as the dialog offers it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum LockMode {
+    #[default]
+    None,
+    All,
+    Include,
+    Exclude,
+}
+
+/// Most form fields the dialog lists to tick; a form with more is listed as far as this.
+const MAX_LOCK_FIELDS_LISTED: usize = 500;
+
 /// The signing dialogs' state.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SignDraft {
@@ -107,6 +120,9 @@ pub struct SignDraft {
     pub location: String,
     /// The RFC 3161 timestamp server to ask (PAdES B-T); empty: sign without a timestamp.
     pub timestamp_url: String,
+    /// Which form fields to lock when signing, and the names ticked for include and exclude.
+    pub lock_mode: LockMode,
+    pub lock_fields: std::collections::BTreeSet<String>,
     pub appearance: Appearance,
     pub graphic: SignGraphic,
     /// The image the dialog holds (remembered or chosen), so Image can be chosen again.
@@ -134,6 +150,8 @@ impl SignDraft {
             reason: String::new(),
             location: String::new(),
             timestamp_url: String::new(),
+            lock_mode: LockMode::None,
+            lock_fields: std::collections::BTreeSet::new(),
             appearance: Appearance::default(),
             graphic: SignGraphic::Name,
             image: None,
@@ -664,6 +682,13 @@ impl CleonPdfApp {
         #[cfg(not(target_arch = "wasm32"))]
         let tsa = if url.is_empty() { None } else { Some(cleonpdf_net::HttpTimestampAuthority::new(&url).map_err(|e| e.to_string())?) };
         self.timestamp_server = url;
+        let lock = match d.lock_mode {
+            LockMode::None => None,
+            LockMode::All => Some(sign::FieldLock::All),
+            LockMode::Include | LockMode::Exclude if d.lock_fields.is_empty() => return Err("Choose the fields to lock.".into()),
+            LockMode::Include => Some(sign::FieldLock::Include(d.lock_fields.iter().cloned().collect())),
+            LockMode::Exclude => Some(sign::FieldLock::Exclude(d.lock_fields.iter().cloned().collect())),
+        };
         let opts = SignOptions {
             field: d.field.clone(),
             page: d.page,
@@ -671,6 +696,7 @@ impl CleonPdfApp {
             reason: some(&d.reason),
             location: some(&d.location),
             certify: d.certify,
+            lock,
             appearance: d.appearance.clone(),
             graphic,
             ..SignOptions::default()
@@ -1323,7 +1349,16 @@ fn preview(
     ui.painter().galley(egui::pos2(x, inner.center().y - galley.size().y / 2.0), galley, Color32::BLACK);
 }
 
+/// The names of the document's form fields, once each, for the lock to list.
+fn lockable_fields(app: &CleonPdfApp) -> Vec<String> {
+    let Some((_, id)) = app.active_ids() else { return Vec::new() };
+    let Some(doc) = app.session.get(id) else { return Vec::new() };
+    let mut seen = std::collections::HashSet::new();
+    doc.form.iter().filter(|f| seen.insert(f.name.as_str())).map(|f| f.name.clone()).take(MAX_LOCK_FIELDS_LISTED).collect()
+}
+
 fn sign_as(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
+    let fields = lockable_fields(app);
     let ids = app.digital_ids.clone();
     #[cfg(not(target_arch = "wasm32"))]
     let servers = app.timestamp_servers.clone();
@@ -1403,6 +1438,43 @@ fn sign_as(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
         let l = ui.label(tl!("Reason"));
         ui.add(crate::widgets::line(&mut d.reason).hint_text(tl!("Optional")).desired_width(260.0)).labelled_by(l.id);
         ui.end_row();
+        // Lock form fields after signing (FieldMDP). A form with no fields has nothing to lock.
+        if !fields.is_empty() {
+            let l = ui.label(tl!("Lock form fields"));
+            let name = |m: LockMode| match m {
+                LockMode::None => tl!("Don't lock"),
+                LockMode::All => tl!("All fields"),
+                LockMode::Include => tl!("Only the fields chosen"),
+                LockMode::Exclude => tl!("All fields except the ones chosen"),
+            };
+            egui::ComboBox::from_id_salt("lock-mode")
+                .selected_text(name(d.lock_mode))
+                .width(260.0)
+                .show_ui(ui, |ui| {
+                    for m in [LockMode::None, LockMode::All, LockMode::Include, LockMode::Exclude] {
+                        ui.selectable_value(&mut d.lock_mode, m, name(m));
+                    }
+                })
+                .response
+                .labelled_by(l.id);
+            ui.end_row();
+            if matches!(d.lock_mode, LockMode::Include | LockMode::Exclude) {
+                ui.label("");
+                egui::ScrollArea::vertical().id_salt("lock-fields").max_height(120.0).show(ui, |ui| {
+                    for f in &fields {
+                        let mut on = d.lock_fields.contains(f);
+                        if ui.add(widgets::checkbox(&mut on, f)).changed() {
+                            if on {
+                                d.lock_fields.insert(f.clone());
+                            } else {
+                                d.lock_fields.remove(f);
+                            }
+                        }
+                    }
+                });
+                ui.end_row();
+            }
+        }
         let l = ui.label(tl!("Location"));
         ui.add(crate::widgets::line(&mut d.location).hint_text(tl!("Optional")).desired_width(260.0)).labelled_by(l.id);
         ui.end_row();

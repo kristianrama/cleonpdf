@@ -876,6 +876,11 @@
 	Fill & Sign signature	Підпис із «Заповнення й підпис»
 	Choose image…	Вибрати зображення…
 	Permitted actions after certifying	Дозволені дії після засвідчення
+	Lock form fields	Заблокувати поля форми
+	Don't lock	Не блокувати
+	All fields	Усі поля
+	Only the fields chosen	Лише вибрані поля
+	All fields except the ones chosen	Усі поля, крім вибраних
 	No changes allowed	Зміни заборонено
 	Annotations, form fill-in, and digital signatures	Коментарі, заповнення форми й цифрові підписи
 	Form fill-in and digital signatures	Заповнення форми й цифрові підписи
