@@ -483,7 +483,10 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tok
     date_format(ui, app, t);
     ui.add_space(8.0);
     #[cfg(not(target_arch = "wasm32"))]
-    timestamp_servers(ui, app, t);
+    {
+        system_roots(ui, app, t);
+        timestamp_servers(ui, app, t);
+    }
     ui.label(egui::RichText::new("JavaScript").font(theme::semibold(13.0)));
     egui::Frame::new().fill(t.hover).corner_radius(egui::CornerRadius::same(6)).inner_margin(egui::Margin::same(10)).show(ui, |ui| {
         ui.set_width(ui.available_width());
@@ -590,6 +593,26 @@ fn date_format(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) {
         .small()
         .color(t.text_muted),
     );
+}
+
+/// Signatures ▸ Trust the operating system's root certificates (Acrobat: Windows Integration).
+#[cfg(not(target_arch = "wasm32"))]
+fn system_roots(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) {
+    ui.label(egui::RichText::new(tl!("Signature trust")).font(theme::semibold(13.0)));
+    let mut on = app.trust_system_roots;
+    if ui.add(widgets::checkbox(&mut on, tl!("Trust the operating system's root certificates"))).changed()
+        && let Err(e) = app.set_trust_system_roots(on)
+    {
+        app.notify_fmt("Couldn't read the system's trusted certificates: {e}", &[("e", &e)]);
+    }
+    ui.label(
+        egui::RichText::new(tl!(
+            "Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents."
+        ))
+        .small()
+        .color(t.text_muted),
+    );
+    ui.add_space(8.0);
 }
 
 /// Signatures ▸ Timestamp servers: addresses to pick from in the Sign dialog. None is asked unless

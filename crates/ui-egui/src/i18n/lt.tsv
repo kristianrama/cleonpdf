@@ -2647,5 +2647,10 @@ window	Zoom	Keisti dydį
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Pasirinkite išmaniosios kortelės ar rakto modulį (PKCS #11 biblioteką). Jis veikia „CleonPDF“ viduje, todėl rinkitės tik tokį, kuriuo pasitikite.
 	Saved servers	Išsaugoti serveriai
 	Timestamp servers	Laiko žymų serveriai
+	Signature trust	Parašų patikimumas
+	Trust the operating system's root certificates	Pasitikėti operacinės sistemos šakniniais sertifikatais
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Pasirašiusieji, kurių sertifikatas veda į šaknį, kuria pasitiki jūsų sistema, rodomi kaip galiojantys. Ši saugykla skirta svetainėms, todėl įjunkite tai tik jei sutinkate, kad jos institucijos laiduotų už dokumentus pasirašančius asmenis.
+	Couldn't read the system's trusted certificates: {e}	Nepavyko nuskaityti sistemos patikimų sertifikatų: {e}
+	The signer's identity is valid: it chains to {}, a certificate the operating system trusts.	Pasirašiusiojo tapatybė galioja: ji veda į {} – sertifikatą, kuriuo pasitiki operacinė sistema.
 	Server address (https://…)	Serverio adresas (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Serveriai, iš kurių galima rinktis pasirašant. Niekas nesiunčiama jokiam serveriui, kol parašas jo nenaudoja, o tada siunčiama tik santrauka, niekada ne dokumentas.

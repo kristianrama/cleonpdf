@@ -80,7 +80,7 @@ fn signed(bytes: &[u8], field: &str, lock: Option<FieldLock>) -> Vec<u8> {
 }
 
 fn check(bytes: &[u8], field: &str) -> SignatureInfo {
-    let trust = TrustStore { certs: vec![id().certificate.clone()] };
+    let trust = TrustStore { certs: vec![id().certificate.clone()], ..TrustStore::default() };
     signatures(&open(bytes), bytes, &trust).into_iter().find(|s| s.field == field).unwrap()
 }
 

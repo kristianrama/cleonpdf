@@ -365,6 +365,12 @@ impl Automation {
     }
 
     pub(crate) fn sign_trust(&mut self, a: &Args) -> Result<Value> {
+        // The system's roots are read first, so a system that can't give them changes nothing.
+        let system = match a.opt_bool("system")? {
+            Some(true) => Some(cleonpdf_net::system_certificates().map_err(failed)?.0),
+            Some(false) => Some(Vec::new()),
+            None => None,
+        };
         let mut certs: Vec<Certificate> =
             if a.opt_bool("clear")?.unwrap_or(false) { Vec::new() } else { self.session.trusted_certificates().to_vec() };
         let paths: Vec<String> = match a.get("paths") {
@@ -393,7 +399,13 @@ impl Automation {
             }
         }
         self.session.set_trusted_certificates(certs);
-        Ok(json!({ "trusted": self.session.trusted_certificates().iter().map(cert_json).collect::<Vec<_>>() }))
+        if let Some(system) = system {
+            self.session.set_system_certificates(system);
+        }
+        Ok(json!({
+            "trusted": self.session.trusted_certificates().iter().map(cert_json).collect::<Vec<_>>(),
+            "system_roots": self.session.system_certificates().len(),
+        }))
     }
 }
 

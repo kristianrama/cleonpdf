@@ -2278,5 +2278,9 @@ window	Zoom	縮放
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	選擇智慧卡或權杖的模組（PKCS #11 程式庫）。它會在 CleonPDF 內執行，請只選擇您信任的模組。
 	Saved servers	已儲存的伺服器
 	Timestamp servers	時間戳記伺服器
+	Signature trust	簽章信任
+	Trust the operating system's root certificates	信任作業系統的根憑證
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	憑證鏈可追溯到系統所信任之根憑證的簽署者會顯示為有效。該憑證存放區是為網站設計的，因此僅在你接受其憑證授權單位為簽署文件的人擔保時才啟用此選項。
+	Couldn't read the system's trusted certificates: {e}	無法讀取系統的受信任憑證：{e}
 	Server address (https://…)	伺服器位址 (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	簽署時可選擇的伺服器。除非簽章使用，否則不會向任何伺服器傳送任何內容；使用時也只傳送摘要，絕不傳送文件。

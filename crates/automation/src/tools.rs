@@ -759,8 +759,13 @@ pub fn tools() -> Vec<ToolDef> {
                 }),
                 &["doc", "id", "out"],
             )),
-        t("sign_trust", "Trust certificates", "Add certificates (.cer/.crt/.pem/.der, or the certificates in a .p12 with `password`) to the trusted certificates used to validate signatures, or clear the list (clear: true). Every open document is revalidated. Returns the trusted list.").with(schema(
-            json!({ "paths": { "type": "array", "items": { "type": "string" } }, "password": { "type": "string" }, "clear": { "type": "boolean" } }),
+        t("sign_trust", "Trust certificates", "Add certificates (.cer/.crt/.pem/.der, or the certificates in a .p12 with `password`) to the trusted certificates used to validate signatures, or clear the list (clear: true), and with `system` count the operating system's root certificates as trusted too (off by default). Every open document is revalidated. Returns the trusted list and system_roots, how many system roots count.").with(schema(
+            json!({
+                "paths": { "type": "array", "items": { "type": "string" } },
+                "password": { "type": "string" },
+                "clear": { "type": "boolean", "description": "Empty the trusted list first. The system's roots are not part of it." },
+                "system": { "type": "boolean", "description": "true counts the operating system's root certificates as trusted too (Acrobat: Windows Integration); false stops. Off until asked, and kept apart from the list. That store is meant for websites." },
+            }),
             &[],
         )),
         t("comment_mark", "Mark a comment with a checkmark", "Mark or unmark a comment with a checkmark (Acrobat: Mark with checkmark), recorded as a private reply. Undoable.").with(schema(

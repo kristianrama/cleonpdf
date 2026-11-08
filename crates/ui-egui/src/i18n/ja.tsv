@@ -2404,5 +2404,9 @@ window	Zoom	拡大／縮小
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	スマートカードまたはトークンのモジュール (PKCS #11 ライブラリ) を選択してください。CleonPDF 内で実行されるため、信頼できるものだけを選んでください。
 	Saved servers	保存済みのサーバー
 	Timestamp servers	タイムスタンプサーバー
+	Signature trust	署名の信頼
+	Trust the operating system's root certificates	オペレーティングシステムのルート証明書を信頼する
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	証明書がシステムの信頼するルートにたどり着く署名者は、有効と表示されます。このストアはウェブサイト向けのものです。そこに登録された認証局が文書の署名者を保証することを受け入れる場合にのみ、オンにしてください。
+	Couldn't read the system's trusted certificates: {e}	システムの信頼済み証明書を読み取れませんでした: {e}
 	Server address (https://…)	サーバーのアドレス (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	署名時に選べるサーバーです。署名が使用しない限り、どのサーバーにも何も送信されません。使用する場合も送られるのはダイジェストのみで、文書そのものは送られません。

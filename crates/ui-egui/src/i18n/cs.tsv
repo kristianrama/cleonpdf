@@ -2478,5 +2478,9 @@ window	Zoom	Změnit velikost
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Vyberte modul čipové karty nebo tokenu (knihovnu PKCS #11). Běží uvnitř CleonPDF, vyberte proto jen takový, kterému důvěřujete.
 	Saved servers	Uložené servery
 	Timestamp servers	Servery časových razítek
+	Signature trust	Důvěra v podpisy
+	Trust the operating system's root certificates	Důvěřovat kořenovým certifikátům operačního systému
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Podepisující, jejichž certifikát vede ke kořenu, kterému váš systém důvěřuje, se zobrazují jako platní. Toto úložiště je určeno pro weby, proto tuto volbu zapněte, jen pokud souhlasíte, aby jeho autority ručily za lidi podepisující dokumenty.
+	Couldn't read the system's trusted certificates: {e}	Důvěryhodné certifikáty systému se nepodařilo přečíst: {e}
 	Server address (https://…)	Adresa serveru (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Servery, ze kterých lze při podepisování vybírat. Na žádný server se nic neposílá, dokud ho podpis nepoužije, a pak jen otisk, nikdy dokument.

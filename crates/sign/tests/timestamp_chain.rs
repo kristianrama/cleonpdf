@@ -97,7 +97,7 @@ fn read(bytes: &[u8], trust: &TrustStore) -> Vec<cleonpdf_sign::SignatureInfo> {
 #[test]
 fn a_signatures_timestamp_chain_is_reported_trusted_or_not() {
     let m = made();
-    for trust in [TrustStore { certs: vec![m.ca.cert.clone()] }, TrustStore::default()] {
+    for trust in [TrustStore { certs: vec![m.ca.cert.clone()], ..TrustStore::default() }, TrustStore::default()] {
         let s = read(&m.signed, &trust).into_iter().find(|s| s.signed).unwrap();
         assert!(s.timestamp);
         let subjects: Vec<_> = s.timestamp_chain.iter().map(|c| c.display_name()).collect();

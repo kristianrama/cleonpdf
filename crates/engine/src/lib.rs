@@ -4561,7 +4561,24 @@ impl Session {
 
     /// Replace the trusted certificates and revalidate every open document's signatures.
     pub fn set_trusted_certificates(&mut self, certs: Vec<cleonpdf_sign::Certificate>) {
-        self.trust = Arc::new(TrustStore { certs });
+        self.trust = Arc::new(TrustStore { certs, system: self.trust.system.clone() });
+        self.revalidate();
+    }
+
+    /// The operating system's root certificates counted as trusted, if the user asked for them.
+    pub fn system_certificates(&self) -> &[cleonpdf_sign::Certificate] {
+        &self.trust.system
+    }
+
+    /// Count `certs` (the operating system's roots) as trusted too, or none with an empty list,
+    /// and revalidate every open document's signatures. They stay apart from
+    /// [`Session::trusted_certificates`], the user's own list.
+    pub fn set_system_certificates(&mut self, certs: Vec<cleonpdf_sign::Certificate>) {
+        self.trust = Arc::new(TrustStore { certs: self.trust.certs.clone(), system: certs });
+        self.revalidate();
+    }
+
+    fn revalidate(&mut self) {
         for doc in &mut self.docs {
             doc.trust = self.trust.clone();
             if let Some(e) = doc.editor.as_ref() {

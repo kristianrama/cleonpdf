@@ -2400,5 +2400,9 @@ window	Zoom	Boyutlandır
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Bir akıllı kartın veya belirtecin modülünü (bir PKCS #11 kitaplığı) seçin. CleonPDF'in içinde çalışır, bu yüzden yalnızca güvendiğiniz birini seçin.
 	Saved servers	Kayıtlı sunucular
 	Timestamp servers	Zaman damgası sunucuları
+	Signature trust	İmza güveni
+	Trust the operating system's root certificates	İşletim sisteminin kök sertifikalarına güven
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Sertifikası, sisteminizin güvendiği bir köke ulaşan imzacılar geçerli olarak gösterilir. Bu depo web siteleri için tasarlanmıştır; bu seçeneği yalnızca otoritelerinin belgeleri imzalayan kişiler için kefil olmasını kabul ediyorsanız açın.
+	Couldn't read the system's trusted certificates: {e}	Sistemin güvenilir sertifikaları okunamadı: {e}
 	Server address (https://…)	Sunucu adresi (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	İmzalarken seçebileceğiniz sunucular. Bir imza kullanmadıkça hiçbir sunucuya bir şey gönderilmez, kullanıldığında da yalnızca bir özet gönderilir, belge asla.

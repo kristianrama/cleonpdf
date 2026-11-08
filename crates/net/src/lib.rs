@@ -108,6 +108,45 @@ fn os_roots() -> Result<ureq::tls::RootCerts, String> {
     Ok(ureq::tls::RootCerts::new_with_certs(&certs))
 }
 
+/// Most certificates read from the system's store. Real stores hold a few hundred; a store with
+/// more than this is cut here rather than loaded without bound.
+pub const MAX_SYSTEM_ROOTS: usize = 5_000;
+
+/// The root certificates the operating system trusts, for validating signatures when the user
+/// asks to trust them (Acrobat: Windows Integration), and how many entries of the store could
+/// not be read as certificates. Nothing is requested from the network. The store is the one the
+/// platform keeps for TLS, so the caller decides whether that is what it wants to trust
+/// documents' signers with.
+///
+/// # Errors
+/// A system with no store, or an empty one, and the browser, which has none to read.
+pub fn system_certificates() -> Result<(Vec<cleonpdf_sign::Certificate>, usize), String> {
+    let der = system_roots()?;
+    let total = der.len();
+    let certs: Vec<cleonpdf_sign::Certificate> = der.iter().filter_map(|d| cleonpdf_sign::Certificate::parse(d).ok()).collect();
+    if certs.is_empty() {
+        return Err("none of the system's trusted certificates could be read".into());
+    }
+    let unreadable = total - certs.len();
+    Ok((certs, unreadable))
+}
+
+fn system_roots() -> Result<Vec<Vec<u8>>, String> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        Err("the browser has no list of trusted certificates to read".into())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let found = rustls_native_certs::load_native_certs();
+        let certs: Vec<Vec<u8>> = found.certs.iter().take(MAX_SYSTEM_ROOTS).map(|c| c.as_ref().to_vec()).collect();
+        if certs.is_empty() {
+            return Err("no trusted certificates found on this system".into());
+        }
+        Ok(certs)
+    }
+}
+
 /// An RFC 3161 timestamp server reached over HTTP(S): the request is POSTed as
 /// `application/timestamp-query` and the answer read as `application/timestamp-reply`.
 ///

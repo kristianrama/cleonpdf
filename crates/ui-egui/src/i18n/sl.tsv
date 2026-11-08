@@ -2409,5 +2409,9 @@ window	Zoom	Spremeni velikost
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Izberite modul pametne kartice ali žetona (knjižnico PKCS #11). Izvaja se znotraj CleonPDF, zato izberite samo takega, ki mu zaupate.
 	Saved servers	Shranjeni strežniki
 	Timestamp servers	Strežniki za časovne žige
+	Signature trust	Zaupanje v podpise
+	Trust the operating system's root certificates	Zaupaj korenskim potrdilom operacijskega sistema
+	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Podpisniki, katerih potrdilo vodi do korena, ki mu vaš sistem zaupa, so prikazani kot veljavni. Ta shramba je namenjena spletnim mestom, zato to možnost vklopite le, če sprejemate, da njeni organi jamčijo za osebe, ki podpisujejo dokumente.
+	Couldn't read the system's trusted certificates: {e}	Zaupanja vrednih potrdil sistema ni bilo mogoče prebrati: {e}
 	Server address (https://…)	Naslov strežnika (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Strežniki za izbiro pri podpisovanju. Nič se ne pošlje nobenemu strežniku, razen če ga podpis uporabi, in takrat le izvleček, nikoli dokument.
