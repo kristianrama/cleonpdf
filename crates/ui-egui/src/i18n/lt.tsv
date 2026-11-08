@@ -1754,6 +1754,7 @@
 	page content	puslapio turinys
 	page {n} is out of range (1–{count})	puslapis {n} nepatenka į intervalą (1–{count})
 	pages added or removed	puslapių pridėjimas arba šalinimas
+	locked form fields	užrakinti formos laukai
 	rows have between {min} and {max} columns	eilutėse yra nuo {min} iki {max} stulpelių
 	the first heading is an H{n}; headings should not skip levels	pirmoji antraštė yra H{n}; antraščių lygiai neturi būti praleidžiami
 	the signed version could not be read	nepavyko perskaityti pasirašytos versijos

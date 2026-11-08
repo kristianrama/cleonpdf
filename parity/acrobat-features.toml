@@ -6089,11 +6089,11 @@ title = "Field locks (FieldMDP)"
 area = "H"
 tier = "P1"
 milestone = "M9"
-status = "planned"
+status = "partial"
 commands = []
-tools = []
-evidence = []
-notes = ""
+tools = ["sign_document", "sign_list"]
+evidence = ["crates/sign/tests/field_lock.rs::signing_records_the_lock_in_the_signature_and_on_the_field", "crates/sign/tests/field_lock.rs::changing_a_locked_field_invalidates_the_signature_and_changing_another_does_not", "crates/sign/tests/field_lock.rs::a_parents_name_locks_the_fields_below_it", "crates/sign/tests/field_lock.rs::exclude_locks_everything_else_including_fields_added_later", "crates/sign/tests/field_lock.rs::removing_a_locked_field_from_the_form_breaks_the_lock", "crates/sign/tests/field_lock.rs::a_field_prepared_with_a_lock_signs_with_it", "crates/automation/tests/automation.rs::signing_can_lock_form_fields"]
+notes = "Headless only: sign_document takes lock {action: all | include | exclude, fields}, or signs with the field's own /Lock; the signature gets a FieldMDP /Reference (Data = the catalog) and sign_list shows locked_fields. Validation compares the signed revision with the file as it is: a locked field or widget that changed (value, appearance, flags, a value inherited from a parent), went missing, or (all/exclude) a field added later makes the signature invalid (change kind locked form fields). Not yet: choosing fields to lock in the Sign dialog or setting a field's lock in Prepare Form; the lock is not enforced while editing (filling a locked field after signing is allowed and then reported); signing a field that an earlier signature locked is not refused (the earlier one reports it); /Lock /P (PDF 2.0 DocMDP in the lock); behaviour not compared with Acrobat"
 
 [[feature]]
 id = "sign.document-timestamp"

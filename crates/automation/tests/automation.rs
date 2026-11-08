@@ -1660,6 +1660,63 @@ fn signing_an_encrypted_form_through_tools() {
     assert_eq!((list["all_valid"].as_bool(), list["signatures"][0]["status"].as_str()), (Some(true), Some("valid")), "{list}");
 }
 
+/// Signing with `lock` freezes the named form fields: the signature lists them, filling in
+/// another field keeps it valid, changing a locked one does not, and a lock that names a field
+/// the form doesn't have is refused before anything is saved.
+#[test]
+fn signing_can_lock_form_fields() {
+    let dir = workdir("sign-lock");
+    let mut a = auto(&dir);
+    ok(&mut a, "sign_id_create", json!({ "name": "Ada Lovelace", "key": "p256", "password": "secret1", "path": "ada.p12" }));
+    let doc = ok(&mut a, "doc_open", json!({ "path": "a.pdf" }))["doc"].as_u64().unwrap();
+    for (name, rect) in [("Name", [20, 20, 120, 40]), ("Amount", [20, 60, 120, 80])] {
+        ok(&mut a, "form_add_field", json!({ "doc": doc, "page": 1, "type": "text", "name": name, "rect": rect }));
+    }
+    ok(&mut a, "form_add_field", json!({ "doc": doc, "page": 1, "type": "signature", "name": "Sign1", "rect": [20, 200, 180, 250] }));
+    ok(&mut a, "doc_save", json!({ "doc": doc, "path": "form.pdf" }));
+    let mut b = auto(&dir);
+    let form = ok(&mut b, "doc_open", json!({ "path": "form.pdf" }))["doc"].as_u64().unwrap();
+    let sign = |b: &mut Automation, lock: Value| {
+        b.call("sign_document", &json!({ "doc": form, "id": "ada.p12", "password": "secret1", "field": "Sign1", "lock": lock, "out": "signed.pdf" }))
+    };
+    for bad in [
+        json!({ "action": "include", "fields": ["Nmae"] }),
+        json!({ "action": "include" }),
+        json!({ "action": "all", "fields": ["Name"] }),
+        json!({ "action": "sometimes" }),
+        json!({ "fields": ["Name"] }),
+        json!({ "action": "include", "fields": [1] }),
+        json!({ "action": "include", "fields": ["Name"], "extra": 1 }),
+        json!("Name"),
+    ] {
+        assert!(matches!(sign(&mut b, bad.clone()), Err(ToolError::InvalidArgs(_))), "{bad}");
+        assert!(!dir.join("signed.pdf").exists(), "{bad}: nothing is saved");
+    }
+    ok(&mut b, "sign_trust", json!({ "paths": ["ada.p12"], "password": "secret1" }));
+    sign(&mut b, json!({ "action": "include", "fields": ["Name"] })).unwrap();
+    let after = |edit: Option<(&str, &str)>| {
+        let mut c = auto(&dir);
+        ok(&mut c, "sign_trust", json!({ "paths": ["ada.p12"], "password": "secret1" }));
+        let d = ok(&mut c, "doc_open", json!({ "path": "signed.pdf" }))["doc"].as_u64().unwrap();
+        if let Some((field, value)) = edit {
+            ok(&mut c, "form_fill", json!({ "doc": d, "values": { field: value } }));
+            ok(&mut c, "doc_save", json!({ "doc": d, "path": "edited.pdf" }));
+            let e = ok(&mut c, "doc_open", json!({ "path": "edited.pdf" }))["doc"].as_u64().unwrap();
+            ok(&mut c, "sign_list", json!({ "doc": e }))["signatures"][0].clone()
+        } else {
+            ok(&mut c, "sign_list", json!({ "doc": d }))["signatures"][0].clone()
+        }
+    };
+    let untouched = after(None);
+    assert_eq!(untouched["locked_fields"], json!([{ "action": "include", "fields": ["Name"] }]));
+    assert_eq!(untouched["status"], "valid", "{untouched}");
+    let other = after(Some(("Amount", "250")));
+    assert_eq!((other["status"].as_str(), other["modification"].as_str()), (Some("valid"), Some("allowed")), "{other}");
+    let locked = after(Some(("Name", "Mallory")));
+    assert_eq!((locked["status"].as_str(), locked["modification"].as_str()), (Some("invalid"), Some("disallowed")), "{locked}");
+    assert_eq!(locked["changes"], json!(["locked form fields"]));
+}
+
 #[test]
 fn combine_opens_protected_files_with_their_passwords() {
     let dir = workdir("combine-passwords");

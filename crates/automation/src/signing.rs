@@ -2,7 +2,7 @@
 //! document, and manage trusted certificates. Rectangles are points from the top-left of the
 //! displayed page.
 
-use cleonpdf_engine::sign::{self, Certificate, DigitalId, Modification, Name, PrivateKey};
+use cleonpdf_engine::sign::{self, Certificate, DigitalId, FieldLock, Modification, Name, PrivateKey};
 use cleonpdf_engine::{SignOptions, SignatureInfo, SignatureStatus};
 use serde_json::{Value, json};
 
@@ -60,6 +60,7 @@ impl Automation {
             "location": s.location,
             "contact": s.contact,
             "certify": s.certify,
+            "locked_fields": s.field_locks.iter().map(lock_json).collect::<Vec<_>>(),
             "page": s.page.map(|p| p + 1),
             "rect": rect,
             "visible": s.visible,
@@ -180,6 +181,7 @@ impl Automation {
             }),
             Some(v) => Some(v.as_u64().filter(|n| (1..=3).contains(n)).ok_or_else(|| bad("certify must be 1, 2 or 3"))? as u8),
         };
+        let lock = lock_arg(a.get("lock"))?;
         let graphic = match a.get("graphic") {
             None | Some(Value::Null) => None,
             Some(g) if rect.is_none() && field.is_none() => return Err(bad(format!("graphic {g} needs a visible signature: pass rect or field"))),
@@ -194,6 +196,7 @@ impl Automation {
             location: a.opt_str("location")?.map(str::to_string),
             contact: a.opt_str("contact")?.map(str::to_string),
             certify,
+            lock,
             graphic,
             ..SignOptions::default()
         };
@@ -210,6 +213,15 @@ impl Automation {
         .map_err(|e| match e {
             // A graphic the signer refuses is the caller's to fix.
             cleonpdf_engine::EditError::Sign(m) if m.starts_with("the signature graphic") => bad(m),
+            // So is a lock that names a field the form doesn't have, or contradicts the field's.
+            cleonpdf_engine::EditError::Sign(m)
+                if m.starts_with("there is no form field ") && m.ends_with(" to lock")
+                    || m.starts_with("the signature field already says which fields it locks")
+                    || m.starts_with("a signature can lock at most")
+                    || m.starts_with("a field name to lock") =>
+            {
+                bad(m)
+            }
             e => failed(e),
         })?;
         write_atomic(&out, &signed)?;
@@ -382,5 +394,41 @@ impl Automation {
         }
         self.session.set_trusted_certificates(certs);
         Ok(json!({ "trusted": self.session.trusted_certificates().iter().map(cert_json).collect::<Vec<_>>() }))
+    }
+}
+
+/// A form-field lock as the tools show it: `{"action": "all" | "include" | "exclude", "fields": [..]}`.
+fn lock_json(l: &FieldLock) -> Value {
+    let action = match l {
+        FieldLock::All => "all",
+        FieldLock::Include(_) => "include",
+        FieldLock::Exclude(_) => "exclude",
+    };
+    json!({ "action": action, "fields": l.names() })
+}
+
+/// The `lock` argument of `sign_document`.
+fn lock_arg(v: Option<&Value>) -> Result<Option<FieldLock>> {
+    let Some(v) = v.filter(|v| !v.is_null()) else { return Ok(None) };
+    let o = v.as_object().ok_or_else(|| bad("lock must be {\"action\": \"all\" | \"include\" | \"exclude\", \"fields\": [names]}"))?;
+    if let Some(k) = o.keys().find(|k| !matches!(k.as_str(), "action" | "fields")) {
+        return Err(bad(format!("unknown lock entry {k:?} (action, fields)")));
+    }
+    let fields = match o.get("fields") {
+        None | Some(Value::Null) => Vec::new(),
+        Some(Value::Array(a)) => a
+            .iter()
+            .map(|n| n.as_str().map(str::to_string).ok_or_else(|| bad("lock fields must be field names (strings)")))
+            .collect::<Result<Vec<_>>>()?,
+        Some(_) => return Err(bad("lock fields must be an array of field names")),
+    };
+    let action = o.get("action").and_then(Value::as_str).ok_or_else(|| bad("lock needs an action: all, include or exclude"))?;
+    match (action, fields.is_empty()) {
+        ("all", true) => Ok(Some(FieldLock::All)),
+        ("all", false) => Err(bad("lock action all takes no fields")),
+        ("include", false) => Ok(Some(FieldLock::Include(fields))),
+        ("exclude", false) => Ok(Some(FieldLock::Exclude(fields))),
+        ("include" | "exclude", true) => Err(bad("lock actions include and exclude need fields")),
+        (other, _) => Err(bad(format!("unknown lock action {other:?} (all, include, exclude)"))),
     }
 }

@@ -2327,6 +2327,7 @@ action wizard	Start	Iniciar
 	links	enlaces
 	document structure	estructura del documento
 	pages added or removed	páginas añadidas o quitadas
+	locked form fields	campos de formulario bloqueados
 	other changes	otros cambios
 	the signed version could not be read	no se ha podido leer la versión firmada
 # What can be wrong with the pages to print (print::WORDINGS).
