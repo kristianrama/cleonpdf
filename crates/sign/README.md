@@ -77,7 +77,9 @@ from the user or from the system's known locations (`is_allowed`, `known_modules
 `configured_modules` / `CLEONPDF_PKCS11_MODULES`), never from a document. Tested against SoftHSM
 (`tests/pkcs11.rs`, which runs when `CLEONPDF_TEST_PKCS11_MODULE` and `SOFTHSM2_CONF` are set; CI sets them).
 
-Not yet: FieldMDP locks, certificate security.
+Form-field locks (FieldMDP): `SignOptions::lock` (a `FieldLock`: all, include or exclude fields by full name) or the signature field's own `/Lock` writes a `/Reference` with `/TransformMethod /FieldMDP` and, on a field signed with a caller's list, the field's `/Lock`. A caller's list must name fields the form has and can't replace a field's own lock. Validation reads `SignatureInfo::field_locks` and reports `kind::LOCKED_FIELDS` when a locked field (or a widget, or a value it inherits from a parent) differs from the signed revision, goes missing, or, under all/exclude, a field is added. Names are matched exactly; a parent's name covers the fields below it. Tested in `tests/field_lock.rs`.
+
+Not yet: certificate security.
 macOS Keychain and Windows Current User Personal (My) store identities sign through
 `ExternalKey` without exporting private keys. Windows CNG supports RSA PKCS #1 v1.5 and
 ECDSA P-256/P-384; the store integration is tested with software-backed keys. A smart card

@@ -15,6 +15,7 @@ pub mod graphic;
 #[cfg(target_os = "macos")]
 pub mod keychain;
 pub mod keys;
+mod lock;
 pub mod ltv;
 pub mod pdf;
 #[cfg(not(target_arch = "wasm32"))]
@@ -30,6 +31,7 @@ pub mod x509;
 pub use der::Time;
 pub use graphic::Graphic;
 pub use keys::{DigestAlg, PrivateKey, PublicKey};
+pub use lock::FieldLock;
 pub use pdf::{
     Appearance, AppearanceLabels, Detail, DigestCache, Fill, Modification, SignOptions, SignatureInfo, Status, TrustStore, WORDINGS, Words,
     in_english, kind, list as signatures, sign, sign_with_timestamp, timestamp_document, validate,
