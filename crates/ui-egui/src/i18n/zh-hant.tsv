@@ -2267,3 +2267,12 @@ window	Zoom	縮放
 	The document changed while the validation information was being fetched, so nothing was saved.	取得驗證資訊期間文件已變更，因此未儲存任何內容。
 	Validation information is already being fetched. Wait for it to finish.	正在取得驗證資訊，請等待完成。
 	Validation information needs the desktop app	驗證資訊需要桌面應用程式
+	Smart card  ·  	智慧卡  ·  
+	Add smart card module…	新增智慧卡模組…
+	Looking for smart cards and tokens…	正在尋找智慧卡和權杖…
+	PIN	PIN
+	The key stays on the smart card or token.	金鑰會保留在智慧卡或權杖上。
+	CleonPDF can't sign with {kind} keys on a smart card.	CleonPDF 無法使用智慧卡上的 {kind} 金鑰進行簽署。
+	Smart card module	智慧卡模組
+	Smart card module added: {name}	已新增智慧卡模組：{name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	選擇智慧卡或權杖的模組（PKCS #11 程式庫）。它會在 CleonPDF 內執行，請只選擇您信任的模組。

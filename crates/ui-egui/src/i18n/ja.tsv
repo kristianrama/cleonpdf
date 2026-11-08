@@ -2393,3 +2393,12 @@ window	Zoom	拡大／縮小
 	The document changed while the validation information was being fetched, so nothing was saved.	検証情報の取得中に文書が変更されたため、何も保存されませんでした。
 	Validation information is already being fetched. Wait for it to finish.	検証情報はすでに取得中です。完了するまでお待ちください。
 	Validation information needs the desktop app	検証情報にはデスクトップアプリが必要です
+	Smart card  ·  	スマートカード  ·  
+	Add smart card module…	スマートカードモジュールを追加…
+	Looking for smart cards and tokens…	スマートカードとトークンを検索中…
+	PIN	PIN
+	The key stays on the smart card or token.	鍵はスマートカードまたはトークンに残ります。
+	CleonPDF can't sign with {kind} keys on a smart card.	CleonPDF はスマートカード上の {kind} 鍵では署名できません。
+	Smart card module	スマートカードモジュール
+	Smart card module added: {name}	スマートカードモジュールを追加しました: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	スマートカードまたはトークンのモジュール (PKCS #11 ライブラリ) を選択してください。CleonPDF 内で実行されるため、信頼できるものだけを選んでください。

@@ -2393,3 +2393,12 @@ window	Zoom	Αλλαγή μεγέθους
 	The table of contents is linked	Ο πίνακας περιεχομένων είναι συνδεδεμένος
 	The table of contents is in the bookmarks	Ο πίνακας περιεχομένων είναι στους σελιδοδείκτες
 	Add validation information	Προσθήκη πληροφοριών επικύρωσης
+	Smart card  ·  	Έξυπνη κάρτα  ·  
+	Add smart card module…	Προσθήκη μονάδας έξυπνης κάρτας…
+	Looking for smart cards and tokens…	Αναζήτηση έξυπνων καρτών και διακριτικών…
+	PIN	PIN
+	The key stays on the smart card or token.	Το κλειδί παραμένει στην έξυπνη κάρτα ή στο διακριτικό.
+	CleonPDF can't sign with {kind} keys on a smart card.	Το CleonPDF δεν μπορεί να υπογράψει με κλειδιά {kind} σε έξυπνη κάρτα.
+	Smart card module	Μονάδα έξυπνης κάρτας
+	Smart card module added: {name}	Προστέθηκε μονάδα έξυπνης κάρτας: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Επιλέξτε τη μονάδα μιας έξυπνης κάρτας ή διακριτικού (μια βιβλιοθήκη PKCS #11). Εκτελείται μέσα στο CleonPDF, επομένως επιλέξτε μόνο μία που εμπιστεύεστε.

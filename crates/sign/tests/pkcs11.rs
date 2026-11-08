@@ -209,3 +209,39 @@ fn a_key_type_cleonpdf_does_not_sign_with_is_refused_before_the_token_is_asked()
         assert!(err.contains("signing with") && err.contains("on a token"), "{err:?}");
     }
 }
+
+#[test]
+fn the_listing_for_the_app_has_the_end_entity_certificates_and_not_the_roots() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    let listing = pkcs11::list(std::slice::from_ref(&f.module));
+    let names: Vec<_> =
+        listing.identities.iter().filter(|i| i.token == KEYS_LABEL).map(|i| i.certificate.subject.common_name().unwrap_or("")).collect();
+    for expected in ["Token EC Signer", "Token RSA Signer"] {
+        assert!(names.contains(&expected), "{names:?}");
+    }
+    // The token's own CA certificate is self-signed: a root is not something to sign as.
+    assert!(listing.identities.iter().all(|i| !i.certificate.is_self_signed()));
+    // The module was named twice (by the user and as a known location) and read once.
+    let again = pkcs11::candidates(&[f.module.clone(), f.module.clone()]);
+    let real = std::fs::canonicalize(&f.module).unwrap();
+    assert_eq!(again.iter().filter(|p| std::fs::canonicalize(p).ok().as_ref() == Some(&real)).count(), 1);
+}
+
+#[test]
+fn a_module_the_user_chose_is_searched_and_a_broken_one_is_only_a_note() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    let broken = std::env::temp_dir().join("cleonpdf-not-a-module.so");
+    std::fs::write(&broken, b"not a shared library").unwrap();
+    let extra = [broken.clone(), f.module.clone()];
+    let listing = pkcs11::list(&extra);
+    assert!(
+        listing.notes.iter().any(|n| n.contains("cleonpdf-not-a-module.so") && !n.contains(&*std::env::temp_dir().to_string_lossy())),
+        "{:?}",
+        listing.notes
+    );
+    assert!(!listing.identities.is_empty());
+    assert!(pkcs11::find_in(&extra, "Token EC Signer", Some(USER_PIN)).is_ok());
+    let _ = std::fs::remove_file(broken);
+}

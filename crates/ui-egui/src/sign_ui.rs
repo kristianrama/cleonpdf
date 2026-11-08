@@ -115,6 +115,8 @@ pub struct SignDraft {
     pub error: Option<String>,
     /// Sign with a Digital ID ▸ Remove was clicked for this list entry: asking to confirm.
     pub confirm_remove: Option<usize>,
+    /// Why a smart card module couldn't be read (the last scan), shown under the list.
+    pub token_notes: Vec<String>,
 }
 
 impl SignDraft {
@@ -138,6 +140,7 @@ impl SignDraft {
             new_id: NewIdDraft::default(),
             error: None,
             confirm_remove: None,
+            token_notes: Vec::new(),
         }
     }
 }
@@ -161,6 +164,34 @@ pub(crate) struct ValidationTask {
     path: PathBuf,
     /// The document's edit generation when the copy was made.
     generation: u64,
+}
+
+/// Smart cards and tokens being listed on another thread: a card reader can take a while, and a
+/// faulty module must not freeze the window.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) struct TokenScan {
+    rx: std::sync::mpsc::Receiver<sign::pkcs11::Listing>,
+}
+
+/// The most PKCS #11 modules the user can add, and the longest path kept from the settings.
+const MAX_MODULES: usize = 8;
+const MAX_MODULE_PATH: usize = 4096;
+
+/// The PKCS #11 module paths in the settings: strings only, bounded in number and length.
+/// (The settings file is untrusted input; whether a path is a file is checked when it is used.)
+pub(crate) fn restore_modules(v: &serde_json::Value) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for p in v.as_array().into_iter().flatten().filter_map(|p| p.as_str()) {
+        if !p.is_empty() && p.len() <= MAX_MODULE_PATH && !out.iter().any(|q| q == p) && out.len() < MAX_MODULES {
+            out.push(p.to_string());
+        }
+    }
+    out
+}
+
+/// An identity from the OS key store or a smart card: listed again at every signing, never saved.
+pub(crate) fn is_os_store(path: &str) -> bool {
+    path.starts_with("keychain:") || path.starts_with("windows:") || path.starts_with("pkcs11:")
 }
 
 /// What a page asks of the signing flow.
@@ -265,6 +296,22 @@ fn windows_id(reference: &str) -> Result<DigitalId, String> {
     Err(format!("{reference}: Windows certificate store identities are only available on Windows"))
 }
 
+/// A smart card or token identity by its `pkcs11:` reference, opened with the PIN (empty: none,
+/// for a reader with its own PIN pad).
+fn token_id(reference: &str, pin: &str, modules: &[String]) -> Result<DigitalId, String> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let extra: Vec<PathBuf> = modules.iter().map(PathBuf::from).collect();
+        let pin = (!pin.is_empty()).then_some(pin);
+        sign::pkcs11::find_in(&extra, reference, pin).map_err(|e| e.to_string())
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        let _ = (pin, modules);
+        Err(format!("{reference}: smart cards need the desktop app"))
+    }
+}
+
 pub fn entry_for(path: &str, c: &Certificate) -> DigitalIdEntry {
     DigitalIdEntry {
         path: path.to_string(),
@@ -293,6 +340,7 @@ impl CleonPdfApp {
     /// Start signing: the rectangle (or field) is known; show Sign with a Digital ID.
     pub fn start_signing(&mut self, page: usize, rect: Option<[f64; 4]>, field: Option<String>, certify: Option<u8>) {
         self.refresh_os_key_store_ids();
+        self.start_token_scan();
         let mut draft = SignDraft::new(page, rect, field, certify, &self.digital_ids);
         draft.graphic = match &self.sign_graphic {
             SignGraphic::FillSign if self.signature.is_none() => SignGraphic::Name,
@@ -308,7 +356,7 @@ impl CleonPdfApp {
 
     /// List OS key store signing identities (after the file-based IDs).
     fn refresh_os_key_store_ids(&mut self) {
-        self.digital_ids.retain(|e| !e.path.starts_with("keychain:") && !e.path.starts_with("windows:"));
+        self.digital_ids.retain(|e| !is_os_store(&e.path));
         #[cfg(target_os = "macos")]
         if self.os_key_store_ids {
             match sign::keychain::identities(None) {
@@ -343,6 +391,116 @@ impl CleonPdfApp {
         }
     }
 
+    /// List the smart cards and tokens of the system's modules and the ones the user added, on
+    /// another thread; [`Self::poll_token_scan`] adds what it finds to the list.
+    fn start_token_scan(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            if self.token_scan.is_some() {
+                return;
+            }
+            let extra: Vec<PathBuf> = self.pkcs11_modules.iter().map(PathBuf::from).collect();
+            // Nothing to look in: no thread, no "looking" line.
+            if sign::pkcs11::candidates(&extra).is_empty() {
+                return;
+            }
+            let (tx, rx) = std::sync::mpsc::channel();
+            let ctx = self.ctx.clone();
+            std::thread::spawn(move || {
+                // The receiver may be gone (the app quit): nothing to report to then.
+                let _ = tx.send(sign::pkcs11::list(&extra));
+                if let Some(ctx) = ctx {
+                    ctx.request_repaint();
+                }
+            });
+            self.token_scan = Some(TokenScan { rx });
+        }
+    }
+
+    /// Smart cards are being looked for.
+    pub fn token_scan_in_progress(&self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        return self.token_scan.is_some();
+        #[cfg(target_arch = "wasm32")]
+        false
+    }
+
+    /// Pick up the smart card listing (each frame). The cards go after the other IDs, so the
+    /// indexes of those do not move under an open dialog's selection.
+    pub(crate) fn poll_token_scan(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let Some(scan) = &self.token_scan else { return };
+            let listing = match scan.rx.try_recv() {
+                Ok(l) => l,
+                Err(std::sync::mpsc::TryRecvError::Empty) => return,
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    sign::pkcs11::Listing { identities: Vec::new(), notes: vec!["looking for smart cards stopped unexpectedly".into()] }
+                }
+            };
+            self.token_scan = None;
+            // The dialog was closed meanwhile: the listing is dropped, the next one starts afresh.
+            if self.sign_draft.is_none() {
+                return;
+            }
+            self.digital_ids.retain(|e| !e.path.starts_with("pkcs11:"));
+            for id in &listing.identities {
+                let mut entry = entry_for(&sign::pkcs11::reference(&id.certificate), &id.certificate);
+                if id.certificate.public_key.store_signing_key().is_none() {
+                    entry.unusable = Some(crate::i18n::fmt(
+                        tl!("CleonPDF can't sign with {kind} keys on a smart card."),
+                        &[("kind", &id.certificate.public_key.describe())],
+                    ));
+                }
+                self.digital_ids.push(entry);
+            }
+            if let Some(d) = self.sign_draft.as_mut() {
+                d.token_notes = listing.notes.into_iter().take(3).collect();
+                // The first usable ID is chosen when nothing was (no IDs before the cards came).
+                if d.selected.is_none() {
+                    d.selected = self.digital_ids.iter().position(|e| e.unusable.is_none());
+                }
+                // Nobody has started on the form meanwhile: show the list instead of "create one".
+                if d.step == SignStep::Configure && !self.digital_ids.is_empty() && d.new_id == NewIdDraft::default() {
+                    d.step = SignStep::Choose;
+                }
+            }
+        }
+    }
+
+    /// Remember a smart card module the user chose (a PKCS #11 library) and look again.
+    pub fn add_pkcs11_module(&mut self, path: &str) -> Result<(), String> {
+        let p = std::path::Path::new(path);
+        if path.len() > MAX_MODULE_PATH || !p.is_file() {
+            return Err(format!("{}: not a file", p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()));
+        }
+        if !self.pkcs11_modules.iter().any(|m| m == path) {
+            if self.pkcs11_modules.len() >= MAX_MODULES {
+                return Err(format!("at most {MAX_MODULES} smart card modules can be added"));
+            }
+            self.pkcs11_modules.push(path.to_string());
+        }
+        self.start_token_scan();
+        Ok(())
+    }
+
+    /// Sign with a Digital ID ▸ Add smart card module…: choose the library of a card or token.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn pick_pkcs11_module(&mut self) {
+        let epoch = self.dialog_epoch();
+        let dialog = rfd::AsyncFileDialog::new().add_filter(tl!("Smart card module"), &["so", "dylib", "dll"]);
+        self.ask_one(crate::pickers::Ask::File(dialog), None, move |app, path| {
+            if app.dialog_epoch() != epoch || app.dialog != Some(crate::Dialog::Sign) {
+                return;
+            }
+            let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            match app.add_pkcs11_module(&path.to_string_lossy()) {
+                Ok(()) => app.notify_fmt("Smart card module added: {name}", &[("name", &name)]),
+                Err(e) => app.notify(e),
+            }
+        });
+    }
+
     /// Add a digital ID file to the list (or select it if it's there).
     pub fn add_digital_id(&mut self, path: &str, cert: &Certificate) -> usize {
         if let Some(i) = self.digital_ids.iter().position(|e| e.path == path) {
@@ -357,7 +515,7 @@ impl CleonPdfApp {
     /// disk. Keychain and Windows store IDs belong to the OS and are listed again on every
     /// signing, so they can't be removed here. The open dialog's selection follows the list.
     pub fn remove_digital_id(&mut self, index: usize) -> bool {
-        if self.digital_ids.get(index).is_none_or(|e| e.path.starts_with("keychain:") || e.path.starts_with("windows:")) {
+        if self.digital_ids.get(index).is_none_or(|e| is_os_store(&e.path)) {
             return false;
         }
         self.digital_ids.remove(index);
@@ -437,6 +595,8 @@ impl CleonPdfApp {
             keychain_id(&entry.path)?
         } else if entry.path.starts_with("windows:") {
             windows_id(&entry.path)?
+        } else if entry.path.starts_with("pkcs11:") {
+            token_id(&entry.path, &d.password, &self.pkcs11_modules)?
         } else {
             let bytes = std::fs::read(&entry.path).map_err(|e| format!("{}: {e}", entry.path))?;
             sign::pkcs12::open(&bytes, &d.password).map_err(|e| match e {
@@ -825,6 +985,9 @@ fn choose(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
     ui.label(tl!("Choose the digital ID that you want to use for signing:"));
     ui.add_space(6.0);
     let ids = app.digital_ids.clone();
+    let scanning = app.token_scan_in_progress();
+    #[cfg(not(target_arch = "wasm32"))]
+    let mut add_module = false;
     let Some(d) = app.sign_draft.as_mut() else { return true };
     let mut close = false;
     egui::ScrollArea::vertical().max_height(220.0).show(ui, |ui| {
@@ -856,6 +1019,8 @@ fn choose(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
                 tl!("Keychain  ·  ").to_string()
             } else if e.path.starts_with("windows:") {
                 tl!("Windows store  ·  ").to_string()
+            } else if e.path.starts_with("pkcs11:") {
+                tl!("Smart card  ·  ").to_string()
             } else {
                 String::new()
             };
@@ -890,6 +1055,12 @@ fn choose(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
             ui.label(egui::RichText::new(tl!("No digital IDs yet.")).color(t.text_muted));
         }
     });
+    if scanning {
+        ui.label(egui::RichText::new(tl!("Looking for smart cards and tokens…")).small().color(t.text_muted));
+    }
+    for note in &d.token_notes {
+        ui.label(egui::RichText::new(note).small().color(t.text_muted));
+    }
     ui.add_space(10.0);
     // Remove takes a digital ID file off the list after asking (#1396); OS key store IDs stay.
     let mut remove = None;
@@ -905,7 +1076,7 @@ fn choose(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
         });
         ui.add_space(10.0);
     }
-    let removable = d.selected.filter(|&i| ids.get(i).is_some_and(|e| !e.path.starts_with("keychain:") && !e.path.starts_with("windows:")));
+    let removable = d.selected.filter(|&i| ids.get(i).is_some_and(|e| !is_os_store(&e.path)));
     ui.horizontal(|ui| {
         if widgets::pill_button(ui, tl!("Configure New Digital ID"), false).clicked() {
             d.step = SignStep::Configure;
@@ -913,6 +1084,15 @@ fn choose(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
         }
         if d.confirm_remove.is_none() && ui.add_enabled_ui(removable.is_some(), |ui| widgets::pill_button(ui, tl!("Remove"), false)).inner.clicked() {
             d.confirm_remove = removable;
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        if widgets::pill_button(ui, tl!("Add smart card module…"), false)
+            .on_hover_text(tl!(
+                "Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust."
+            ))
+            .clicked()
+        {
+            add_module = true;
         }
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             if ui.add_enabled_ui(d.selected.is_some(), |ui| widgets::pill_button(ui, tl!("Continue"), true)).inner.clicked() {
@@ -926,6 +1106,10 @@ fn choose(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
     });
     if let Some(i) = remove {
         app.remove_digital_id(i);
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    if add_module {
+        app.pick_pkcs11_module();
     }
     close
 }
@@ -1107,6 +1291,7 @@ fn sign_as(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
         ),
     );
     let in_os_key_store = entry.path.starts_with("keychain:") || entry.path.starts_with("windows:");
+    let on_token = entry.path.starts_with("pkcs11:");
     let mut close = false;
     let mut go = false;
     #[cfg(not(target_arch = "wasm32"))]
@@ -1196,13 +1381,18 @@ fn sign_as(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) -> bool {
                 .color(t.text_muted),
             );
         } else {
-            let l = ui.label(tl!("Digital ID password"));
+            let l = ui.label(if on_token { tl!("PIN") } else { tl!("Digital ID password") });
             let r = ui.add(crate::widgets::line(&mut d.password).password(true).desired_width(200.0)).labelled_by(l.id);
             if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                 go = true;
             }
         }
         ui.end_row();
+        if on_token {
+            ui.label("");
+            ui.label(egui::RichText::new(tl!("The key stays on the smart card or token.")).small().color(t.text_muted));
+            ui.end_row();
+        }
     });
     ui.add_space(6.0);
     error(ui, &d.error);

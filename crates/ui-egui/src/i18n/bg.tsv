@@ -2356,3 +2356,12 @@ window	Zoom	Мащабиране
 	The document changed while the validation information was being fetched, so nothing was saved.	Документът е променен, докато се извличаше информацията за валидиране, затова нищо не е запазено.
 	Validation information is already being fetched. Wait for it to finish.	Информацията за валидиране вече се извлича. Изчакайте да приключи.
 	Validation information needs the desktop app	Информацията за валидиране изисква настолното приложение
+	Smart card  ·  	Смарт карта  ·  
+	Add smart card module…	Добавяне на модул за смарт карта…
+	Looking for smart cards and tokens…	Търсене на смарт карти и токени…
+	PIN	PIN
+	The key stays on the smart card or token.	Ключът остава на смарт картата или токена.
+	CleonPDF can't sign with {kind} keys on a smart card.	CleonPDF не може да подписва с {kind} ключове на смарт карта.
+	Smart card module	Модул за смарт карта
+	Smart card module added: {name}	Добавен е модул за смарт карта: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Изберете модула на смарт карта или токен (библиотека PKCS #11). Той се изпълнява в CleonPDF, затова изберете само такъв, на който се доверявате.

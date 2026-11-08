@@ -2416,3 +2416,12 @@ window	Zoom	تغيير الحجم
 	The document changed while the validation information was being fetched, so nothing was saved.	تغيّر المستند أثناء جلب معلومات التحقق، لذلك لم يُحفظ شيء.
 	Validation information is already being fetched. Wait for it to finish.	يجري جلب معلومات التحقق بالفعل. انتظر حتى ينتهي.
 	Validation information needs the desktop app	تتطلب معلومات التحقق تطبيق سطح المكتب
+	Smart card  ·  	البطاقة الذكية  ·  
+	Add smart card module…	إضافة وحدة بطاقة ذكية…
+	Looking for smart cards and tokens…	جارٍ البحث عن البطاقات الذكية والرموز…
+	PIN	PIN
+	The key stays on the smart card or token.	يبقى المفتاح على البطاقة الذكية أو الرمز.
+	CleonPDF can't sign with {kind} keys on a smart card.	لا يستطيع CleonPDF التوقيع بمفاتيح {kind} على بطاقة ذكية.
+	Smart card module	وحدة البطاقة الذكية
+	Smart card module added: {name}	تمت إضافة وحدة البطاقة الذكية: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	اختر وحدة بطاقة ذكية أو رمز (مكتبة PKCS #11). تعمل داخل CleonPDF، لذا اختر فقط وحدة تثق بها.

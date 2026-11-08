@@ -2467,3 +2467,12 @@ window	Zoom	Změnit velikost
 	The document changed while the validation information was being fetched, so nothing was saved.	Dokument se změnil během načítání informací o ověření, proto nebylo nic uloženo.
 	Validation information is already being fetched. Wait for it to finish.	Informace o ověření se již načítají. Počkejte, až skončí.
 	Validation information needs the desktop app	Informace o ověření vyžadují desktopovou aplikaci
+	Smart card  ·  	Čipová karta  ·  
+	Add smart card module…	Přidat modul čipové karty…
+	Looking for smart cards and tokens…	Hledání čipových karet a tokenů…
+	PIN	PIN
+	The key stays on the smart card or token.	Klíč zůstává na čipové kartě nebo tokenu.
+	CleonPDF can't sign with {kind} keys on a smart card.	CleonPDF nemůže podepisovat klíči {kind} na čipové kartě.
+	Smart card module	Modul čipové karty
+	Smart card module added: {name}	Modul čipové karty přidán: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Vyberte modul čipové karty nebo tokenu (knihovnu PKCS #11). Běží uvnitř CleonPDF, vyberte proto jen takový, kterému důvěřujete.
