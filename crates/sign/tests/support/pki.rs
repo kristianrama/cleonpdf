@@ -107,6 +107,31 @@ pub fn issue(cn: &str, issuer: Option<&Party>, extensions: &[Vec<u8>]) -> Party 
     Party { name, key, cert }
 }
 
+/// A leaf certificate for a public key someone else holds (a token generated it), issued by
+/// `under`. `spki` is the DER `SubjectPublicKeyInfo`.
+pub fn end_entity_for_key(cn: &str, under: &Party, spki: Vec<u8>, extensions: &[Vec<u8>]) -> Certificate {
+    let mut all = vec![basic_constraints(false), key_usage(DIGITAL_SIGNATURE)];
+    all.extend_from_slice(extensions);
+    let exts: Vec<&[u8]> = all.iter().map(Vec::as_slice).collect();
+    let name = Name::build(cn, "", "PKI Tests", "", "US");
+    let alg = under.key.preferred_digest();
+    let sig_alg = under.key.signature_algorithm(alg);
+    let mut fields: Vec<Vec<u8>> = vec![der::explicit(0, &der::int(2))];
+    fields.extend([
+        der::uint(&[0x40 + cn.len() as u8]),
+        sig_alg.clone(),
+        under.name.raw.clone(),
+        der::seq(&[&time(2020, 1, 1).encode(), &time(2040, 1, 1).encode()]),
+        name.raw,
+        spki,
+    ]);
+    fields.push(der::explicit(3, &der::seq(&exts)));
+    let refs: Vec<&[u8]> = fields.iter().map(Vec::as_slice).collect();
+    let tbs = der::seq(&refs);
+    let signature = under.key.sign(alg, &tbs).unwrap();
+    Certificate::parse(&der::seq(&[&tbs, &sig_alg, &der::bit_string(&signature)])).unwrap()
+}
+
 pub fn root(cn: &str) -> Party {
     issue(cn, None, &[basic_constraints(true), key_usage(KEY_CERT_SIGN)])
 }

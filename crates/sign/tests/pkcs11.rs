@@ -12,10 +12,12 @@ mod pki;
 #[path = "support/softhsm.rs"]
 mod softhsm;
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
-use cleonpdf_sign::pkcs11::{self, Module};
-use softhsm::fixture;
+use cleonpdf_cos::Document;
+use cleonpdf_sign::pkcs11::{self, Module, TokenInfo};
+use cleonpdf_sign::{DigitalId, SignOptions, Status, TrustStore, signatures};
+use softhsm::{EC_ID, KEYS_LABEL, MISMATCH_ID, P521_ID, RSA_ID, USER_PIN, fixture};
 
 /// The tests share one token and one library; run them one at a time.
 fn serial() -> std::sync::MutexGuard<'static, ()> {
@@ -75,5 +77,135 @@ fn a_module_is_allowed_only_when_listed() {
     // The places a system package uses are allowed (when SoftHSM is installed there).
     for known in pkcs11::known_modules() {
         assert!(pkcs11::is_allowed(&known), "{}", known.display());
+    }
+}
+
+fn keys_token(module: &Module) -> TokenInfo {
+    module.tokens().unwrap().into_iter().find(|t| t.label == KEYS_LABEL).expect("the keys token is listed")
+}
+
+/// A one-page document with a real cross-reference table.
+fn document() -> Document {
+    let objs: [&str; 3] = [
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 300] >>",
+        "<< /Type /Page /Parent 2 0 R /Resources << >> >>",
+    ];
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, o) in objs.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend_from_slice(format!("{} 0 obj\n{o}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+    for o in offsets {
+        out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
+    Document::open(Arc::new(out)).unwrap()
+}
+
+fn sign_with(id: &DigitalId) -> Result<Vec<u8>, cleonpdf_sign::SignError> {
+    cleonpdf_sign::sign(&document(), id, &SignOptions { date: "D:20261106120000Z".into(), ..SignOptions::default() })
+}
+
+#[test]
+fn a_key_on_the_token_signs_and_the_signature_validates() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    let module = Module::load(&f.module).unwrap();
+    let token = keys_token(&module);
+    for (id, signer) in [(EC_ID, "Token EC Signer"), (RSA_ID, "Token RSA Signer")] {
+        let identity = module.identity(token.slot, &id, Some(USER_PIN)).unwrap();
+        assert!(identity.key.is_external(), "the key stays on the token");
+        assert_eq!(identity.chain.len(), 0, "the CA on the token is the root, which a chain leaves out");
+        let signed = sign_with(&identity).unwrap();
+        let ca = cleonpdf_sign::Certificate::parse(&f.ca).unwrap();
+        let doc = Document::open(Arc::new(signed.clone())).unwrap();
+        let found = signatures(&doc, &signed, &TrustStore { certs: vec![ca] }).into_iter().find(|s| s.signed).unwrap();
+        assert_eq!(found.status, Status::Valid, "{signer}: {:?}", found.details);
+        assert_eq!(found.signer.as_deref(), Some(signer));
+    }
+}
+
+#[test]
+fn a_wrong_pin_is_refused_without_putting_the_pin_in_the_message() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    let module = Module::load(&f.module).unwrap();
+    let token = keys_token(&module);
+    let wrong = "not-the-pin-4321";
+    let err = module.identity(token.slot, &EC_ID, Some(wrong)).err().map(|e| e.to_string()).unwrap_or_default();
+    assert!(err.contains("PIN is not correct") && !err.contains(wrong), "{err:?}");
+    // One wrong try does not lock the token: the right PIN still works (and resets the count).
+    assert!(module.identity(token.slot, &EC_ID, Some(USER_PIN)).is_ok());
+    // The PIN is not in what a key or an identity prints either.
+    let identity = module.identity(token.slot, &EC_ID, Some(USER_PIN)).unwrap();
+    assert!(!format!("{:?} {:?}", identity.key, identity.certificate.subject).contains(USER_PIN));
+}
+
+#[test]
+fn a_token_that_needs_a_pin_is_not_asked_to_sign_without_one() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    let module = Module::load(&f.module).unwrap();
+    let token = keys_token(&module);
+    assert!(token.login_required && !token.protected_authentication_path);
+    let err = module.identity(token.slot, &EC_ID, None).err().map(|e| e.to_string()).unwrap_or_default();
+    assert!(err.contains("needs a PIN"), "{err:?}");
+}
+
+#[test]
+fn a_certificate_without_a_private_key_or_an_unknown_identifier_is_an_error() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    let module = Module::load(&f.module).unwrap();
+    let token = keys_token(&module);
+    // The CA's certificate is on the token (id 2) but no private key goes with it.
+    let err = module.identity(token.slot, &[2], Some(USER_PIN)).err().map(|e| e.to_string()).unwrap_or_default();
+    assert!(err.contains("holds no private key"), "{err:?}");
+    let err = module.identity(token.slot, &[0x77], Some(USER_PIN)).err().map(|e| e.to_string()).unwrap_or_default();
+    assert!(err.contains("no certificate with that identifier"), "{err:?}");
+}
+
+#[test]
+fn a_signature_that_does_not_match_the_certificate_is_never_used() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    let module = Module::load(&f.module).unwrap();
+    let token = keys_token(&module);
+    // The token signs with the key it holds under this identifier; the certificate is for another.
+    let identity = module.identity(token.slot, &MISMATCH_ID, Some(USER_PIN)).unwrap();
+    let err = sign_with(&identity).err().map(|e| e.to_string()).unwrap_or_default();
+    assert!(err.contains("doesn't match the certificate's key"), "{err:?}");
+}
+
+#[test]
+fn an_identity_is_found_by_reference_or_name_among_the_modules_the_user_listed() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    assert!(pkcs11::is_allowed(&f.module), "{} is not a known location: list it in CLEONPDF_PKCS11_MODULES", f.module.display());
+    let module = Module::load(&f.module).unwrap();
+    let token = keys_token(&module);
+    let found = module.certificates(token.slot).unwrap();
+    let ec = found.certificates.iter().find(|c| c.id == EC_ID).unwrap();
+    let by_reference = pkcs11::find(&pkcs11::reference(&ec.certificate), Some(USER_PIN)).unwrap();
+    assert_eq!(by_reference.certificate.raw, ec.certificate.raw);
+    assert!(pkcs11::find("Token RSA Signer", Some(USER_PIN)).is_ok(), "by common name");
+    let err = pkcs11::find("pkcs11:00", Some(USER_PIN)).err().map(|e| e.to_string()).unwrap_or_default();
+    assert!(err.contains("no PKCS #11 identity"), "{err:?}");
+}
+
+#[test]
+fn a_key_type_cleonpdf_does_not_sign_with_is_refused_before_the_token_is_asked() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    let module = Module::load(&f.module).unwrap();
+    let token = keys_token(&module);
+    // The key is on the token and the PIN is right; the refusal does not depend on either.
+    for pin in [Some(USER_PIN), Some("not-the-pin-4321")] {
+        let err = module.identity(token.slot, &P521_ID, pin).err().map(|e| e.to_string()).unwrap_or_default();
+        assert!(err.contains("signing with") && err.contains("on a token"), "{err:?}");
     }
 }

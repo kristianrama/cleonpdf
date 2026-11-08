@@ -132,6 +132,14 @@ impl Automation {
             #[cfg(not(target_os = "windows"))]
             return Err(failed(format!("windows:{r}: Windows certificate store identities are only available on Windows")));
         }
+        // A hardware token: "pkcs11:<fingerprint>" or "pkcs11:<common name>" from sign_hardware_tokens;
+        // `password` is the token's PIN.
+        if let Some(r) = a.str("id")?.strip_prefix("pkcs11:") {
+            #[cfg(not(target_arch = "wasm32"))]
+            return sign::pkcs11::find(&format!("pkcs11:{r}"), a.opt_str("password")?).map_err(failed);
+            #[cfg(target_arch = "wasm32")]
+            return Err(failed(format!("pkcs11:{r}: PKCS #11 tokens need the desktop app")));
+        }
         let path = self.resolve(a.str("id")?, false)?;
         let bytes = std::fs::read(&path).map_err(|e| failed(format!("{}: {e}", path.display())))?;
         sign::pkcs12::open(&bytes, a.opt_str("password")?.unwrap_or("")).map_err(|e| match e {
@@ -287,7 +295,10 @@ impl Automation {
                             .iter()
                             .map(|c| {
                                 let id: String = c.id.iter().map(|b| format!("{b:02x}")).collect();
-                                json!({ "label": c.label, "key_id": id, "certificate": cert_json(&c.certificate) })
+                                json!({
+                                    "label": c.label, "key_id": id, "id": pkcs11::reference(&c.certificate),
+                                    "certificate": cert_json(&c.certificate),
+                                })
                             })
                             .collect();
                         Ok(json!({
