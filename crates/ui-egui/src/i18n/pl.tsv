@@ -2374,3 +2374,7 @@ window	Zoom	Zmień rozmiar
 	Smart card module	Moduł karty inteligentnej
 	Smart card module added: {name}	Dodano moduł karty inteligentnej: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Wybierz moduł karty inteligentnej lub tokenu (bibliotekę PKCS #11). Działa wewnątrz CleonPDF, więc wybieraj tylko taki, któremu ufasz.
+	Saved servers	Zapisane serwery
+	Timestamp servers	Serwery znaczników czasu
+	Server address (https://…)	Adres serwera (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Serwery do wyboru przy podpisywaniu. Nic nie jest wysyłane do żadnego serwera, dopóki podpis go nie użyje, a wtedy tylko skrót, nigdy dokument.

@@ -2532,3 +2532,7 @@ window	Zoom	Zoom
 	Smart card module	Módulo de tarjeta inteligente
 	Smart card module added: {name}	Módulo de tarjeta inteligente añadido: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Elige el módulo de una tarjeta inteligente o un token (una biblioteca PKCS #11). Se ejecuta dentro de CleonPDF, así que elige solo uno de confianza.
+	Saved servers	Servidores guardados
+	Timestamp servers	Servidores de sellado de tiempo
+	Server address (https://…)	Dirección del servidor (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Servidores para elegir al firmar. No se envía nada a ningún servidor salvo que una firma lo use, y entonces solo un resumen, nunca el documento.

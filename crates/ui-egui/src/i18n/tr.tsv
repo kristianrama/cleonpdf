@@ -2398,3 +2398,7 @@ window	Zoom	Boyutlandır
 	Smart card module	Akıllı kart modülü
 	Smart card module added: {name}	Akıllı kart modülü eklendi: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Bir akıllı kartın veya belirtecin modülünü (bir PKCS #11 kitaplığı) seçin. CleonPDF'in içinde çalışır, bu yüzden yalnızca güvendiğiniz birini seçin.
+	Saved servers	Kayıtlı sunucular
+	Timestamp servers	Zaman damgası sunucuları
+	Server address (https://…)	Sunucu adresi (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	İmzalarken seçebileceğiniz sunucular. Bir imza kullanmadıkça hiçbir sunucuya bir şey gönderilmez, kullanıldığında da yalnızca bir özet gönderilir, belge asla.

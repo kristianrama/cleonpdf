@@ -2644,3 +2644,7 @@ window	Zoom	Keisti dydį
 	Smart card module	Išmaniosios kortelės modulis
 	Smart card module added: {name}	Išmaniosios kortelės modulis pridėtas: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Pasirinkite išmaniosios kortelės ar rakto modulį (PKCS #11 biblioteką). Jis veikia „CleonPDF“ viduje, todėl rinkitės tik tokį, kuriuo pasitikite.
+	Saved servers	Išsaugoti serveriai
+	Timestamp servers	Laiko žymų serveriai
+	Server address (https://…)	Serverio adresas (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Serveriai, iš kurių galima rinktis pasirašant. Niekas nesiunčiama jokiam serveriui, kol parašas jo nenaudoja, o tada siunčiama tik santrauka, niekada ne dokumentas.

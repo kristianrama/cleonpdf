@@ -2305,3 +2305,7 @@ window	Zoom	పరిమాణం మార్చు
 	Smart card module	స్మార్ట్ కార్డ్ మాడ్యూల్
 	Smart card module added: {name}	స్మార్ట్ కార్డ్ మాడ్యూల్ జోడించబడింది: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	స్మార్ట్ కార్డ్ లేదా టోకెన్ మాడ్యూల్‌ను (PKCS #11 లైబ్రరీ) ఎంచుకోండి. ఇది CleonPDF లోపల నడుస్తుంది, కాబట్టి మీరు నమ్మేదాన్ని మాత్రమే ఎంచుకోండి.
+	Saved servers	సేవ్ చేసిన సర్వర్లు
+	Timestamp servers	టైమ్‌స్టాంప్ సర్వర్లు
+	Server address (https://…)	సర్వర్ చిరునామా (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	సంతకం చేసేటప్పుడు ఎంచుకోగల సర్వర్లు. సంతకం ఉపయోగిస్తే తప్ప ఏ సర్వర్‌కూ ఏమీ పంపబడదు, అప్పుడు కూడా డైజెస్ట్ మాత్రమే పంపబడుతుంది, పత్రం ఎప్పుడూ కాదు.

@@ -2365,3 +2365,7 @@ window	Zoom	Мащабиране
 	Smart card module	Модул за смарт карта
 	Smart card module added: {name}	Добавен е модул за смарт карта: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Изберете модула на смарт карта или токен (библиотека PKCS #11). Той се изпълнява в CleonPDF, затова изберете само такъв, на който се доверявате.
+	Saved servers	Запазени сървъри
+	Timestamp servers	Сървъри за времеви печат
+	Server address (https://…)	Адрес на сървъра (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Сървъри, от които можете да избирате при подписване. Нищо не се изпраща до сървър, освен ако подпис не го използва, и тогава само хеш, никога документът.

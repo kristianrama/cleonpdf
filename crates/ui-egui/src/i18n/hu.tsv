@@ -2401,3 +2401,7 @@ window	Zoom	Méretezés
 	Smart card module	Intelligenskártya-modul
 	Smart card module added: {name}	Intelligenskártya-modul hozzáadva: {name}
 	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Válassza ki egy intelligens kártya vagy token modulját (PKCS #11 könyvtár). A CleonPDF-en belül fut, ezért csak olyat válasszon, amelyben megbízik.
+	Saved servers	Mentett kiszolgálók
+	Timestamp servers	Időbélyegző-kiszolgálók
+	Server address (https://…)	Kiszolgáló címe (https://…)
+	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Aláíráskor választható kiszolgálók. Semmi sem kerül elküldésre egyik kiszolgálónak sem, hacsak egy aláírás nem használja, és akkor is csak egy lenyomat, soha nem a dokumentum.
