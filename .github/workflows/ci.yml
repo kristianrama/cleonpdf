@@ -186,7 +186,11 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: PKCS #11 tests
         run: |
-          cargo test -p cleonpdf-sign -p cleonpdf-automation --test pkcs11 -- --test-threads=1
+          # Every test binary makes its own tokens; start each on an empty token directory.
+          cargo test -p cleonpdf-sign --test pkcs11 -- --test-threads=1
+          rm -rf "$RUNNER_TEMP"/softhsm/tokens/*
+          cargo test -p cleonpdf-automation --test pkcs11 -- --test-threads=1
+          rm -rf "$RUNNER_TEMP"/softhsm/tokens/*
           cargo test -p cleonpdf-ui-egui --test signing_token -- --test-threads=1
 
   interop-macos:
