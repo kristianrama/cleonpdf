@@ -245,3 +245,19 @@ fn a_module_the_user_chose_is_searched_and_a_broken_one_is_only_a_note() {
     assert!(pkcs11::find_in(&extra, "Token EC Signer", Some(USER_PIN)).is_ok());
     let _ = std::fs::remove_file(broken);
 }
+
+#[test]
+fn a_card_that_two_modules_show_is_listed_once() {
+    let _one = serial();
+    let Some(f) = fixture() else { return };
+    // The same library under another name: two modules, one token.
+    let copy = std::env::temp_dir().join(format!("cleonpdf-softhsm-copy-{}.so", std::process::id()));
+    std::fs::copy(&f.module, &copy).unwrap();
+    let listing = pkcs11::list(&[copy.clone(), f.module.clone()]);
+    let _ = std::fs::remove_file(&copy);
+    let mut seen = std::collections::HashSet::new();
+    for i in &listing.identities {
+        assert!(seen.insert(i.certificate.raw.clone()), "{:?} is listed twice", i.certificate.subject.common_name());
+    }
+    assert!(seen.len() >= 2, "{} certificates", seen.len());
+}

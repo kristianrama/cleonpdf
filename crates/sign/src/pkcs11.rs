@@ -354,12 +354,17 @@ pub fn list(extra: &[PathBuf]) -> Listing {
         for token in tokens {
             match module.certificates(token.slot) {
                 Ok(found) => {
-                    listing.identities.extend(found.certificates.into_iter().filter(|c| !c.certificate.is_self_signed()).map(|c| TokenIdentity {
-                        module: path.clone(),
-                        token: token.label.clone(),
-                        label: c.label,
-                        certificate: c.certificate,
-                    }))
+                    for c in found.certificates.into_iter().filter(|c| !c.certificate.is_self_signed()) {
+                        // One card can be shown by two modules (a vendor's and OpenSC): list it once.
+                        if !listing.identities.iter().any(|i| i.certificate.raw == c.certificate.raw) {
+                            listing.identities.push(TokenIdentity {
+                                module: path.clone(),
+                                token: token.label.clone(),
+                                label: c.label,
+                                certificate: c.certificate,
+                            });
+                        }
+                    }
                 }
                 Err(e) => listing.notes.push(e.to_string()),
             }
