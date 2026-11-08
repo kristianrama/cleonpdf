@@ -70,12 +70,14 @@ self-signed root or ten certificates.
 certificates on them, with no PIN, and `Module::identity` / `pkcs11::find` open a token certificate as a
 `DigitalId`: the PIN logs in, the private key stays on the token (`ExternalKey`: RSA PKCS #1 over the
 DigestInfo, ECDSA over the digest; tested with RSA-2048 and P-256) and the token's answer is checked against the
-certificate's key before it is used. A module is code that runs in the process, so its path comes only
+certificate's key before it is used. `pkcs11::list(extra)` gives the end-entity certificates of every
+candidate module (`candidates(extra)`: the user's, the configured and the known ones, each once) for the
+app's Sign dialog, and `find_in(extra, …)` is `find` over the same set. A module is code that runs in the process, so its path comes only
 from the user or from the system's known locations (`is_allowed`, `known_modules`,
 `configured_modules` / `CLEONPDF_PKCS11_MODULES`), never from a document. Tested against SoftHSM
 (`tests/pkcs11.rs`, which runs when `CLEONPDF_TEST_PKCS11_MODULE` and `SOFTHSM2_CONF` are set; CI sets them).
 
-Not yet: token signing in the app, FieldMDP locks, certificate security.
+Not yet: FieldMDP locks, certificate security.
 macOS Keychain and Windows Current User Personal (My) store identities sign through
 `ExternalKey` without exporting private keys. Windows CNG supports RSA PKCS #1 v1.5 and
 ECDSA P-256/P-384; the store integration is tested with software-backed keys. A smart card

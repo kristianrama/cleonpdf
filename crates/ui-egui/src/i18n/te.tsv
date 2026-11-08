@@ -2296,3 +2296,12 @@ window	Zoom	పరిమాణం మార్చు
 	The table of contents is linked	విషయ సూచిక లింక్ చేయబడింది
 	The table of contents is in the bookmarks	విషయ సూచిక బుక్‌మార్క్‌లలో ఉంది
 	Add validation information	ధృవీకరణ సమాచారాన్ని జోడించు
+	Smart card  ·  	స్మార్ట్ కార్డ్  ·  
+	Add smart card module…	స్మార్ట్ కార్డ్ మాడ్యూల్‌ను జోడించండి…
+	Looking for smart cards and tokens…	స్మార్ట్ కార్డ్‌లు మరియు టోకెన్‌ల కోసం వెతుకుతోంది…
+	PIN	PIN
+	The key stays on the smart card or token.	కీ స్మార్ట్ కార్డ్ లేదా టోకెన్‌లోనే ఉంటుంది.
+	CleonPDF can't sign with {kind} keys on a smart card.	స్మార్ట్ కార్డ్‌లోని {kind} కీలతో CleonPDF సంతకం చేయలేదు.
+	Smart card module	స్మార్ట్ కార్డ్ మాడ్యూల్
+	Smart card module added: {name}	స్మార్ట్ కార్డ్ మాడ్యూల్ జోడించబడింది: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	స్మార్ట్ కార్డ్ లేదా టోకెన్ మాడ్యూల్‌ను (PKCS #11 లైబ్రరీ) ఎంచుకోండి. ఇది CleonPDF లోపల నడుస్తుంది, కాబట్టి మీరు నమ్మేదాన్ని మాత్రమే ఎంచుకోండి.

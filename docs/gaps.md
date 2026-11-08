@@ -301,7 +301,7 @@ update the numbers.
   requested unless one is given. `sign_add_validation_info` fetches OCSP responses and CRLs for
   the signers' chains and embeds them (PAdES B-LT), refusing non-public hosts unless told otherwise, for the timestamp authority's chain too, and completing a chain from the caIssuers address. The Signatures panel has an Add validation
   information button for it (desktop).
-- **Missing:** the app side of PKCS #11 tokens and smart cards on macOS and Linux (module setting, PIN prompt, tokens in the ID list; headlessly they can be listed and signed with, `sign_hardware_tokens` and `sign_document` with `pkcs11:…`, tested against SoftHSM only); a timestamp-server list in
+- **Missing:** a check of PKCS #11 tokens and smart cards on real cards (the Sign dialog lists them, asks for the PIN and signs, and `sign_document` takes `pkcs11:…`; all tested against SoftHSM only), RSA-PSS and keypad readers; a timestamp-server list in
   Preferences; FieldMDP and locking fields on signing; the OS trust store; EU
   Trusted Lists; signature graphics and saved appearances; compare signed version; signing in the
   browser.

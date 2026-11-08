@@ -2635,3 +2635,12 @@ window	Zoom	Keisti dydį
 	The document changed while the validation information was being fetched, so nothing was saved.	Gaunant patvirtinimo informaciją dokumentas pasikeitė, todėl nieko neišsaugota.
 	Validation information is already being fetched. Wait for it to finish.	Patvirtinimo informacija jau gaunama. Palaukite, kol baigsis.
 	Validation information needs the desktop app	Patvirtinimo informacijai reikalinga staliniams kompiuteriams skirta programa
+	Smart card  ·  	Išmanioji kortelė  ·  
+	Add smart card module…	Pridėti išmaniosios kortelės modulį…
+	Looking for smart cards and tokens…	Ieškoma išmaniųjų kortelių ir raktų…
+	PIN	PIN
+	The key stays on the smart card or token.	Raktas lieka išmaniojoje kortelėje arba rakte.
+	CleonPDF can't sign with {kind} keys on a smart card.	„CleonPDF“ negali pasirašyti {kind} raktais iš išmaniosios kortelės.
+	Smart card module	Išmaniosios kortelės modulis
+	Smart card module added: {name}	Išmaniosios kortelės modulis pridėtas: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Pasirinkite išmaniosios kortelės ar rakto modulį (PKCS #11 biblioteką). Jis veikia „CleonPDF“ viduje, todėl rinkitės tik tokį, kuriuo pasitikite.

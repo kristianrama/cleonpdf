@@ -170,7 +170,9 @@ jobs:
       - name: Install SoftHSM
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends softhsm2
+          sudo apt-get install -y --no-install-recommends softhsm2 \
+            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libgtk-3-dev
       - name: Give the tests a token directory of their own
         run: |
           mkdir -p "$RUNNER_TEMP/softhsm/tokens"
@@ -183,7 +185,13 @@ jobs:
             echo "CLEONPDF_REQUIRE_PKCS11=1"
           } >> "$GITHUB_ENV"
       - name: PKCS #11 tests
-        run: cargo test -p cleonpdf-sign -p cleonpdf-automation --test pkcs11 -- --test-threads=1
+        run: |
+          # Every test binary makes its own tokens; start each on an empty token directory.
+          cargo test -p cleonpdf-sign --test pkcs11 -- --test-threads=1
+          rm -rf "$RUNNER_TEMP"/softhsm/tokens/*
+          cargo test -p cleonpdf-automation --test pkcs11 -- --test-threads=1
+          rm -rf "$RUNNER_TEMP"/softhsm/tokens/*
+          cargo test -p cleonpdf-ui-egui --test signing_token -- --test-threads=1
 
   interop-macos:
     name: interop (macOS)

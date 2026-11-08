@@ -2389,3 +2389,12 @@ window	Zoom	Boyutlandır
 	The document changed while the validation information was being fetched, so nothing was saved.	Doğrulama bilgisi alınırken belge değişti, bu yüzden hiçbir şey kaydedilmedi.
 	Validation information is already being fetched. Wait for it to finish.	Doğrulama bilgisi zaten alınıyor. Bitmesini bekleyin.
 	Validation information needs the desktop app	Doğrulama bilgisi için masaüstü uygulaması gerekir
+	Smart card  ·  	Akıllı kart  ·  
+	Add smart card module…	Akıllı kart modülü ekle…
+	Looking for smart cards and tokens…	Akıllı kartlar ve belirteçler aranıyor…
+	PIN	PIN
+	The key stays on the smart card or token.	Anahtar akıllı kartta veya belirteçte kalır.
+	CleonPDF can't sign with {kind} keys on a smart card.	CleonPDF, akıllı karttaki {kind} anahtarlarıyla imzalayamaz.
+	Smart card module	Akıllı kart modülü
+	Smart card module added: {name}	Akıllı kart modülü eklendi: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Bir akıllı kartın veya belirtecin modülünü (bir PKCS #11 kitaplığı) seçin. CleonPDF'in içinde çalışır, bu yüzden yalnızca güvendiğiniz birini seçin.

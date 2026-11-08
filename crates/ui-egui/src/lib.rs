@@ -657,6 +657,12 @@ pub struct CleonPdfApp {
     /// Validation information (OCSP and CRL answers) being fetched on another thread (desktop).
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) validation_task: Option<sign_ui::ValidationTask>,
+    /// Smart cards and tokens being listed on another thread while the Sign dialog is open (desktop).
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) token_scan: Option<sign_ui::TokenScan>,
+    /// PKCS #11 modules (smart card and token libraries) the user chose, besides the ones the
+    /// system's known locations give. Loading one runs its code, so only the user adds to this.
+    pub pkcs11_modules: Vec<String>,
     /// Also reach OCSP and CRL servers on private networks when adding validation information
     /// (a company's own PKI). Off by default: the addresses come from the document's certificates.
     pub validation_private_hosts: bool,
@@ -994,6 +1000,9 @@ impl CleonPdfApp {
             signing_task: None,
             #[cfg(not(target_arch = "wasm32"))]
             validation_task: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            token_scan: None,
+            pkcs11_modules: Vec::new(),
             validation_private_hosts: false,
             digital_ids: Vec::new(),
             sig_expanded: Vec::new(),
@@ -2196,7 +2205,7 @@ impl CleonPdfApp {
             "initials": self.initials,
             "sign_graphic": self.sign_graphic,
             // macOS Keychain and Windows store identities are read from their OS key stores each time.
-            "digital_ids": self.digital_ids.iter().filter(|e| !e.path.starts_with("keychain:") && !e.path.starts_with("windows:")).collect::<Vec<_>>(),
+            "digital_ids": self.digital_ids.iter().filter(|e| !sign_ui::is_os_store(&e.path)).collect::<Vec<_>>(),
             "trusted": trusted,
             "custom_stamps": stamps_ui::encode(&self.custom_stamps),
             "javascript": self.session.javascript(),
@@ -2212,6 +2221,7 @@ impl CleonPdfApp {
         settings["window_glass"] = serde_json::Value::Bool(self.window_glass);
         settings["timestamp_server"] = serde_json::Value::String(self.timestamp_server.clone());
         settings["validation_private_hosts"] = serde_json::Value::Bool(self.validation_private_hosts);
+        settings["pkcs11_modules"] = serde_json::json!(self.pkcs11_modules);
         settings.to_string()
     }
 
@@ -2359,6 +2369,7 @@ impl CleonPdfApp {
         // Settings are untrusted input: a server address longer than any accepted one is dropped.
         self.timestamp_server = v["timestamp_server"].as_str().filter(|s| s.len() <= 2048).unwrap_or_default().to_string();
         self.validation_private_hosts = v["validation_private_hosts"].as_bool().unwrap_or(false);
+        self.pkcs11_modules = sign_ui::restore_modules(&v["pkcs11_modules"]);
         if let Ok(ids) = serde_json::from_value::<Vec<DigitalIdEntry>>(v["digital_ids"].clone()) {
             self.digital_ids = ids;
         }
@@ -2437,6 +2448,7 @@ impl CleonPdfApp {
                 let g = cleonpdf_engine::catalog::group(value).ok_or_else(|| format!("unknown tool {value}"))?;
                 self.select_tool(g.id);
             }
+            ("pkcs11-module", _) => self.add_pkcs11_module(value)?,
             ("validation-private-hosts", _) => {
                 self.validation_private_hosts = match value {
                     "on" => true,
@@ -2987,6 +2999,7 @@ impl eframe::App for CleonPdfApp {
         self.poll_print();
         self.poll_signing();
         self.poll_validation();
+        self.poll_token_scan();
         // Shortcuts deferred last frame: the text field has taken that frame's typing since.
         let deferred = std::mem::take(&mut self.deferred_commands);
         self.run_system_choices(ctx);

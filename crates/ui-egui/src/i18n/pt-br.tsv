@@ -2407,3 +2407,12 @@ window	Zoom	Zoom
 	The document changed while the validation information was being fetched, so nothing was saved.	O documento mudou enquanto as informações de validação eram obtidas, então nada foi salvo.
 	Validation information is already being fetched. Wait for it to finish.	As informações de validação já estão sendo obtidas. Aguarde a conclusão.
 	Validation information needs the desktop app	As informações de validação exigem o aplicativo para desktop
+	Smart card  ·  	Smart card  ·  
+	Add smart card module…	Adicionar módulo de smart card…
+	Looking for smart cards and tokens…	Procurando smart cards e tokens…
+	PIN	PIN
+	The key stays on the smart card or token.	A chave permanece no smart card ou no token.
+	CleonPDF can't sign with {kind} keys on a smart card.	O CleonPDF não consegue assinar com chaves {kind} em um smart card.
+	Smart card module	Módulo de smart card
+	Smart card module added: {name}	Módulo de smart card adicionado: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Escolha o módulo de um smart card ou token (uma biblioteca PKCS #11). Ele é executado dentro do CleonPDF, então escolha apenas um em que você confie.

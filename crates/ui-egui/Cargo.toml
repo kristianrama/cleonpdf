@@ -70,6 +70,9 @@ web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlE
 cleonpdf-xfa = { workspace = true }
 cleonpdf-sign = { workspace = true }
 cleonpdf-cos = { workspace = true }
+# A SoftHSM token for the smart card tests.
+cryptoki = "0.12"
+secrecy = "0.10"
 egui_kittest = { workspace = true, features = ["eframe", "wgpu"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 # Glyph-coverage test of the interface fonts; the same skrifa cleonpdf-fonts already uses.

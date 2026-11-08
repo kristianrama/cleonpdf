@@ -2392,3 +2392,12 @@ window	Zoom	Méretezés
 	The document changed while the validation information was being fetched, so nothing was saved.	A dokumentum megváltozott az érvényesítési információk lekérése közben, ezért semmi nem lett mentve.
 	Validation information is already being fetched. Wait for it to finish.	Az érvényesítési információk lekérése már folyamatban van. Várja meg a végét.
 	Validation information needs the desktop app	Az érvényesítési információkhoz az asztali alkalmazás szükséges
+	Smart card  ·  	Intelligens kártya  ·  
+	Add smart card module…	Intelligenskártya-modul hozzáadása…
+	Looking for smart cards and tokens…	Intelligens kártyák és tokenek keresése…
+	PIN	PIN
+	The key stays on the smart card or token.	A kulcs az intelligens kártyán vagy a tokenen marad.
+	CleonPDF can't sign with {kind} keys on a smart card.	A CleonPDF nem tud {kind} kulcsokkal aláírni egy intelligens kártyán.
+	Smart card module	Intelligenskártya-modul
+	Smart card module added: {name}	Intelligenskártya-modul hozzáadva: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Válassza ki egy intelligens kártya vagy token modulját (PKCS #11 könyvtár). A CleonPDF-en belül fut, ezért csak olyat válasszon, amelyben megbízik.

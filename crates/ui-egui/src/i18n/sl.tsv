@@ -2398,3 +2398,12 @@ window	Zoom	Spremeni velikost
 	The document changed while the validation information was being fetched, so nothing was saved.	Dokument se je med pridobivanjem podatkov za preverjanje spremenil, zato ni bilo nič shranjeno.
 	Validation information is already being fetched. Wait for it to finish.	Podatki za preverjanje se že pridobivajo. Počakajte, da se konča.
 	Validation information needs the desktop app	Podatki za preverjanje zahtevajo namizno aplikacijo
+	Smart card  ·  	Pametna kartica  ·  
+	Add smart card module…	Dodaj modul pametne kartice…
+	Looking for smart cards and tokens…	Iskanje pametnih kartic in žetonov…
+	PIN	PIN
+	The key stays on the smart card or token.	Ključ ostane na pametni kartici ali žetonu.
+	CleonPDF can't sign with {kind} keys on a smart card.	CleonPDF ne more podpisovati s ključi {kind} na pametni kartici.
+	Smart card module	Modul pametne kartice
+	Smart card module added: {name}	Modul pametne kartice dodan: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Izberite modul pametne kartice ali žetona (knjižnico PKCS #11). Izvaja se znotraj CleonPDF, zato izberite samo takega, ki mu zaupate.

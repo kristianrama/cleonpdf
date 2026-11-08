@@ -2365,3 +2365,12 @@ window	Zoom	Zmień rozmiar
 	The table of contents is linked	Spis treści jest połączony
 	The table of contents is in the bookmarks	Spis treści jest w zakładkach
 	Add validation information	Dodaj informacje weryfikacyjne
+	Smart card  ·  	Karta inteligentna  ·  
+	Add smart card module…	Dodaj moduł karty inteligentnej…
+	Looking for smart cards and tokens…	Wyszukiwanie kart inteligentnych i tokenów…
+	PIN	PIN
+	The key stays on the smart card or token.	Klucz pozostaje na karcie inteligentnej lub tokenie.
+	CleonPDF can't sign with {kind} keys on a smart card.	CleonPDF nie może podpisywać kluczami {kind} na karcie inteligentnej.
+	Smart card module	Moduł karty inteligentnej
+	Smart card module added: {name}	Dodano moduł karty inteligentnej: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Wybierz moduł karty inteligentnej lub tokenu (bibliotekę PKCS #11). Działa wewnątrz CleonPDF, więc wybieraj tylko taki, któremu ufasz.

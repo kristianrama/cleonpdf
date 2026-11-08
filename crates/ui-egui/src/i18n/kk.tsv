@@ -2391,3 +2391,12 @@ window	Zoom	Өлшемін өзгерту
 	The document changed while the validation information was being fetched, so nothing was saved.	Тексеру ақпаратын алу кезінде құжат өзгерді, сондықтан ештеңе сақталмады.
 	Validation information is already being fetched. Wait for it to finish.	Тексеру ақпараты қазірдің өзінде алынуда. Аяқталғанша күтіңіз.
 	Validation information needs the desktop app	Тексеру ақпараты үшін жұмыс үстелі қолданбасы қажет
+	Smart card  ·  	Смарт-карта  ·  
+	Add smart card module…	Смарт-карта модулін қосу…
+	Looking for smart cards and tokens…	Смарт-карталар мен токендер ізделуде…
+	PIN	PIN
+	The key stays on the smart card or token.	Кілт смарт-картада немесе токенде қалады.
+	CleonPDF can't sign with {kind} keys on a smart card.	CleonPDF смарт-картадағы {kind} кілттерімен қол қоя алмайды.
+	Smart card module	Смарт-карта модулі
+	Smart card module added: {name}	Смарт-карта модулі қосылды: {name}
+	Choose the module of a smart card or token (a PKCS #11 library). It runs inside CleonPDF, so choose only one you trust.	Смарт-картаның немесе токеннің модулін (PKCS #11 кітапханасын) таңдаңыз. Ол CleonPDF ішінде орындалады, сондықтан тек сенімді модульді таңдаңыз.

@@ -113,7 +113,12 @@ impl Module {
         if let Some(module) = loaded.get(&key) {
             return Ok(module.clone());
         }
-        let context = Pkcs11::new(&key).map_err(|e| describe(path, format!("can't be loaded ({e})")))?;
+        let context = Pkcs11::new(&key).map_err(|e| {
+            // The loader quotes the full path; this names the file only.
+            let name = key.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            let said = e.to_string().replace(&*key.to_string_lossy(), &name).replace(&*path.to_string_lossy(), &name);
+            describe(path, format!("can't be loaded ({said})"))
+        })?;
         match context.initialize(CInitializeArgs::new(CInitializeFlags::OS_LOCKING_OK)) {
             Ok(()) => {}
             // Something else in this process already initialised the library; the context is
@@ -294,19 +299,92 @@ pub fn reference(c: &Certificate) -> String {
     format!("pkcs11:{}", d.iter().map(|b| format!("{b:02x}")).collect::<String>())
 }
 
+/// The modules to look in: the ones the user chose (`extra`), [`configured_modules`] and
+/// [`known_modules`], each once (compared by real path).
+pub fn candidates(extra: &[PathBuf]) -> Vec<PathBuf> {
+    let mut seen = Vec::new();
+    let mut out = Vec::new();
+    for path in extra.iter().cloned().chain(configured_modules()).chain(known_modules()) {
+        let real = std::fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
+        if !seen.contains(&real) {
+            seen.push(real);
+            out.push(path);
+        }
+    }
+    out
+}
+
+/// A certificate on a token as the app lists it for signing.
+#[derive(Clone, Debug)]
+pub struct TokenIdentity {
+    pub module: PathBuf,
+    /// The token's label.
+    pub token: String,
+    pub label: String,
+    pub certificate: Certificate,
+}
+
+/// What [`list`] found.
+#[derive(Clone, Debug, Default)]
+pub struct Listing {
+    pub identities: Vec<TokenIdentity>,
+    /// Modules or tokens that could not be read, each in a sentence that names no folder.
+    pub notes: Vec<String>,
+}
+
+/// The end-entity certificates (not self-signed CA roots) on the tokens of [`candidates`]`(extra)`.
+/// No PIN is needed to read them. A module that fails to load is reported in `notes` and skipped.
+pub fn list(extra: &[PathBuf]) -> Listing {
+    let mut listing = Listing::default();
+    for path in candidates(extra) {
+        let module = match Module::load(&path) {
+            Ok(m) => m,
+            Err(e) => {
+                listing.notes.push(e.to_string());
+                continue;
+            }
+        };
+        let tokens = match module.tokens() {
+            Ok(t) => t,
+            Err(e) => {
+                listing.notes.push(e.to_string());
+                continue;
+            }
+        };
+        for token in tokens {
+            match module.certificates(token.slot) {
+                Ok(found) => {
+                    for c in found.certificates.into_iter().filter(|c| !c.certificate.is_self_signed()) {
+                        // One card can be shown by two modules (a vendor's and OpenSC): list it once.
+                        if !listing.identities.iter().any(|i| i.certificate.raw == c.certificate.raw) {
+                            listing.identities.push(TokenIdentity {
+                                module: path.clone(),
+                                token: token.label.clone(),
+                                label: c.label,
+                                certificate: c.certificate,
+                            });
+                        }
+                    }
+                }
+                Err(e) => listing.notes.push(e.to_string()),
+            }
+        }
+    }
+    listing
+}
+
 /// The token identity a reference (or a certificate common name) names, searched in the modules
 /// [`configured_modules`] and [`known_modules`] give, and opened with `pin`. A module that fails
 /// to load is skipped; if nothing matches, the error says which could not be read.
 pub fn find(reference_or_name: &str, pin: Option<&str>) -> Result<DigitalId, SignError> {
+    find_in(&[], reference_or_name, pin)
+}
+
+/// [`find`], also looking in `extra`: modules the user chose themselves.
+pub fn find_in(extra: &[PathBuf], reference_or_name: &str, pin: Option<&str>) -> Result<DigitalId, SignError> {
     let name = reference_or_name.strip_prefix("pkcs11:").unwrap_or(reference_or_name);
-    let mut seen = Vec::new();
     let mut unreadable = Vec::new();
-    for path in configured_modules().into_iter().chain(known_modules()) {
-        let real = std::fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
-        if seen.contains(&real) {
-            continue;
-        }
-        seen.push(real);
+    for path in candidates(extra) {
         let module = match Module::load(&path) {
             Ok(m) => m,
             Err(e) => {
@@ -400,6 +478,8 @@ mod tests {
         std::fs::write(&junk, b"not a library").unwrap();
         let err = Module::load(&junk).unwrap_err().to_string();
         assert!(err.contains("can't be loaded"), "{err}");
+        // …and does not say which folder it was in.
+        assert!(!err.contains(&*std::env::temp_dir().to_string_lossy()), "{err}");
         let _ = std::fs::remove_file(&junk);
     }
 }
