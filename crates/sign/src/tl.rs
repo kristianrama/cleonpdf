@@ -262,7 +262,9 @@ impl TrustedList {
         let info = child(root, "SchemeInformation").ok_or_else(|| TrustedListError::Malformed("no SchemeInformation".into()))?;
         let number = |name: &str| child_text(info, name).and_then(|t| t.parse::<u64>().ok());
         let scheme = SchemeInfo {
-            version: number("TSLVersionIdentifier").and_then(|v| u32::try_from(v).ok()).ok_or_else(|| TrustedListError::Malformed("no version".into()))?,
+            version: number("TSLVersionIdentifier")
+                .and_then(|v| u32::try_from(v).ok())
+                .ok_or_else(|| TrustedListError::Malformed("no version".into()))?,
             sequence_number: number("TSLSequenceNumber").ok_or_else(|| TrustedListError::Malformed("no sequence number".into()))?,
             list_type: child_text(info, "TSLType").unwrap_or_default(),
             operator: child(info, "SchemeOperatorName").map(|n| localized(n, "Name")).unwrap_or_default(),
@@ -346,14 +348,30 @@ mod tests {
         assert_eq!(datetime("2026-04-01T10:00:00+02:00"), Some(t(2026, 4, 1, 8, 0, 0)));
         assert_eq!(datetime("2026-01-01T01:00:00+02:30"), Some(t(2025, 12, 31, 22, 30, 0)));
         assert_eq!(datetime("2026-04-01T10:00:00-05:00"), Some(t(2026, 4, 1, 15, 0, 0)));
-        for bad in ["", "2026-04-01", "T", "2026-13-01T00:00:00Z", "2026-04-32T00:00:00Z", "0000-01-01T00:00:00Z", "2026-04-01T25:00:00Z", "2026-04-01T00:00Z", "x-y-zT0:0:0Z", "2026-04-01T00:00:00+2"] {
+        for bad in [
+            "",
+            "2026-04-01",
+            "T",
+            "2026-13-01T00:00:00Z",
+            "2026-04-32T00:00:00Z",
+            "0000-01-01T00:00:00Z",
+            "2026-04-01T25:00:00Z",
+            "2026-04-01T00:00Z",
+            "x-y-zT0:0:0Z",
+            "2026-04-01T00:00:00+2",
+        ] {
             assert_eq!(datetime(bad), None, "{bad:?}");
         }
     }
 
     #[test]
     fn a_service_is_judged_by_the_state_in_force_then() {
-        let st = |status: &str, y| ServiceState { service_type: CA_QC.into(), status: status.into(), from: Time { year: y, month: 1, day: 1, hour: 0, minute: 0, second: 0 }, certificates: Vec::new() };
+        let st = |status: &str, y| ServiceState {
+            service_type: CA_QC.into(),
+            status: status.into(),
+            from: Time { year: y, month: 1, day: 1, hour: 0, minute: 0, second: 0 },
+            certificates: Vec::new(),
+        };
         let service = TrustService { name: "s".into(), states: vec![st(GRANTED[0], 2016), st("withdrawn", 2020), st(GRANTED[1], 2024)] };
         let at = |y| Time { year: y, month: 6, day: 1, hour: 0, minute: 0, second: 0 };
         assert!(service.state_at(at(2015)).is_none());

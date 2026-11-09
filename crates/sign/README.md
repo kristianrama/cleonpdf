@@ -50,6 +50,18 @@ for s in signatures(&doc, &bytes, &trust) {                                // li
   CertID hash matching, validity windows); validation checks embedded evidence against the
   signer's chain and a verified revocation invalidates the signature.
 
+- **XML signatures and Trusted Lists (not used by validation yet):** `xmldsig` verifies an enveloped
+  XML signature (canonical XML 1.0, inclusive and exclusive; SHA-2; RSA PKCS #1 and ECDSA) and
+  nothing else: the signer is never taken from the document but must be one of the certificates the
+  caller names, valid at the time given; the signature must cover the whole document element; an
+  id that names two elements, a DTD, more than one signature and nesting deeper than 256 levels are
+  refused. `tl` reads an ETSI TS 119 612 Trusted List (or the list of lists) once `xmldsig` has
+  verified it: scheme details, pointers to other lists with their signers, providers, services with
+  their status history, and the certification authorities that were granted for qualified
+  certificates at a given time (`qualified_roots_at`). It fetches nothing; where the lists come from,
+  and whose signing certificates start the chain (the Commission's, from the Official Journal), is
+  the caller's decision.
+
 - **Gathering evidence (PAdES B-LT):** `ltv::gather` takes the signers' chains and a
   `RevocationFetcher` (this crate never opens a socket; `cleonpdf-net` is the HTTP one). For
   each certificate below a root it asks the OCSP responders the certificate names, then its CRL

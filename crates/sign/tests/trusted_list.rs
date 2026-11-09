@@ -129,7 +129,10 @@ fn a_list_that_was_changed_is_refused() {
     assert_eq!(refused(it.replacen(&base64_of(&qca1)[..60], &b64[..60], 1)), XmlSignatureError::DigestMismatch);
     assert_eq!(refused(it.replace("2024-01-01T00:00:00Z", "2010-01-01T00:00:00Z")), XmlSignatureError::DigestMismatch);
     // The signed properties are covered too.
-    assert_eq!(refused(it.replace("2026-10-01T08:00:00Z</xades:SigningTime>", "2026-10-02T08:00:00Z</xades:SigningTime>")), XmlSignatureError::DigestMismatch);
+    assert_eq!(
+        refused(it.replace("2026-10-01T08:00:00Z</xades:SigningTime>", "2026-10-02T08:00:00Z</xades:SigningTime>")),
+        XmlSignatureError::DigestMismatch
+    );
     // A list with its signature removed is never taken as a list.
     let start = it.find("<ds:Signature").unwrap();
     let end = it.find("</ds:Signature>").unwrap() + "</ds:Signature>".len();
@@ -147,4 +150,28 @@ fn a_signed_document_that_is_not_a_list_is_refused() {
     let r = TrustedList::parse(&text("rsa-sha256-exc.xml"), &[cert("rsa.der")], now());
     assert_eq!(r.unwrap_err(), TrustedListError::NotATrustedList);
     assert!(matches!(TrustedList::parse("not xml", &[cert("rsa.der")], now()), Err(TrustedListError::Signature(XmlSignatureError::NotXml(_)))));
+}
+
+#[test]
+fn damaged_lists_never_panic_and_are_never_believed_by_accident() {
+    let it = data("tl-it.xml");
+    let signers = [cert("tsl-signer-it.der")];
+    // A list cut short is not a list.
+    for cut in (0..it.len()).step_by(97) {
+        if let Ok(s) = std::str::from_utf8(&it[..cut]) {
+            assert!(TrustedList::parse(s, &signers, now()).is_err(), "cut at {cut}");
+        }
+    }
+    // One byte changed anywhere: whatever happens, it must not panic, and a list that still
+    // verifies must read as the original does (only insignificant bytes can change).
+    let original = national();
+    for i in (0..it.len()).step_by(13) {
+        let mut b = it.clone();
+        b[i] = b[i].wrapping_add(1);
+        let Ok(s) = String::from_utf8(b) else { continue };
+        if let Ok(l) = TrustedList::parse(&s, &signers, now()) {
+            assert_eq!(names(&l, now()), names(&original, now()), "byte {i}");
+            assert_eq!(l.scheme, original.scheme, "byte {i}");
+        }
+    }
 }

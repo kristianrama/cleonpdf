@@ -71,7 +71,9 @@ pub fn parse(xml: &str) -> Result<Document<'_>, XmlSignatureError> {
 fn nesting(xml: &[u8]) -> usize {
     let (mut depth, mut deepest, mut i) = (0usize, 0usize, 0usize);
     let find = |from: usize, pat: &[u8]| -> usize {
-        xml.get(from..).and_then(|rest| rest.windows(pat.len()).position(|w| w == pat)).map_or(xml.len(), |p| from.saturating_add(p).saturating_add(pat.len()))
+        xml.get(from..)
+            .and_then(|rest| rest.windows(pat.len()).position(|w| w == pat))
+            .map_or(xml.len(), |p| from.saturating_add(p).saturating_add(pat.len()))
     };
     while i < xml.len() {
         let Some(&b) = xml.get(i) else { break };
@@ -197,12 +199,7 @@ impl Canon<'_> {
         }
         let mut attrs: Vec<Attr<'_>> = n
             .attributes()
-            .map(|a| Attr {
-                ns: a.namespace().unwrap_or(""),
-                local: a.name(),
-                qname: written_name(self.src, a.range().start),
-                value: a.value(),
-            })
+            .map(|a| Attr { ns: a.namespace().unwrap_or(""), local: a.name(), qname: written_name(self.src, a.range().start), value: a.value() })
             .collect();
         attrs.sort_by(|a, b| (a.ns, a.local).cmp(&(b.ns, b.local)));
         // The namespace declarations to write: what is in scope and not yet written by an
@@ -379,8 +376,10 @@ pub fn verify_enveloped(doc: &Document<'_>, src: &str, signers: &[Certificate], 
         return Err(XmlSignatureError::Unsupported("more than one signature on the document element".into()));
     }
     let info = child(sig, "SignedInfo").ok_or_else(|| XmlSignatureError::Malformed("no SignedInfo".into()))?;
-    let info_mode = mode_of(algorithm(child(info, "CanonicalizationMethod").ok_or_else(|| XmlSignatureError::Malformed("no CanonicalizationMethod".into()))?)?)?;
-    let (scheme, alg) = signature_method(algorithm(child(info, "SignatureMethod").ok_or_else(|| XmlSignatureError::Malformed("no SignatureMethod".into()))?)?)?;
+    let info_mode =
+        mode_of(algorithm(child(info, "CanonicalizationMethod").ok_or_else(|| XmlSignatureError::Malformed("no CanonicalizationMethod".into()))?)?)?;
+    let (scheme, alg) =
+        signature_method(algorithm(child(info, "SignatureMethod").ok_or_else(|| XmlSignatureError::Malformed("no SignatureMethod".into()))?)?)?;
     // Every reference must digest to what it says, and one of them must be the whole document.
     let mut covers_document = false;
     let mut seen = 0usize;
@@ -434,11 +433,8 @@ pub fn verify_enveloped(doc: &Document<'_>, src: &str, signers: &[Certificate], 
         }
     }
     let trusted: HashSet<&[u8]> = signers.iter().map(|c| c.raw.as_slice()).collect();
-    let candidates: Vec<&Certificate> = if carried.is_empty() {
-        signers.iter().collect()
-    } else {
-        carried.iter().filter(|c| trusted.contains(c.raw.as_slice())).collect()
-    };
+    let candidates: Vec<&Certificate> =
+        if carried.is_empty() { signers.iter().collect() } else { carried.iter().filter(|c| trusted.contains(c.raw.as_slice())).collect() };
     if candidates.is_empty() {
         return Err(XmlSignatureError::UntrustedSigner);
     }

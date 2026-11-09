@@ -150,5 +150,3 @@ fn hostile_xml_is_refused_without_trouble() {
     let doc = roxmltree::Document::parse(&nested).unwrap();
     assert!(matches!(canonical_xml(&nested, doc.root_element(), true), Err(XmlSignatureError::Unsupported(_))));
 }
-
-

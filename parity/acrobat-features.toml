@@ -6272,8 +6272,8 @@ milestone = "M9"
 status = "planned"
 commands = []
 tools = []
-evidence = []
-notes = ""
+evidence = ["crates/sign/tests/trusted_list.rs::a_national_list_is_trusted_through_the_signers_the_list_of_lists_names", "crates/sign/tests/trusted_list.rs::qualified_roots_follow_each_services_status_through_time", "crates/sign/tests/trusted_list.rs::a_list_that_was_changed_is_refused", "crates/sign/tests/xmldsig.rs::signatures_by_another_implementation_verify"]
+notes = "Still planned: only the reading half exists, and nothing in the application uses it yet. cleonpdf-sign can verify an enveloped XML signature (canonical XML 1.0 inclusive and exclusive, SHA-2, RSA PKCS #1 and ECDSA, signer must be a certificate the caller names and valid then) and read a Trusted List or the list of lists from it (scheme details, pointers with their signers, providers, services with their status history, qualified CA roots at a given time), tested against files made by lxml, signxml and libxml2. Not yet: downloading and caching the lists (and refusing a rollback or an expired list), the Commission's signing certificates from the Official Journal (they must be supplied and checked by a person), turning qualified roots into trust anchors in validation, the qualifiers and extensions of a service, a user interface and a tool, a check against the Commission's real lists or Acrobat"
 
 [[feature]]
 id = "sign.os-trust"
