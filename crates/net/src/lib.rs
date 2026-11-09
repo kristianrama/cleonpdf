@@ -21,7 +21,9 @@ use std::time::Duration;
 
 use cleonpdf_sign::{SignError, TimestampAuthority};
 
+mod lists;
 mod revocation;
+pub use lists::HttpListFetcher;
 pub use revocation::{HttpRevocationFetcher, MAX_EVIDENCE, is_public};
 
 /// The most bytes read from a timestamp server's answer. A token with its certificate chain is a

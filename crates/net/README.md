@@ -18,6 +18,11 @@ Layer L5: outbound network requests, in one crate. It is the only crate that ope
   checked one by one (three at most; a POST is not replayed after a 301/302/303). Behind a proxy
   the proxy resolves the name, so this guards against crafted addresses and is not a firewall.
 
+- `HttpListFetcher`: Trusted List downloads (GET, up to the size the caller allows, 48 MiB for the
+  EU lists) for `cleonpdf_sign::trusted_lists`. The same host checks and redirect handling as the
+  revocation fetcher. What it brings is believed only if its XML signature verifies, which
+  `cleonpdf_sign` checks; a request is made only when the user asks to update the lists.
+
 Rules:
 
 - **Nothing runs on its own.** A request is made when the user asks for something that needs one

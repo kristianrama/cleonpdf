@@ -184,7 +184,7 @@ impl HttpRevocationFetcher {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn fetch(&self, what: &str, url: &str, post: Option<&[u8]>) -> Result<Vec<u8>, SignError> {
+    pub(crate) fn fetch(&self, what: &str, url: &str, post: Option<&[u8]>, limit: u64) -> Result<Vec<u8>, SignError> {
         let mut url = check_address(what, url).map_err(SignError::Transport)?;
         let client = crate::client(self.timeout, 0, false).map_err(|e| SignError::Transport(format!("{what}: {e}")))?;
         for _ in 0..=MAX_HOPS {
@@ -235,7 +235,7 @@ impl HttpRevocationFetcher {
             let body = response
                 .body_mut()
                 .with_config()
-                .limit(MAX_EVIDENCE)
+                .limit(limit)
                 .read_to_vec()
                 .map_err(|e| fail(format!("sent an unreadable or oversized answer ({e})")))?;
             if body.is_empty() {
@@ -247,22 +247,22 @@ impl HttpRevocationFetcher {
     }
 
     #[cfg(target_arch = "wasm32")]
-    fn fetch(&self, _what: &str, _url: &str, _post: Option<&[u8]>) -> Result<Vec<u8>, SignError> {
+    pub(crate) fn fetch(&self, _what: &str, _url: &str, _post: Option<&[u8]>, _limit: u64) -> Result<Vec<u8>, SignError> {
         Err(SignError::Transport("revocation servers can't be reached from the browser".into()))
     }
 }
 
 impl RevocationFetcher for HttpRevocationFetcher {
     fn crl(&self, url: &str) -> Result<Vec<u8>, SignError> {
-        self.fetch("the CRL address", url, None)
+        self.fetch("the CRL address", url, None, MAX_EVIDENCE)
     }
 
     fn ocsp(&self, url: &str, request: &[u8]) -> Result<Vec<u8>, SignError> {
-        self.fetch("the OCSP address", url, Some(request))
+        self.fetch("the OCSP address", url, Some(request), MAX_EVIDENCE)
     }
 
     fn issuer(&self, url: &str) -> Result<Vec<u8>, SignError> {
-        self.fetch("the issuer certificate address", url, None)
+        self.fetch("the issuer certificate address", url, None, MAX_EVIDENCE)
     }
 }
 
