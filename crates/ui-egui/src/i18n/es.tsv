@@ -871,6 +871,11 @@
 	Fill & Sign signature	Firma de Rellenar y firmar
 	Choose image…	Elegir imagen…
 	Permitted actions after certifying	Acciones permitidas después de certificar
+	Lock form fields	Bloquear campos del formulario
+	Don't lock	No bloquear
+	All fields	Todos los campos
+	Only the fields chosen	Solo los campos elegidos
+	All fields except the ones chosen	Todos los campos excepto los elegidos
 	No changes allowed	No se permite ningún cambio
 	Annotations, form fill-in, and digital signatures	Anotaciones, rellenado de formularios y firmas digitales
 	Form fill-in and digital signatures	Rellenado de formularios y firmas digitales

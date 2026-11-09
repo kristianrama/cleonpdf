@@ -105,7 +105,7 @@ are borrowed; PDF 2.0 additions and most subset standards are missing. **150–2
 | PAdES B-T (signature timestamp), document timestamps | yes, with configured TSA | partial: works when a TSA is given; no timestamp-server preferences |
 | PAdES B-LT, B-LTA (DSS/VRI, OCSP/CRL) | yes, fetched online | partial: evidence supplied by the caller; no online fetching |
 | DocMDP certification | yes | yes |
-| FieldMDP (lock fields) | yes | partial: signing locks named fields (`sign_document` `lock`, or the field's own `/Lock`) and validation reports changes to them; no way to choose fields in the Sign dialog |
+| FieldMDP (lock fields) | yes | partial: signing locks named fields (`sign_document` `lock`, or the field's own `/Lock`) and validation reports changes to them; the Sign dialog and `sign_document` choose the fields; no way yet to set a field's own lock in Prepare Form |
 | UR3 usage rights | preserved, Reader-extending is Adobe-only | none (P3) |
 | Seed values | yes | none |
 | Validation: chain, key usage, EKU, critical extensions, changes after signing, signed version | yes | yes; name constraints and issuer critical extensions missing |

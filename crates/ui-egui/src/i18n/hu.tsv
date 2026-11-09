@@ -849,6 +849,11 @@
 	Fill & Sign signature	A Kitöltés és aláírás aláírása
 	Choose image…	Kép kiválasztása…
 	Permitted actions after certifying	Engedélyezett műveletek hitelesítés után
+	Lock form fields	Űrlapmezők zárolása
+	Don't lock	Nincs zárolás
+	All fields	Minden mező
+	Only the fields chosen	Csak a kiválasztott mezők
+	All fields except the ones chosen	Minden mező a kiválasztottak kivételével
 	No changes allowed	Semmilyen módosítás nem engedélyezett
 	Annotations, form fill-in, and digital signatures	Széljegyzetek, űrlapkitöltés és digitális aláírások
 	Form fill-in and digital signatures	Űrlapkitöltés és digitális aláírások

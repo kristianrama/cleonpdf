@@ -862,6 +862,11 @@
 	Percentage	Procentai
 	Permissions password	Teisių slaptažodis
 	Permitted actions after certifying	Po patvirtinimo leidžiami veiksmai
+	Lock form fields	Užrakinti formos laukus
+	Don't lock	Neužrakinti
+	All fields	Visi laukai
+	Only the fields chosen	Tik pasirinkti laukai
+	All fields except the ones chosen	Visi laukai, išskyrus pasirinktus
 	Photo	Nuotrauka
 	Pick a tool in the quick bar, or type above.	Pasirinkite įrankį sparčiojoje juostoje arba įveskite paieškos tekstą aukščiau.
 	Pictures on those pages are recognized too; words already in the page's text are not added again	Paveikslėliuose esantis tekstas taip pat atpažįstamas; puslapio tekste jau esantys žodžiai dar kartą nepridedami

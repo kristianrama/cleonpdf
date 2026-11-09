@@ -872,6 +872,11 @@
 	Fill & Sign signature	Подпись из «Заполнить и подписать»
 	Choose image…	Выбрать изображение…
 	Permitted actions after certifying	Разрешённые действия после сертификации
+	Lock form fields	Заблокировать поля формы
+	Don't lock	Не блокировать
+	All fields	Все поля
+	Only the fields chosen	Только выбранные поля
+	All fields except the ones chosen	Все поля, кроме выбранных
 	No changes allowed	Изменения не разрешены
 	Annotations, form fill-in, and digital signatures	Аннотации, заполнение форм и цифровые подписи
 	Form fill-in and digital signatures	Заполнение форм и цифровые подписи

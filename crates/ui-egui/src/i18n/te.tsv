@@ -850,6 +850,11 @@ comment menu	Edit	సవరించు
 	Fill & Sign signature	నింపడం & సంతకం సంతకం
 	Choose image…	చిత్రాన్ని ఎంచుకోండి…
 	Permitted actions after certifying	సర్టిఫై చేసిన తర్వాత అనుమతించే చర్యలు
+	Lock form fields	ఫారమ్ ఫీల్డ్‌లను లాక్ చేయండి
+	Don't lock	లాక్ చేయవద్దు
+	All fields	అన్ని ఫీల్డ్‌లు
+	Only the fields chosen	ఎంచుకున్న ఫీల్డ్‌లు మాత్రమే
+	All fields except the ones chosen	ఎంచుకున్నవి తప్ప అన్ని ఫీల్డ్‌లు
 	No changes allowed	మార్పులు ఏవీ అనుమతించబడవు
 	Annotations, form fill-in, and digital signatures	ఉల్లేఖనలు, ఫారం నింపడం మరియు డిజిటల్ సంతకాలు
 	Form fill-in and digital signatures	ఫారం నింపడం మరియు డిజిటల్ సంతకాలు

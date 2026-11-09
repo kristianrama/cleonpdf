@@ -482,6 +482,11 @@
 	Distinguished name	Διακεκριμένο όνομα
 	Labels	Ετικέτες
 	Permitted actions after certifying	Επιτρεπόμενες ενέργειες μετά την πιστοποίηση
+	Lock form fields	Κλείδωμα πεδίων φόρμας
+	Don't lock	Χωρίς κλείδωμα
+	All fields	Όλα τα πεδία
+	Only the fields chosen	Μόνο τα επιλεγμένα πεδία
+	All fields except the ones chosen	Όλα τα πεδία εκτός από τα επιλεγμένα
 	No changes allowed	Δεν επιτρέπονται αλλαγές
 	Annotations, form fill-in, and digital signatures	Σημειώσεις, συμπλήρωση φορμών και ψηφιακές υπογραφές
 	Form fill-in and digital signatures	Συμπλήρωση φορμών και ψηφιακές υπογραφές

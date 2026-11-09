@@ -879,6 +879,11 @@
 	Fill & Sign signature	入力と署名の署名
 	Choose image…	画像を選択…
 	Permitted actions after certifying	証明後に許可する操作
+	Lock form fields	フォームフィールドをロック
+	Don't lock	ロックしない
+	All fields	すべてのフィールド
+	Only the fields chosen	選択したフィールドのみ
+	All fields except the ones chosen	選択したもの以外のすべてのフィールド
 	No changes allowed	変更を許可しない
 	Annotations, form fill-in, and digital signatures	注釈、フォーム入力、デジタル署名
 	Form fill-in and digital signatures	フォーム入力とデジタル署名

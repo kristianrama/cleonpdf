@@ -875,6 +875,11 @@
 	Fill & Sign signature	Firma di Compila e firma
 	Choose image…	Scegli immagine…
 	Permitted actions after certifying	Azioni consentite dopo la certificazione
+	Lock form fields	Blocca i campi del modulo
+	Don't lock	Non bloccare
+	All fields	Tutti i campi
+	Only the fields chosen	Solo i campi scelti
+	All fields except the ones chosen	Tutti i campi tranne quelli scelti
 	No changes allowed	Nessuna modifica consentita
 	Annotations, form fill-in, and digital signatures	Annotazioni, compilazione moduli e firme digitali
 	Form fill-in and digital signatures	Compilazione moduli e firme digitali

@@ -852,6 +852,11 @@
 	Fill & Sign signature	Signature de Remplir et signer
 	Choose image…	Choisir une image…
 	Permitted actions after certifying	Actions autorisées après certification
+	Lock form fields	Verrouiller les champs du formulaire
+	Don't lock	Ne pas verrouiller
+	All fields	Tous les champs
+	Only the fields chosen	Seulement les champs choisis
+	All fields except the ones chosen	Tous les champs sauf ceux choisis
 	No changes allowed	Aucune modification autorisée
 	Annotations, form fill-in, and digital signatures	Annotations, remplissage de formulaire et signatures numériques
 	Form fill-in and digital signatures	Remplissage de formulaire et signatures numériques

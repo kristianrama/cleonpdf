@@ -952,6 +952,11 @@ key	Space	Mezerník
 	Fill & Sign signature	Podpis z nástroje Vyplnit a podepsat
 	Choose image…	Vybrat obrázek…
 	Permitted actions after certifying	Povolené akce po certifikaci
+	Lock form fields	Zamknout pole formuláře
+	Don't lock	Nezamykat
+	All fields	Všechna pole
+	Only the fields chosen	Pouze vybraná pole
+	All fields except the ones chosen	Všechna pole kromě vybraných
 	No changes allowed	Nejsou povoleny žádné změny
 	Annotations, form fill-in, and digital signatures	Anotace, vyplňování formulářů a digitální podpisy
 	Form fill-in and digital signatures	Vyplňování formulářů a digitální podpisy

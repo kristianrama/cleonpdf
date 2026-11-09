@@ -566,6 +566,11 @@
 	Fill & Sign signature	填写与签名中的签名
 	Choose image…	选择图像…
 	Permitted actions after certifying	认证后允许的操作
+	Lock form fields	锁定表单域
+	Don't lock	不锁定
+	All fields	所有域
+	Only the fields chosen	仅所选的域
+	All fields except the ones chosen	除所选域之外的所有域
 	No changes allowed	不允许任何更改
 	Annotations, form fill-in, and digital signatures	注释、填写表单和数字签名
 	Form fill-in and digital signatures	填写表单和数字签名

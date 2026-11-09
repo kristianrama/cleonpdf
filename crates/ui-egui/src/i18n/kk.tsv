@@ -830,6 +830,11 @@
 	Distinguished name	Ажырататын атау
 	Labels	Белгілер
 	Permitted actions after certifying	Куәландырғаннан кейінгі рұқсат етілген әрекеттер
+	Lock form fields	Пішін өрістерін құлыптау
+	Don't lock	Құлыптамау
+	All fields	Барлық өрістер
+	Only the fields chosen	Тек таңдалған өрістер
+	All fields except the ones chosen	Таңдалғандардан басқа барлық өрістер
 	No changes allowed	Ешқандай өзгеріс рұқсат етілмейді
 	Annotations, form fill-in, and digital signatures	Белгілеулер, форманы толтыру және цифрлық қолтаңбалар
 	Form fill-in and digital signatures	Форманы толтыру және цифрлық қолтаңбалар
