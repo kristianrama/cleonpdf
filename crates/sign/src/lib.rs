@@ -24,6 +24,7 @@ pub mod pkcs12;
 pub mod revocation;
 mod rsa_pad;
 pub mod timestamp;
+pub mod tl;
 #[cfg(target_os = "windows")]
 pub mod windows;
 pub mod x509;
