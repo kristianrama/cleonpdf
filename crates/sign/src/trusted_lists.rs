@@ -336,6 +336,18 @@ impl Snapshot {
         out
     }
 
+    /// This snapshot used again because the lists could not be fetched: every list it still
+    /// holds is reported as kept, with `why`.
+    #[must_use]
+    pub fn kept_offline(mut self, why: &str) -> Snapshot {
+        for r in &mut self.reports {
+            if r.outcome == Outcome::Unchanged {
+                r.outcome = Outcome::KeptPrevious(format!("the list of lists could not be fetched ({why})"));
+            }
+        }
+        self
+    }
+
     /// The national lists that are not in use, with the reason.
     #[must_use]
     pub fn unusable(&self) -> Vec<&ListReport> {

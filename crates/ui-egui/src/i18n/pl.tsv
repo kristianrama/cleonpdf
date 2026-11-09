@@ -2387,3 +2387,23 @@ window	Zoom	Zmień rozmiar
 	Couldn't read the system's trusted certificates: {e}	Nie udało się odczytać zaufanych certyfikatów systemu: {e}
 	Server address (https://…)	Adres serwera (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Serwery do wyboru przy podpisywaniu. Nic nie jest wysyłane do żadnego serwera, dopóki podpis go nie użyje, a wtedy tylko skrót, nigdy dokument.
+	Use the European Union Trusted Lists	Używaj list zaufania Unii Europejskiej
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Podpisujący, których certyfikat prowadzi do urzędu certyfikacji wskazanego na krajowej liście zaufania, są pokazywani jako ważni, dopóki ta usługa była przyznana. Listy są pobierane tylko po kliknięciu Aktualizuj teraz.
+	Certificates that sign the list of lists	Certyfikaty podpisujące listę list
+	SHA-256 fingerprint: {fp}	Odcisk SHA-256: {fp}
+	Add certificate…	Dodaj certyfikat…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF nie ma żadnego wbudowanego. Zanim mu zaufasz, porównaj każdy odcisk z tym, który Komisja Europejska publikuje w Dzienniku Urzędowym Unii Europejskiej.
+	Update now	Aktualizuj teraz
+	Updating…	Aktualizowanie…
+	List of lists: sequence {n}, next update {date}	Lista list: numer kolejny {n}, następna aktualizacja {date}
+	{a} certification authorities from {c} national lists	Urzędów certyfikacji: {a}, list krajowych: {c}
+	{country}: updated	{country}: zaktualizowana
+	{country}: unchanged	{country}: bez zmian
+	{country}: kept the copy held ({why})	{country}: zachowano posiadaną kopię ({why})
+	{country}: not used ({why})	{country}: nieużywana ({why})
+	Trusted Lists updated: {n} national lists	Listy zaufania zaktualizowane: list krajowych {n}
+	The Trusted Lists could not be fetched; the lists already kept are used	Nie udało się pobrać list zaufania; używane są już zapisane
+	Couldn't update the Trusted Lists: {e}	Nie udało się zaktualizować list zaufania: {e}
+	Couldn't read the certificate: {e}	Nie udało się odczytać certyfikatu: {e}
+	That certificate is already in the list	Ten certyfikat jest już na liście
+	Certificate	Certyfikat

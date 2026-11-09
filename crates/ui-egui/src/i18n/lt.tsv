@@ -2660,3 +2660,23 @@ window	Zoom	Keisti dydį
 	The signer's identity is valid: it chains to {}, a certification authority on a European Union Trusted List.	Pasirašiusiojo tapatybė galioja: ji veda į {} – sertifikavimo instituciją Europos Sąjungos patikimųjų sąrašuose.
 	Server address (https://…)	Serverio adresas (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Serveriai, iš kurių galima rinktis pasirašant. Niekas nesiunčiama jokiam serveriui, kol parašas jo nenaudoja, o tada siunčiama tik santrauka, niekada ne dokumentas.
+	Use the European Union Trusted Lists	Naudoti Europos Sąjungos patikimumo sąrašus
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Pasirašiusieji, kurių sertifikatas veda į nacionaliniame patikimumo sąraše nurodytą sertifikavimo instituciją, rodomi kaip galiojantys, kol ta paslauga buvo suteikta. Sąrašai atsisiunčiami tik paspaudus Atnaujinti dabar.
+	Certificates that sign the list of lists	Sertifikatai, pasirašantys sąrašų sąrašą
+	SHA-256 fingerprint: {fp}	SHA-256 kontrolinis kodas: {fp}
+	Add certificate…	Pridėti sertifikatą…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	„CleonPDF“ neturi įtaisytų sertifikatų. Prieš pasitikėdami palyginkite kiekvieną kontrolinį kodą su tuo, kurį Europos Komisija skelbia Europos Sąjungos oficialiajame leidinyje.
+	Update now	Atnaujinti dabar
+	Updating…	Atnaujinama…
+	List of lists: sequence {n}, next update {date}	Sąrašų sąrašas: eilės numeris {n}, kitas atnaujinimas {date}
+	{a} certification authorities from {c} national lists	Sertifikavimo institucijų: {a}, nacionalinių sąrašų: {c}
+	{country}: updated	{country}: atnaujinta
+	{country}: unchanged	{country}: nepakito
+	{country}: kept the copy held ({why})	{country}: palikta turima kopija ({why})
+	{country}: not used ({why})	{country}: nenaudojama ({why})
+	Trusted Lists updated: {n} national lists	Patikimumo sąrašai atnaujinti: nacionalinių sąrašų {n}
+	The Trusted Lists could not be fetched; the lists already kept are used	Nepavyko atsisiųsti patikimumo sąrašų; naudojami jau išsaugoti
+	Couldn't update the Trusted Lists: {e}	Nepavyko atnaujinti patikimumo sąrašų: {e}
+	Couldn't read the certificate: {e}	Nepavyko perskaityti sertifikato: {e}
+	That certificate is already in the list	Šis sertifikatas jau yra sąraše
+	Certificate	Sertifikatas

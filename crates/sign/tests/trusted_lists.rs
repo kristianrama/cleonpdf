@@ -78,6 +78,21 @@ fn a_refresh_fetches_the_list_of_lists_then_each_xml_list_it_points_to() {
 }
 
 #[test]
+fn a_snapshot_used_offline_says_its_lists_were_kept_and_why() {
+    let s = Snapshot::load(&good().documents, &anchors(), now()).unwrap().kept_offline("no route");
+    match outcome(&s, "IT") {
+        Outcome::KeptPrevious(why) => assert!(why.contains("no route"), "{why}"),
+        other => panic!("{other:?}"),
+    }
+    assert!(matches!(outcome(&s, "DE"), Outcome::KeptPrevious(_)));
+    // A list that was not usable stays what it was.
+    let mut docs = good().documents;
+    docs.lists.retain(|(loc, _)| loc != DE);
+    let s = Snapshot::load(&docs, &anchors(), now()).unwrap().kept_offline("x");
+    assert_eq!(*outcome(&s, "DE"), Outcome::Unusable("not held".into()));
+}
+
+#[test]
 fn what_is_kept_is_verified_again_when_it_is_loaded() {
     let s = good();
     let again = Snapshot::load(&s.documents, &anchors(), now()).unwrap();

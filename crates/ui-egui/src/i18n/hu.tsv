@@ -2414,3 +2414,23 @@ window	Zoom	Méretezés
 	Couldn't read the system's trusted certificates: {e}	A rendszer megbízható tanúsítványait nem sikerült beolvasni: {e}
 	Server address (https://…)	Kiszolgáló címe (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Aláíráskor választható kiszolgálók. Semmi sem kerül elküldésre egyik kiszolgálónak sem, hacsak egy aláírás nem használja, és akkor is csak egy lenyomat, soha nem a dokumentum.
+	Use the European Union Trusted Lists	Az Európai Unió megbízható listáinak használata
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Azok az aláírók, akiknek tanúsítványa egy nemzeti megbízható lista által megnevezett hitelesítésszolgáltatóhoz vezet, érvényesként jelennek meg, amíg az adott szolgáltatás engedélyezett volt. A listák letöltése csak a Frissítés most gombra kattintva történik.
+	Certificates that sign the list of lists	A listák listáját aláíró tanúsítványok
+	SHA-256 fingerprint: {fp}	SHA-256 ujjlenyomat: {fp}
+	Add certificate…	Tanúsítvány hozzáadása…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	A CleonPDF nem tartalmaz beépítettet. Mielőtt megbízna benne, vesse össze az ujjlenyomatot azzal, amelyet az Európai Bizottság az Európai Unió Hivatalos Lapjában közzétesz.
+	Update now	Frissítés most
+	Updating…	Frissítés…
+	List of lists: sequence {n}, next update {date}	Listák listája: sorszám {n}, következő frissítés {date}
+	{a} certification authorities from {c} national lists	{a} hitelesítésszolgáltató {c} nemzeti listából
+	{country}: updated	{country}: frissítve
+	{country}: unchanged	{country}: változatlan
+	{country}: kept the copy held ({why})	{country}: a meglévő másolat megmaradt ({why})
+	{country}: not used ({why})	{country}: nincs használatban ({why})
+	Trusted Lists updated: {n} national lists	A megbízható listák frissítve: {n} nemzeti lista
+	The Trusted Lists could not be fetched; the lists already kept are used	A megbízható listákat nem sikerült letölteni; a már mentett listák használatosak
+	Couldn't update the Trusted Lists: {e}	A megbízható listákat nem sikerült frissíteni: {e}
+	Couldn't read the certificate: {e}	A tanúsítványt nem sikerült beolvasni: {e}
+	That certificate is already in the list	Ez a tanúsítvány már szerepel a listán
+	Certificate	Tanúsítvány

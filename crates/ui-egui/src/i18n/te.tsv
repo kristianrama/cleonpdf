@@ -2318,3 +2318,23 @@ window	Zoom	పరిమాణం మార్చు
 	Couldn't read the system's trusted certificates: {e}	సిస్టమ్ విశ్వసనీయ సర్టిఫికెట్లను చదవలేకపోయాం: {e}
 	Server address (https://…)	సర్వర్ చిరునామా (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	సంతకం చేసేటప్పుడు ఎంచుకోగల సర్వర్లు. సంతకం ఉపయోగిస్తే తప్ప ఏ సర్వర్‌కూ ఏమీ పంపబడదు, అప్పుడు కూడా డైజెస్ట్ మాత్రమే పంపబడుతుంది, పత్రం ఎప్పుడూ కాదు.
+	Use the European Union Trusted Lists	యూరోపియన్ యూనియన్ విశ్వసనీయ జాబితాలను ఉపయోగించండి
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	జాతీయ విశ్వసనీయ జాబితా పేర్కొన్న ధృవీకరణ అధికారానికి చేరే సంతకందారులు, ఆ సేవ మంజూరై ఉన్నంతవరకు చెల్లుబాటు అయ్యేవారిగా చూపబడతారు. ఇప్పుడే నవీకరించండి నొక్కినప్పుడు మాత్రమే జాబితాలు డౌన్‌లోడ్ అవుతాయి.
+	Certificates that sign the list of lists	జాబితాల జాబితాపై సంతకం చేసే ధృవపత్రాలు
+	SHA-256 fingerprint: {fp}	SHA-256 వేలిముద్ర: {fp}
+	Add certificate…	ధృవపత్రాన్ని జోడించండి…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDFలో అంతర్నిర్మిత ధృవపత్రాలు ఏవీ లేవు. నమ్మే ముందు ప్రతి వేలిముద్రను యూరోపియన్ కమిషన్ యూరోపియన్ యూనియన్ అధికారిక పత్రికలో ప్రచురించినదానితో సరిపోల్చండి.
+	Update now	ఇప్పుడే నవీకరించండి
+	Updating…	నవీకరిస్తోంది…
+	List of lists: sequence {n}, next update {date}	జాబితాల జాబితా: క్రమ సంఖ్య {n}, తదుపరి నవీకరణ {date}
+	{a} certification authorities from {c} national lists	{c} జాతీయ జాబితాల నుండి {a} ధృవీకరణ అధికారులు
+	{country}: updated	{country}: నవీకరించబడింది
+	{country}: unchanged	{country}: మార్పు లేదు
+	{country}: kept the copy held ({why})	{country}: ఉన్న కాపీ ఉంచబడింది ({why})
+	{country}: not used ({why})	{country}: ఉపయోగించబడదు ({why})
+	Trusted Lists updated: {n} national lists	విశ్వసనీయ జాబితాలు నవీకరించబడ్డాయి: {n} జాతీయ జాబితాలు
+	The Trusted Lists could not be fetched; the lists already kept are used	విశ్వసనీయ జాబితాలను డౌన్‌లోడ్ చేయలేకపోయాము; ఇప్పటికే నిల్వ చేసినవి ఉపయోగించబడతాయి
+	Couldn't update the Trusted Lists: {e}	విశ్వసనీయ జాబితాలను నవీకరించలేకపోయాము: {e}
+	Couldn't read the certificate: {e}	ధృవపత్రాన్ని చదవలేకపోయాము: {e}
+	That certificate is already in the list	ఈ ధృవపత్రం ఇప్పటికే జాబితాలో ఉంది
+	Certificate	ధృవపత్రం

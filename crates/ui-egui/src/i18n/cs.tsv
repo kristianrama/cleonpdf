@@ -2489,3 +2489,23 @@ window	Zoom	Změnit velikost
 	Couldn't read the system's trusted certificates: {e}	Důvěryhodné certifikáty systému se nepodařilo přečíst: {e}
 	Server address (https://…)	Adresa serveru (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Servery, ze kterých lze při podepisování vybírat. Na žádný server se nic neposílá, dokud ho podpis nepoužije, a pak jen otisk, nikdy dokument.
+	Use the European Union Trusted Lists	Používat důvěryhodné seznamy Evropské unie
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Podepisující, jejichž certifikát vede k certifikační autoritě uvedené v národním důvěryhodném seznamu, se zobrazují jako platní, dokud byla tato služba udělena. Seznamy se stahují jen tehdy, když kliknete na Aktualizovat nyní.
+	Certificates that sign the list of lists	Certifikáty, které podepisují seznam seznamů
+	SHA-256 fingerprint: {fp}	Otisk SHA-256: {fp}
+	Add certificate…	Přidat certifikát…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF žádný nemá vestavěný. Než mu uvěříte, porovnejte každý otisk s tím, který Evropská komise zveřejňuje v Úředním věstníku Evropské unie.
+	Update now	Aktualizovat nyní
+	Updating…	Aktualizuje se…
+	List of lists: sequence {n}, next update {date}	Seznam seznamů: pořadové číslo {n}, další aktualizace {date}
+	{a} certification authorities from {c} national lists	Certifikačních autorit: {a}, národních seznamů: {c}
+	{country}: updated	{country}: aktualizováno
+	{country}: unchanged	{country}: beze změny
+	{country}: kept the copy held ({why})	{country}: ponechána stávající kopie ({why})
+	{country}: not used ({why})	{country}: nepoužito ({why})
+	Trusted Lists updated: {n} national lists	Důvěryhodné seznamy aktualizovány: národních seznamů {n}
+	The Trusted Lists could not be fetched; the lists already kept are used	Důvěryhodné seznamy se nepodařilo stáhnout; použijí se již uložené
+	Couldn't update the Trusted Lists: {e}	Důvěryhodné seznamy se nepodařilo aktualizovat: {e}
+	Couldn't read the certificate: {e}	Certifikát se nepodařilo přečíst: {e}
+	That certificate is already in the list	Tento certifikát už v seznamu je
+	Certificate	Certifikát

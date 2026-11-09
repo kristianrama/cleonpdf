@@ -2548,3 +2548,23 @@ window	Zoom	Zoom
 	The signer's identity is valid: it chains to {}, a certification authority on a European Union Trusted List.	La identidad del firmante es válida: enlaza con {}, una autoridad de certificación de una Lista de Confianza de la Unión Europea.
 	Server address (https://…)	Dirección del servidor (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Servidores para elegir al firmar. No se envía nada a ningún servidor salvo que una firma lo use, y entonces solo un resumen, nunca el documento.
+	Use the European Union Trusted Lists	Usar las listas de confianza de la Unión Europea
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Los firmantes cuyo certificado se remonta a una autoridad de certificación que nombra una lista de confianza nacional se muestran como válidos mientras ese servicio estuvo concedido. Las listas solo se descargan cuando pulsa Actualizar ahora.
+	Certificates that sign the list of lists	Certificados que firman la lista de listas
+	SHA-256 fingerprint: {fp}	Huella SHA-256: {fp}
+	Add certificate…	Añadir certificado…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF no incluye ninguno. Compare cada huella con la que publica la Comisión Europea en el Diario Oficial de la Unión Europea antes de fiarse de ella.
+	Update now	Actualizar ahora
+	Updating…	Actualizando…
+	List of lists: sequence {n}, next update {date}	Lista de listas: secuencia {n}, próxima actualización {date}
+	{a} certification authorities from {c} national lists	{a} autoridades de certificación de {c} listas nacionales
+	{country}: updated	{country}: actualizada
+	{country}: unchanged	{country}: sin cambios
+	{country}: kept the copy held ({why})	{country}: se conserva la copia existente ({why})
+	{country}: not used ({why})	{country}: no se usa ({why})
+	Trusted Lists updated: {n} national lists	Listas de confianza actualizadas: {n} listas nacionales
+	The Trusted Lists could not be fetched; the lists already kept are used	No se pudieron descargar las listas de confianza; se usan las ya guardadas
+	Couldn't update the Trusted Lists: {e}	No se pudieron actualizar las listas de confianza: {e}
+	Couldn't read the certificate: {e}	No se pudo leer el certificado: {e}
+	That certificate is already in the list	Este certificado ya está en la lista
+	Certificate	Certificado

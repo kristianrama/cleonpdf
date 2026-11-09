@@ -412,7 +412,7 @@ impl Automation {
 impl Automation {
     /// Fetch, load, show or drop the EU Trusted Lists.
     pub(crate) fn sign_eutl(&mut self, a: &Args) -> Result<Value> {
-        use cleonpdf_engine::sign::trusted_lists::{Documents, LOTL_URL, Outcome, RefreshError, Snapshot};
+        use cleonpdf_engine::sign::trusted_lists::{Documents, LOTL_URL, RefreshError, Snapshot};
         let action = a.str("action")?;
         match action {
             "status" => return Ok(self.eutl_status(None)),
@@ -468,13 +468,8 @@ impl Automation {
                 Ok(s) => (s, true),
                 // Offline: the lists already held are still good, and say so below.
                 Err(RefreshError::Fetch(why)) if previous.is_some() => {
-                    let mut held = previous.ok_or_else(|| failed(why.clone()))?;
-                    for r in &mut held.reports {
-                        if r.outcome == Outcome::Unchanged {
-                            r.outcome = Outcome::KeptPrevious(format!("the list of lists could not be fetched ({why})"));
-                        }
-                    }
-                    (held, false)
+                    let held = previous.ok_or_else(|| failed(why.clone()))?;
+                    (held.kept_offline(&why), false)
                 }
                 Err(e) => return Err(failed(e)),
             }

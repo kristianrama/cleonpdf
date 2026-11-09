@@ -2420,3 +2420,23 @@ window	Zoom	Spremeni velikost
 	Couldn't read the system's trusted certificates: {e}	Zaupanja vrednih potrdil sistema ni bilo mogoče prebrati: {e}
 	Server address (https://…)	Naslov strežnika (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Strežniki za izbiro pri podpisovanju. Nič se ne pošlje nobenemu strežniku, razen če ga podpis uporabi, in takrat le izvleček, nikoli dokument.
+	Use the European Union Trusted Lists	Uporabi zaupanja vredne sezname Evropske unije
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Podpisniki, katerih potrdilo vodi do overitelja, ki ga navaja nacionalni seznam zaupanja vrednih ponudnikov, so prikazani kot veljavni, dokler je bila ta storitev odobrena. Seznami se prenesejo samo, ko kliknete Posodobi zdaj.
+	Certificates that sign the list of lists	Potrdila, ki podpisujejo seznam seznamov
+	SHA-256 fingerprint: {fp}	Prstni odtis SHA-256: {fp}
+	Add certificate…	Dodaj potrdilo …
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF nima vgrajenega nobenega. Preden mu zaupate, primerjajte vsak prstni odtis s tistim, ki ga Evropska komisija objavlja v Uradnem listu Evropske unije.
+	Update now	Posodobi zdaj
+	Updating…	Posodabljanje …
+	List of lists: sequence {n}, next update {date}	Seznam seznamov: zaporedna številka {n}, naslednja posodobitev {date}
+	{a} certification authorities from {c} national lists	Overiteljev: {a}, nacionalnih seznamov: {c}
+	{country}: updated	{country}: posodobljen
+	{country}: unchanged	{country}: nespremenjen
+	{country}: kept the copy held ({why})	{country}: ohranjena obstoječa kopija ({why})
+	{country}: not used ({why})	{country}: ni v uporabi ({why})
+	Trusted Lists updated: {n} national lists	Seznami zaupanja vrednih ponudnikov posodobljeni: nacionalnih seznamov {n}
+	The Trusted Lists could not be fetched; the lists already kept are used	Seznamov zaupanja vrednih ponudnikov ni bilo mogoče prenesti; uporabljeni so že shranjeni
+	Couldn't update the Trusted Lists: {e}	Seznamov zaupanja vrednih ponudnikov ni bilo mogoče posodobiti: {e}
+	Couldn't read the certificate: {e}	Potrdila ni bilo mogoče prebrati: {e}
+	That certificate is already in the list	To potrdilo je že na seznamu
+	Certificate	Potrdilo

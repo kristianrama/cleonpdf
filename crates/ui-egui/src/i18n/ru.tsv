@@ -2328,3 +2328,23 @@ window	Zoom	Изменить масштаб
 	Couldn't read the system's trusted certificates: {e}	Не удалось прочитать доверенные сертификаты системы: {e}
 	Server address (https://…)	Адрес сервера (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Серверы, которые можно выбрать при подписании. Ничего не отправляется на сервер, пока подпись его не использует, и тогда уходит только хеш, но не документ.
+	Use the European Union Trusted Lists	Использовать доверенные списки Европейского союза
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Подписанты, чей сертификат восходит к удостоверяющему центру из национального доверенного списка, отображаются как действительные, пока эта услуга была предоставлена. Списки загружаются только после нажатия «Обновить сейчас».
+	Certificates that sign the list of lists	Сертификаты, подписывающие список списков
+	SHA-256 fingerprint: {fp}	Отпечаток SHA-256: {fp}
+	Add certificate…	Добавить сертификат…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	В CleonPDF нет встроенных сертификатов. Прежде чем доверять, сверьте каждый отпечаток с тем, который Европейская комиссия публикует в Официальном журнале Европейского союза.
+	Update now	Обновить сейчас
+	Updating…	Обновление…
+	List of lists: sequence {n}, next update {date}	Список списков: номер {n}, следующее обновление {date}
+	{a} certification authorities from {c} national lists	Удостоверяющих центров: {a}, национальных списков: {c}
+	{country}: updated	{country}: обновлён
+	{country}: unchanged	{country}: без изменений
+	{country}: kept the copy held ({why})	{country}: сохранена имеющаяся копия ({why})
+	{country}: not used ({why})	{country}: не используется ({why})
+	Trusted Lists updated: {n} national lists	Доверенные списки обновлены: национальных списков — {n}
+	The Trusted Lists could not be fetched; the lists already kept are used	Не удалось загрузить доверенные списки; используются уже сохранённые
+	Couldn't update the Trusted Lists: {e}	Не удалось обновить доверенные списки: {e}
+	Couldn't read the certificate: {e}	Не удалось прочитать сертификат: {e}
+	That certificate is already in the list	Этот сертификат уже есть в списке
+	Certificate	Сертификат

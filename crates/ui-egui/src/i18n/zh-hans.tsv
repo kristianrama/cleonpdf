@@ -2379,3 +2379,23 @@ window	Zoom	缩放
 	Couldn't read the system's trusted certificates: {e}	无法读取系统的受信任证书：{e}
 	Server address (https://…)	服务器地址 (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	签名时可选择的服务器。除非签名使用，否则不会向任何服务器发送任何内容；使用时也只发送摘要，绝不发送文档。
+	Use the European Union Trusted Lists	使用欧盟可信列表
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	证书可追溯到国家可信列表所列认证机构的签名者，在该服务获批期间显示为有效。仅当您点击“立即更新”时才会下载列表。
+	Certificates that sign the list of lists	为列表之列表签名的证书
+	SHA-256 fingerprint: {fp}	SHA-256 指纹：{fp}
+	Add certificate…	添加证书…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF 未内置任何证书。信赖之前，请将每个指纹与欧盟委员会在《欧盟官方公报》上公布的指纹核对。
+	Update now	立即更新
+	Updating…	正在更新…
+	List of lists: sequence {n}, next update {date}	列表之列表：序号 {n}，下次更新 {date}
+	{a} certification authorities from {c} national lists	来自 {c} 个国家列表的 {a} 家认证机构
+	{country}: updated	{country}：已更新
+	{country}: unchanged	{country}：未变化
+	{country}: kept the copy held ({why})	{country}：保留现有副本（{why}）
+	{country}: not used ({why})	{country}：未使用（{why}）
+	Trusted Lists updated: {n} national lists	可信列表已更新：{n} 个国家列表
+	The Trusted Lists could not be fetched; the lists already kept are used	无法下载可信列表；将使用已保存的列表
+	Couldn't update the Trusted Lists: {e}	无法更新可信列表：{e}
+	Couldn't read the certificate: {e}	无法读取证书：{e}
+	That certificate is already in the list	该证书已在列表中
+	Certificate	证书
