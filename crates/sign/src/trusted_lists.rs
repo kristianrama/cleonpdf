@@ -19,7 +19,8 @@
 use std::collections::BTreeSet;
 
 use crate::der::Time;
-use crate::tl::{QualifiedRoot, TrustedList, TrustedListError};
+use crate::pdf::EutlAnchor;
+use crate::tl::{CA_QC, QualifiedRoot, TrustedList, TrustedListError};
 use crate::x509::Certificate;
 use crate::{SignError, tl::ListPointer};
 
@@ -50,6 +51,64 @@ pub struct Documents {
     pub lotl: String,
     /// The national lists with the address each was fetched from.
     pub lists: Vec<(String, String)>,
+}
+
+/// The file that holds the list of lists, in the layout [`Documents::to_files`] gives.
+pub const LOTL_FILE: &str = "lotl.xml";
+/// The file that says which address each `list-N.xml` came from.
+pub const LOCATIONS_FILE: &str = "locations.txt";
+
+fn list_file_name(n: usize) -> String {
+    format!("list-{n}.xml")
+}
+
+/// Whether `name` is a name `to_files` gives a national list.
+fn is_list_file(name: &str) -> bool {
+    name.strip_prefix("list-").and_then(|r| r.strip_suffix(".xml")).is_some_and(|d| !d.is_empty() && d.len() <= 4 && d.bytes().all(|b| b.is_ascii_digit()))
+}
+
+impl Documents {
+    /// The files to keep these documents in, as (name, content) pairs: the list of lists, each
+    /// national list as `list-N.xml`, and last the file that says where each came from. Writing
+    /// them in this order means a half-written set never names a list it lacks.
+    #[must_use]
+    pub fn to_files(&self) -> Vec<(String, String)> {
+        let mut files = vec![(LOTL_FILE.to_string(), self.lotl.clone())];
+        let mut index = String::new();
+        for (n, (location, xml)) in self.lists.iter().enumerate() {
+            let name = list_file_name(n);
+            // An address has no tab or line break: the fetcher refuses those.
+            index.push_str(&format!("{name}\t{}\n", location.replace(['\t', '\n', '\r'], "")));
+            files.push((name, xml.clone()));
+        }
+        files.push((LOCATIONS_FILE.to_string(), index));
+        files
+    }
+
+    /// The names of files a previous `to_files` may have left that the current set no longer
+    /// uses: `list-N.xml` for an N past the lists held.
+    #[must_use]
+    pub fn stale_files(&self, existing: &[String]) -> Vec<String> {
+        let keep: std::collections::BTreeSet<String> = (0..self.lists.len()).map(list_file_name).collect();
+        existing.iter().filter(|n| is_list_file(n) && !keep.contains(*n)).cloned().collect()
+    }
+
+    /// Read documents kept by [`Documents::to_files`], with `read` giving a file's text by name.
+    /// `None` when there is no list of lists; a national list whose file is missing is left out.
+    pub fn from_files(read: impl Fn(&str) -> Option<String>) -> Option<Documents> {
+        let lotl = read(LOTL_FILE)?;
+        let mut lists = Vec::new();
+        for line in read(LOCATIONS_FILE).unwrap_or_default().lines().take(MAX_NATIONAL_LISTS) {
+            let Some((name, location)) = line.split_once('\t') else { continue };
+            if !is_list_file(name) {
+                continue;
+            }
+            if let Some(xml) = read(name) {
+                lists.push((location.to_string(), xml));
+            }
+        }
+        Some(Documents { lotl, lists })
+    }
 }
 
 /// What became of one national list in a refresh.
@@ -240,6 +299,36 @@ impl Snapshot {
         for (_, list) in &self.lists {
             for root in list.qualified_roots_at(t) {
                 out.push((list.scheme.territory.clone(), root));
+            }
+        }
+        out
+    }
+
+    /// The certification authorities of qualified services, as trust anchors for validation: each
+    /// certificate with the times its service was granted (from the state's start to the next
+    /// state's, or without end for the current one).
+    #[must_use]
+    pub fn anchors(&self) -> Vec<EutlAnchor> {
+        let mut out = Vec::new();
+        for (_, list) in &self.lists {
+            for provider in &list.providers {
+                for service in &provider.services {
+                    for (i, state) in service.states.iter().enumerate() {
+                        if state.service_type != CA_QC || !state.is_granted() {
+                            continue;
+                        }
+                        let until = service.states.get(i.saturating_add(1)).map(|next| next.from);
+                        for certificate in &state.certificates {
+                            out.push(EutlAnchor {
+                                certificate: certificate.clone(),
+                                territory: list.scheme.territory.clone(),
+                                provider: provider.name.clone(),
+                                service: service.name.clone(),
+                                granted: vec![(state.from, until)],
+                            });
+                        }
+                    }
+                }
             }
         }
         out

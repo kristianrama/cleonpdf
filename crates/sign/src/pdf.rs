@@ -189,6 +189,33 @@ impl DigestCache {
     }
 }
 
+/// A certification authority that an EU Trusted List names for qualified certificates, with the
+/// times its service was "granted" (see [`crate::trusted_lists::Snapshot::anchors`]).
+#[derive(Clone, Debug)]
+pub struct EutlAnchor {
+    pub certificate: Certificate,
+    /// The country of the list (`IT`), the provider and the service, for saying who vouched.
+    pub territory: String,
+    pub provider: String,
+    pub service: String,
+    /// From when until when (exclusive; `None`: still) the service was granted.
+    pub granted: Vec<(Time, Option<Time>)>,
+}
+
+impl EutlAnchor {
+    /// Whether the service was granted at `t`.
+    #[must_use]
+    pub fn granted_at(&self, t: Time) -> bool {
+        self.granted.iter().any(|(from, until)| *from <= t && until.is_none_or(|u| t < u))
+    }
+
+    /// Who vouches, as a sentence fragment: the service, the provider and the country.
+    fn describe(&self) -> String {
+        let service = if self.service.is_empty() { self.certificate.display_name() } else { self.service.clone() };
+        format!("{service} ({}, {})", self.provider, self.territory)
+    }
+}
+
 /// Certificates the user trusts for signing (Acrobat: Trusted Certificates).
 #[derive(Clone, Debug, Default)]
 pub struct TrustStore {
@@ -197,6 +224,13 @@ pub struct TrustStore {
     /// (Acrobat: Windows Integration). Kept apart from `certs` so the signature can say that a
     /// signer is trusted because of them.
     pub system: Vec<Certificate>,
+    /// Certification authorities the EU Trusted Lists name for qualified certificates, when the
+    /// user has loaded them. Kept apart too, and each counts only while its service was granted.
+    pub eutl: Vec<EutlAnchor>,
+    /// Today, for judging `eutl` when a signature has no trusted timestamp: a signer's own claimed
+    /// time says nothing about whether the authority is granted. With no time given, `eutl`
+    /// counts for nothing.
+    pub eutl_now: Option<Time>,
 }
 
 impl TrustStore {
@@ -206,6 +240,12 @@ impl TrustStore {
 
     fn trusts_by_user(&self, c: &Certificate) -> bool {
         self.certs.iter().any(|t| t.raw == c.raw)
+    }
+
+    /// The Trusted List entry that vouches for `c` at `t`.
+    fn eutl_voucher(&self, c: &Certificate, t: Option<Time>) -> Option<&EutlAnchor> {
+        let t = t?;
+        self.eutl.iter().find(|a| a.certificate.raw == c.raw && a.granted_at(t))
     }
 }
 
@@ -390,6 +430,7 @@ pub const WORDINGS: &[&str] = &[
     "The signer's identity is unknown because it has not been included in your list of trusted certificates and none of its parent certificates are trusted certificates.",
     "The signer's identity is valid.",
     "The signer's identity is valid: it chains to {}, a certificate the operating system trusts.",
+    "The signer's identity is valid: it chains to {}, a certification authority on a European Union Trusted List.",
     "The signature includes an embedded timestamp.",
     "Signing time is from the clock on the signer's computer.",
     // What the signature's own timestamp token proves, if it carries one.
@@ -860,14 +901,19 @@ fn finish_validation(
     info.signing_time = cms_time.or_else(|| info.date.as_deref().and_then(Time::from_pdf));
     let mut pool = embedded.to_vec();
     pool.extend(trust.certs.iter().chain(&trust.system).cloned());
+    pool.extend(trust.eutl.iter().map(|a| a.certificate.clone()));
     // The time the chain is judged at: trusted timestamp, else the signer's claimed time.
     let at = info.timestamp_time.or(info.signing_time);
     let (chain, refused) = build_chain_noted(&cert, &pool, at);
     let chain: Vec<Certificate> = chain.into_iter().cloned().collect();
-    let trusted = chain.iter().any(|c| trust.trusts(c));
+    let known = chain.iter().any(|c| trust.trusts(c));
     // The certificate the system vouches with, when nothing the user trusts is in the chain.
     let by_system =
         if chain.iter().any(|c| trust.trusts_by_user(c)) { None } else { chain.iter().find(|c| trust.trusts(c)).map(Certificate::display_name) };
+    // A Trusted List vouches only when nothing else does. Only a trusted timestamp (or today's
+    // date) says whether its service was granted; the time the signer claims does not.
+    let by_eutl = if known { None } else { chain.iter().find_map(|c| trust.eutl_voucher(c, info.timestamp_time.or(trust.eutl_now))).map(EutlAnchor::describe) };
+    let trusted = known || by_eutl.is_some();
     info.chain = chain;
     info.certificate = Some(cert.clone());
     if let Some(why) = refused
@@ -929,11 +975,15 @@ fn finish_validation(
             info.status = Status::Unknown;
         }
     } else {
-        match by_system {
-            Some(root) => info
+        match (by_system, by_eutl) {
+            (_, Some(who)) => info.details.push(Detail::of(
+                "The signer's identity is valid: it chains to {}, a certification authority on a European Union Trusted List.",
+                Fill::Value(who),
+            )),
+            (Some(root), None) => info
                 .details
                 .push(Detail::of("The signer's identity is valid: it chains to {}, a certificate the operating system trusts.", Fill::Value(root))),
-            None => info.details.push(Detail::plain("The signer's identity is valid.")),
+            (None, None) => info.details.push(Detail::plain("The signer's identity is valid.")),
         }
         if !problems && !revoked {
             info.status = Status::Valid;

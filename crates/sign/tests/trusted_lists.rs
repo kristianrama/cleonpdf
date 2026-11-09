@@ -196,3 +196,58 @@ fn a_territory_has_one_list_and_the_list_of_lists_is_not_followed_again() {
     assert_eq!(*server.asked.borrow(), [LOTL_URL, IT]);
     assert_eq!(s.reports.len(), 1);
 }
+
+#[test]
+fn the_snapshot_hands_validation_its_anchors_with_the_times_they_were_granted() {
+    let anchors = good().anchors();
+    let find = |name: &str| anchors.iter().filter(|a| a.service == name).collect::<Vec<_>>();
+    // Qualified CA One: granted since 2016 and still.
+    let one = find("Qualified CA One");
+    assert_eq!(one.len(), 1);
+    assert_eq!((one[0].territory.as_str(), one[0].provider.as_str()), ("IT", "Test Qualified Provider"));
+    assert!(one[0].granted_at(t(2016, 7, 2)) && one[0].granted_at(now()) && !one[0].granted_at(t(2016, 6, 30)));
+    // Qualified CA Two: granted until it was withdrawn on 2022-03-01 09:00 UTC.
+    let two = find("Qualified CA Two");
+    assert_eq!(two.len(), 1);
+    assert!(two[0].granted_at(t(2020, 1, 1)) && !two[0].granted_at(t(2022, 3, 2)) && !two[0].granted_at(now()));
+    // Not certification authorities for qualified certificates, or not granted ever, or unreadable.
+    for none in ["Qualified TSA", "Non-qualified CA", "Broken"] {
+        assert!(find(none).is_empty(), "{none}");
+    }
+    // The ceased service was granted before it ceased.
+    let old = find("Old CA");
+    assert!(old.len() == 1 && old[0].granted_at(t(2018, 1, 1)) && !old[0].granted_at(now()));
+}
+
+#[test]
+fn documents_round_trip_through_files_and_a_damaged_set_is_read_as_far_as_it_goes() {
+    let docs = good().documents;
+    let files = docs.to_files();
+    // The index comes last, and only names that are our own are ever written.
+    assert_eq!(files.last().unwrap().0, "locations.txt");
+    assert!(files.iter().all(|(n, _)| n == "lotl.xml" || n == "locations.txt" || (n.starts_with("list-") && n.ends_with(".xml"))));
+    let by_name: HashMap<String, String> = files.iter().cloned().collect();
+    let back = Documents::from_files(|n| by_name.get(n).cloned()).unwrap();
+    assert_eq!(back, docs);
+    // It still loads and verifies.
+    assert_eq!(Snapshot::load(&back, &anchors(), now()).unwrap().lists.len(), 2);
+    // No list of lists, no documents; a missing national list or index leaves the rest.
+    assert!(Documents::from_files(|_| None).is_none());
+    let without = Documents::from_files(|n| if n == "list-0.xml" { None } else { by_name.get(n).cloned() }).unwrap();
+    assert_eq!(without.lists.len(), docs.lists.len() - 1);
+    assert!(Documents::from_files(|n| if n == "locations.txt" { None } else { by_name.get(n).cloned() }).unwrap().lists.is_empty());
+    // An index that names other files is not followed to them.
+    let evil = "../../etc/passwd\thttps://x.invalid/a.xml\nlist-0.xml\thttps://example.invalid/tl-it.xml\nlist-99999.xml\thttps://x.invalid/b.xml\n";
+    let asked = RefCell::new(Vec::new());
+    let read = |n: &str| {
+        asked.borrow_mut().push(n.to_string());
+        if n == "locations.txt" { Some(evil.to_string()) } else { by_name.get(n).cloned() }
+    };
+    let got = Documents::from_files(read).unwrap();
+    assert_eq!(got.lists.len(), 1);
+    assert_eq!(*asked.borrow(), ["lotl.xml", "locations.txt", "list-0.xml"]);
+    // Files a smaller set no longer uses.
+    let one = Documents { lotl: docs.lotl.clone(), lists: docs.lists[..1].to_vec() };
+    let names: Vec<String> = ["lotl.xml", "list-0.xml", "list-1.xml", "list-7.xml", "notes.txt", "list-x.xml"].map(String::from).to_vec();
+    assert_eq!(one.stale_files(&names), ["list-1.xml", "list-7.xml"]);
+}

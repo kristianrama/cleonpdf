@@ -768,6 +768,16 @@ pub fn tools() -> Vec<ToolDef> {
             }),
             &[],
         )),
+        t("sign_eutl", "EU Trusted Lists", "Use the European Union's Trusted Lists to trust the certification authorities of qualified trust service providers when validating signatures (each counts only while its service was granted, judged by a trusted timestamp or today's date; the signature says which list vouched). `anchors` names the files holding the certificates the European Commission signs the list of lists with (from the Official Journal; none is built in, so check them first). action `update` fetches the list of lists and each national list it points to (the only network requests: to the addresses in the signed list of lists, public hosts only unless `allow_private_hosts`), believing only what verifies against the anchors and refusing a list that is out of date, older than the copy in `cache`, or for another country; one country failing does not stop the others, and offline the verified copy in `cache` is used. `cache` is a folder inside the root where the signed lists are kept (and read again, verified again, by `load`, which makes no request). `clear` stops counting them; `status` shows what counts. Every open document is revalidated. Returns the anchors counted, by country, the list of lists' sequence and dates, and what became of each country's list.").with(schema(
+            json!({
+                "action": { "type": "string", "enum": ["status", "update", "load", "clear"] },
+                "anchors": { "type": "array", "items": { "type": "string" }, "description": "Files (.cer/.crt/.pem/.der) with the certificates that sign the list of lists. Required for update and load." },
+                "cache": { "type": "string", "description": "A folder inside the root for the signed lists." },
+                "lotl_url": { "type": "string", "description": "Another address for the list of lists. Default the European Commission's." },
+                "allow_private_hosts": { "type": "boolean", "description": "Also reach hosts on private, loopback and link-local addresses. Default false." },
+            }),
+            &["action"],
+        )),
         t("comment_mark", "Mark a comment with a checkmark", "Mark or unmark a comment with a checkmark (Acrobat: Mark with checkmark), recorded as a private reply. Undoable.").with(schema(
             comment_ref(json!({ "marked": { "type": "boolean", "description": "Default true." }, "author": { "type": "string" } })),
             &["doc"],

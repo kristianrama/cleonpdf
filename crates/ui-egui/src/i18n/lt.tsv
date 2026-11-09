@@ -2657,5 +2657,6 @@ window	Zoom	Keisti dydį
 	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Pasirašiusieji, kurių sertifikatas veda į šaknį, kuria pasitiki jūsų sistema, rodomi kaip galiojantys. Ši saugykla skirta svetainėms, todėl įjunkite tai tik jei sutinkate, kad jos institucijos laiduotų už dokumentus pasirašančius asmenis.
 	Couldn't read the system's trusted certificates: {e}	Nepavyko nuskaityti sistemos patikimų sertifikatų: {e}
 	The signer's identity is valid: it chains to {}, a certificate the operating system trusts.	Pasirašiusiojo tapatybė galioja: ji veda į {} – sertifikatą, kuriuo pasitiki operacinė sistema.
+	The signer's identity is valid: it chains to {}, a certification authority on a European Union Trusted List.	Pasirašiusiojo tapatybė galioja: ji veda į {} – sertifikavimo instituciją Europos Sąjungos patikimųjų sąrašuose.
 	Server address (https://…)	Serverio adresas (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Serveriai, iš kurių galima rinktis pasirašant. Niekas nesiunčiama jokiam serveriui, kol parašas jo nenaudoja, o tada siunčiama tik santrauka, niekada ne dokumentas.
