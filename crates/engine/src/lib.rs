@@ -3148,7 +3148,11 @@ impl Session {
     /// Snapshot the session state that affects open-time scripts, dates and signature trust.
     pub fn open_context(&self) -> OpenContext {
         // A long-running session judges the Trusted Lists by today's date, not by the day they were loaded.
-        let trust = if self.trust.eutl.is_empty() { self.trust.clone() } else { Arc::new(TrustStore { eutl_now: self.trust_time(), ..(*self.trust).clone() }) };
+        let trust = if self.trust.eutl.is_empty() {
+            self.trust.clone()
+        } else {
+            Arc::new(TrustStore { eutl_now: self.trust_time(), ..(*self.trust).clone() })
+        };
         OpenContext { now: self.now(), js_off: self.js_off, trust }
     }
 

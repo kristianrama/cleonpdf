@@ -1757,7 +1757,8 @@ fn the_eu_trusted_lists_come_from_a_verified_cache_and_need_anchors() {
     ] {
         std::fs::write(dir.join(to), xml(from)).unwrap();
     }
-    std::fs::write(dir.join("lists/locations.txt"), "list-0.xml\thttps://example.invalid/tl-it.xml\nlist-1.xml\thttps://example.invalid/tl-de.xml\n").unwrap();
+    std::fs::write(dir.join("lists/locations.txt"), "list-0.xml\thttps://example.invalid/tl-it.xml\nlist-1.xml\thttps://example.invalid/tl-de.xml\n")
+        .unwrap();
     // A clock inside the test certificates' and lists' validity.
     let mut a = Automation::new().with_root(&dir).unwrap().with_clock(|| 1_795_000_000);
     assert_eq!(ok(&mut a, "sign_eutl", json!({ "action": "status" }))["anchors"], 0, "nothing counts until asked");
@@ -1765,7 +1766,12 @@ fn the_eu_trusted_lists_come_from_a_verified_cache_and_need_anchors() {
     let loaded = ok(&mut a, "sign_eutl", json!({ "action": "load", "anchors": ["eu.der"], "cache": "lists" }));
     assert_eq!(loaded["countries"], json!({ "DE": 1, "IT": 4 }), "{loaded}");
     assert_eq!(loaded["list_of_lists"]["sequence"], 371);
-    let outcomes: Vec<String> = loaded["lists"].as_array().unwrap().iter().map(|l| format!("{}:{}", l["territory"].as_str().unwrap(), l["outcome"].as_str().unwrap())).collect();
+    let outcomes: Vec<String> = loaded["lists"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|l| format!("{}:{}", l["territory"].as_str().unwrap(), l["outcome"].as_str().unwrap()))
+        .collect();
     assert_eq!(outcomes, ["IT:unchanged", "DE:unchanged"]);
     assert_eq!(ok(&mut a, "sign_eutl", json!({ "action": "status" }))["anchors"], 5);
     // They are not the user's trusted certificates, nor the system's.
@@ -1792,13 +1798,22 @@ fn the_eu_trusted_lists_come_from_a_verified_cache_and_need_anchors() {
     // with no copy it is an error. The default fetcher does not even try a loopback address.
     let port = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
     let url = format!("http://127.0.0.1:{port}/eu-lotl.xml");
-    let offline = ok(&mut a, "sign_eutl", json!({ "action": "update", "anchors": ["eu.der"], "cache": "lists", "lotl_url": url, "allow_private_hosts": true }));
+    let offline =
+        ok(&mut a, "sign_eutl", json!({ "action": "update", "anchors": ["eu.der"], "cache": "lists", "lotl_url": url, "allow_private_hosts": true }));
     assert!(offline["lists"].as_array().unwrap().iter().any(|l| l["outcome"] == "kept_previous"), "{offline}");
     assert_eq!(offline["countries"], json!({ "DE": 1 }));
-    assert!(matches!(a.call("sign_eutl", &json!({ "action": "update", "anchors": ["eu.der"], "lotl_url": url, "allow_private_hosts": true })), Err(ToolError::Failed(_))));
-    let Err(ToolError::Failed(why)) = a.call("sign_eutl", &json!({ "action": "update", "anchors": ["eu.der"], "lotl_url": url })) else { panic!("expected a refusal") };
+    assert!(matches!(
+        a.call("sign_eutl", &json!({ "action": "update", "anchors": ["eu.der"], "lotl_url": url, "allow_private_hosts": true })),
+        Err(ToolError::Failed(_))
+    ));
+    let Err(ToolError::Failed(why)) = a.call("sign_eutl", &json!({ "action": "update", "anchors": ["eu.der"], "lotl_url": url })) else {
+        panic!("expected a refusal")
+    };
     assert!(why.contains("not a public address"), "{why}");
-    assert!(matches!(a.call("sign_eutl", &json!({ "action": "update", "anchors": ["eu.der"], "lotl_url": "file:///etc/passwd" })), Err(ToolError::InvalidArgs(_))));
+    assert!(matches!(
+        a.call("sign_eutl", &json!({ "action": "update", "anchors": ["eu.der"], "lotl_url": "file:///etc/passwd" })),
+        Err(ToolError::InvalidArgs(_))
+    ));
 
     // Clearing stops them counting.
     assert_eq!(ok(&mut a, "sign_eutl", json!({ "action": "clear" }))["anchors"], 0);

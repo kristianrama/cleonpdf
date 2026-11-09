@@ -912,7 +912,8 @@ fn finish_validation(
         if chain.iter().any(|c| trust.trusts_by_user(c)) { None } else { chain.iter().find(|c| trust.trusts(c)).map(Certificate::display_name) };
     // A Trusted List vouches only when nothing else does. Only a trusted timestamp (or today's
     // date) says whether its service was granted; the time the signer claims does not.
-    let by_eutl = if known { None } else { chain.iter().find_map(|c| trust.eutl_voucher(c, info.timestamp_time.or(trust.eutl_now))).map(EutlAnchor::describe) };
+    let by_eutl =
+        if known { None } else { chain.iter().find_map(|c| trust.eutl_voucher(c, info.timestamp_time.or(trust.eutl_now))).map(EutlAnchor::describe) };
     let trusted = known || by_eutl.is_some();
     info.chain = chain;
     info.certificate = Some(cert.clone());

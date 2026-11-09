@@ -455,7 +455,8 @@ impl Automation {
                 .and_then(|docs| Snapshot::load(&docs, &anchors, now).ok()),
         };
         let (snapshot, refreshed) = if action == "load" {
-            let held = previous.ok_or_else(|| failed("there are no usable Trusted Lists in the cache (or they no longer verify against these anchors)"))?;
+            let held =
+                previous.ok_or_else(|| failed("there are no usable Trusted Lists in the cache (or they no longer verify against these anchors)"))?;
             (held, false)
         } else {
             let url = match a.opt_str("lotl_url")? {

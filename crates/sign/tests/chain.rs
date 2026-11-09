@@ -360,24 +360,37 @@ fn a_certification_authority_on_an_eu_trusted_list_vouches_while_it_is_granted()
     let today = Some(Time { year: 2026, month: 11, day: 20, hour: 12, minute: 0, second: 0 });
     let granted_since_2016 = vec![(time(2016), None)];
     // Granted now: valid, and the detail says where the trust comes from.
-    let (status, details) = verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, granted_since_2016.clone())], today));
+    let (status, details) =
+        verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, granted_since_2016.clone())], today));
     assert_eq!(status, Status::Valid, "{details:?}");
     assert!(details.iter().any(|d| d == said) && !details.iter().any(|d| d == "The signer's identity is valid."), "{details:?}");
     // The authority's certificate need not be embedded in the document.
     let (status, _) = verdict_with(end_entity("Signer", &i), vec![], &trust(vec![anchor(&i.cert, granted_since_2016.clone())], today));
     assert_eq!(status, Status::Valid);
     // With no date to judge by, the list counts for nothing.
-    assert_eq!(verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, granted_since_2016.clone())], None)).0, Status::Unknown);
+    assert_eq!(
+        verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, granted_since_2016.clone())], None)).0,
+        Status::Unknown
+    );
     // Withdrawn since 2022, or not granted yet: not a voucher. The signer cannot help by claiming
     // an earlier signing time.
     let withdrawn = vec![(time(2016), Some(time(2022)))];
     let (status, details) = verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, withdrawn.clone())], today));
     assert_eq!(status, Status::Unknown, "{details:?}");
-    assert_eq!(verdict_dated(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, withdrawn)], today), "D:20200601120000Z").0, Status::Unknown);
-    assert_eq!(verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, vec![(time(2027), None)])], today)).0, Status::Unknown);
+    assert_eq!(
+        verdict_dated(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, withdrawn)], today), "D:20200601120000Z").0,
+        Status::Unknown
+    );
+    assert_eq!(
+        verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, vec![(time(2027), None)])], today)).0,
+        Status::Unknown
+    );
     // A different authority vouches for nothing.
     let other = issue("Other Root", None, FOREVER, &[basic_constraints(true, None), key_usage(KEY_CERT_SIGN)]);
-    assert_eq!(verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&other.cert, granted_since_2016.clone())], today)).0, Status::Unknown);
+    assert_eq!(
+        verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&other.cert, granted_since_2016.clone())], today)).0,
+        Status::Unknown
+    );
     // The user's own list needs no such excuse.
     let both = TrustStore { certs: vec![r.cert.clone()], eutl: vec![anchor(&i.cert, granted_since_2016)], eutl_now: today, ..TrustStore::default() };
     let (status, details) = verdict_with(end_entity("Signer", &i), embedded, &both);

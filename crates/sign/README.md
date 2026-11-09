@@ -70,7 +70,12 @@ for s in signatures(&doc, &bytes, &trust) {                                // li
   the pointer says; a territory has one list. One list failing does not stop the others, a copy held is
   kept only while it still verifies and has not expired, and every list's outcome is recorded.
   `Snapshot::load` verifies kept documents again, so a copy changed on disk is not believed.
-  `qualified_roots_at` gives the qualified CA certificates across all lists.
+  `qualified_roots_at` gives the qualified CA certificates across all lists, and `anchors` the same
+  as `EutlAnchor`s for validation, each with the times its service was granted: `TrustStore::eutl`
+  counts them as trusted apart from the user's and the system's lists, judged by a trusted
+  timestamp or `TrustStore::eutl_now` (today), never by the signing time the signer claims, and the
+  signature says that a Trusted List vouched. `Documents::to_files` / `from_files` give the layout
+  the signed text is kept in.
 
 - **Gathering evidence (PAdES B-LT):** `ltv::gather` takes the signers' chains and a
   `RevocationFetcher` (this crate never opens a socket; `cleonpdf-net` is the HTTP one). For

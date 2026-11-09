@@ -64,7 +64,9 @@ fn list_file_name(n: usize) -> String {
 
 /// Whether `name` is a name `to_files` gives a national list.
 fn is_list_file(name: &str) -> bool {
-    name.strip_prefix("list-").and_then(|r| r.strip_suffix(".xml")).is_some_and(|d| !d.is_empty() && d.len() <= 4 && d.bytes().all(|b| b.is_ascii_digit()))
+    name.strip_prefix("list-")
+        .and_then(|r| r.strip_suffix(".xml"))
+        .is_some_and(|d| !d.is_empty() && d.len() <= 4 && d.bytes().all(|b| b.is_ascii_digit()))
 }
 
 impl Documents {
