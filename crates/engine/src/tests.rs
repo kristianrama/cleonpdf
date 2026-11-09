@@ -2519,6 +2519,46 @@ fn the_systems_roots_trust_signers_apart_from_the_users_list() {
     assert_eq!(status(&s), SignatureStatus::Unknown);
 }
 
+/// The EU Trusted Lists' authorities trust signers while their service was granted, apart from
+/// the user's list and the system's, for documents open now and opened later.
+#[test]
+fn the_eu_trusted_lists_trust_signers_while_the_service_was_granted() {
+    let p12 = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../sign/tests/data/ec-p256.p12")).unwrap();
+    let digital_id = sign::pkcs12::open(&p12, "test").unwrap();
+    let time = |year| sign::Time { year, month: 1, day: 1, hour: 0, minute: 0, second: 0 };
+    let anchor = |granted: Vec<(sign::Time, Option<sign::Time>)>| sign::EutlAnchor {
+        certificate: digital_id.certificate.clone(),
+        territory: "IT".into(),
+        provider: "Test Provider".into(),
+        service: "Test Service".into(),
+        granted,
+    };
+    let mut s = Session::new().with_clock(|| 1_800_000_000);
+    let id = s.open("fixture.pdf", None, Arc::new(fixture(2)), None).unwrap();
+    let opts = SignOptions { page: 1, rect: Some([20.0, 20.0, 180.0, 60.0]), ..SignOptions::default() };
+    let signed = s.sign(id, &digital_id, opts).unwrap();
+    s.mark_signed(id, signed.clone(), Some("/tmp/signed.pdf".into())).unwrap();
+    let status = |s: &Session| s.get(id).unwrap().signatures[0].status;
+    assert_eq!(status(&s), SignatureStatus::Unknown);
+    s.set_eutl_anchors(vec![anchor(vec![(time(2016), None)])]);
+    assert_eq!(status(&s), SignatureStatus::Valid, "open documents are validated again");
+    let said = s.get(id).unwrap().signatures[0].details.iter().any(|d| d.message.contains("European Union Trusted List"));
+    assert!(said && s.trusted_certificates().is_empty() && s.system_certificates().is_empty() && s.eutl_anchors().len() == 1);
+    // A document opened later is judged by them too.
+    let later = s.open("signed.pdf", None, signed, None).unwrap();
+    assert_eq!(s.get(later).unwrap().signatures[0].status, SignatureStatus::Valid);
+    // The user's list and the system's change nothing about them.
+    s.set_trusted_certificates(Vec::new());
+    s.set_system_certificates(Vec::new());
+    assert_eq!(status(&s), SignatureStatus::Valid);
+    // A service that was withdrawn before today vouches for nothing; so does withdrawing them all.
+    s.set_eutl_anchors(vec![anchor(vec![(time(2016), Some(time(2020)))])]);
+    assert_eq!(status(&s), SignatureStatus::Unknown);
+    s.set_eutl_anchors(vec![anchor(vec![(time(2016), None)])]);
+    s.set_eutl_anchors(Vec::new());
+    assert_eq!(status(&s), SignatureStatus::Unknown);
+}
+
 #[test]
 #[ignore = "timing probe"]
 fn probe_edit_latency_on_a_large_signed_document() {

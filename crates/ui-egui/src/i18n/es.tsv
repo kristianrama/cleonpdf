@@ -2545,5 +2545,6 @@ window	Zoom	Zoom
 	Signers that chain to a root your system trusts are shown as valid. That store is meant for websites, so turn this on only if you accept its authorities vouching for people who sign documents.	Los firmantes cuyo certificado enlaza con una raíz en la que confía su sistema se muestran como válidos. Ese almacén está pensado para sitios web, así que actívelo solo si acepta que sus autoridades avalen a quienes firman documentos.
 	Couldn't read the system's trusted certificates: {e}	No se pudieron leer los certificados de confianza del sistema: {e}
 	The signer's identity is valid: it chains to {}, a certificate the operating system trusts.	La identidad del firmante es válida: enlaza con {}, un certificado en el que confía el sistema operativo.
+	The signer's identity is valid: it chains to {}, a certification authority on a European Union Trusted List.	La identidad del firmante es válida: enlaza con {}, una autoridad de certificación de una Lista de Confianza de la Unión Europea.
 	Server address (https://…)	Dirección del servidor (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Servidores para elegir al firmar. No se envía nada a ningún servidor salvo que una firma lo use, y entonces solo un resumen, nunca el documento.

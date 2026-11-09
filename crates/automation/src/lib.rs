@@ -803,6 +803,7 @@ impl Automation {
                 json!({ "count": ids.len(), "ids": ids, "unusable": unusable })
             }
             "sign_trust" => self.sign_trust(&a)?,
+            "sign_eutl" => self.sign_eutl(&a)?,
             "comment_mark" => self.comment_mark(&a)?,
             "comment_lock" => self.comment_lock(&a)?,
             "comments_hide" => self.comments_hide(&a)?,

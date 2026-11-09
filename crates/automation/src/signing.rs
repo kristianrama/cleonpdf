@@ -409,6 +409,130 @@ impl Automation {
     }
 }
 
+impl Automation {
+    /// Fetch, load, show or drop the EU Trusted Lists.
+    pub(crate) fn sign_eutl(&mut self, a: &Args) -> Result<Value> {
+        use cleonpdf_engine::sign::trusted_lists::{Documents, LOTL_URL, Outcome, RefreshError, Snapshot};
+        let action = a.str("action")?;
+        match action {
+            "status" => return Ok(self.eutl_status(None)),
+            "clear" => {
+                self.session.set_eutl_anchors(Vec::new());
+                return Ok(self.eutl_status(None));
+            }
+            "update" | "load" => {}
+            other => return Err(bad(format!("action must be status, update, load or clear, not {other:?}"))),
+        }
+        let now = self.session.trust_time().ok_or_else(|| failed("the Trusted Lists need today's date and this session has no clock"))?;
+        // The anchors: the certificates the Commission signs the list of lists with, which the
+        // caller supplies and has checked against the Official Journal; nothing is built in.
+        let paths: Vec<String> = a
+            .get("anchors")
+            .and_then(Value::as_array)
+            .ok_or_else(|| bad("anchors must list the files holding the certificates that sign the list of lists"))?
+            .iter()
+            .map(|p| p.as_str().map(str::to_string).ok_or_else(|| bad("anchors must be strings")))
+            .collect::<Result<_>>()?;
+        let mut anchors: Vec<Certificate> = Vec::new();
+        for p in &paths {
+            let path = self.resolve(p, false)?;
+            let bytes = std::fs::read(&path).map_err(|e| failed(format!("{}: {e}", path.display())))?;
+            for c in sign::x509::load_certificates(&bytes).map_err(failed)? {
+                if !anchors.iter().any(|t| t.raw == c.raw) {
+                    anchors.push(c);
+                }
+            }
+        }
+        if anchors.is_empty() {
+            return Err(bad("anchors held no certificate"));
+        }
+        // The cache: a folder inside the root, read and written one fixed name at a time.
+        let cache = a.opt_str("cache")?.map(str::to_string);
+        let in_cache = |name: &str| format!("{}/{name}", cache.as_deref().unwrap_or(".").trim_end_matches('/'));
+        let previous: Option<Snapshot> = match &cache {
+            None => None,
+            Some(_) => Documents::from_files(|name| std::fs::read_to_string(self.resolve(&in_cache(name), false).ok()?).ok())
+                .and_then(|docs| Snapshot::load(&docs, &anchors, now).ok()),
+        };
+        let (snapshot, refreshed) = if action == "load" {
+            let held =
+                previous.ok_or_else(|| failed("there are no usable Trusted Lists in the cache (or they no longer verify against these anchors)"))?;
+            (held, false)
+        } else {
+            let url = match a.opt_str("lotl_url")? {
+                Some(u) => cleonpdf_net::check_url(u).map_err(bad)?,
+                None => LOTL_URL.to_string(),
+            };
+            let fetcher = cleonpdf_net::HttpListFetcher::new().allow_private_hosts(a.opt_bool("allow_private_hosts")?.unwrap_or(false));
+            match Snapshot::refresh(&fetcher, &url, &anchors, now, previous.as_ref()) {
+                Ok(s) => (s, true),
+                // Offline: the lists already held are still good, and say so below.
+                Err(RefreshError::Fetch(why)) if previous.is_some() => {
+                    let mut held = previous.ok_or_else(|| failed(why.clone()))?;
+                    for r in &mut held.reports {
+                        if r.outcome == Outcome::Unchanged {
+                            r.outcome = Outcome::KeptPrevious(format!("the list of lists could not be fetched ({why})"));
+                        }
+                    }
+                    (held, false)
+                }
+                Err(e) => return Err(failed(e)),
+            }
+        };
+        if refreshed && let Some(dir) = &cache {
+            let files = snapshot.documents.to_files();
+            let existing: Vec<String> = match self.resolve(dir, false).ok().and_then(|d| std::fs::read_dir(d).ok()) {
+                Some(rd) => rd.filter_map(|e| e.ok()?.file_name().into_string().ok()).collect(),
+                None => Vec::new(),
+            };
+            for (name, text) in &files {
+                write_atomic(&self.resolve(&in_cache(name), true)?, text.as_bytes())?;
+            }
+            for name in snapshot.documents.stale_files(&existing) {
+                let _ = std::fs::remove_file(self.resolve(&in_cache(&name), true)?);
+            }
+        }
+        self.session.set_eutl_anchors(snapshot.anchors());
+        Ok(self.eutl_status(Some(&snapshot)))
+    }
+
+    fn eutl_status(&self, snapshot: Option<&sign::trusted_lists::Snapshot>) -> Value {
+        use cleonpdf_engine::sign::trusted_lists::Outcome;
+        let anchors = self.session.eutl_anchors();
+        let mut by_country: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+        for a in anchors {
+            *by_country.entry(a.territory.as_str()).or_insert(0) += 1;
+        }
+        let lists: Vec<Value> = snapshot
+            .map(|s| {
+                s.reports
+                    .iter()
+                    .map(|r| {
+                        let (outcome, why) = match &r.outcome {
+                            Outcome::Updated => ("updated", None),
+                            Outcome::Unchanged => ("unchanged", None),
+                            Outcome::KeptPrevious(why) => ("kept_previous", Some(why.clone())),
+                            Outcome::Unusable(why) => ("unusable", Some(why.clone())),
+                        };
+                        json!({ "territory": r.territory, "outcome": outcome, "reason": why })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        json!({
+            "anchors": anchors.len(),
+            "countries": by_country,
+            "list_of_lists": snapshot.map(|s| json!({
+                "sequence": s.lotl.scheme.sequence_number,
+                "issued": s.lotl.scheme.issued.map(|t| t.to_string()),
+                "next_update": s.lotl.scheme.next_update.map(|t| t.to_string()),
+                "signer": s.lotl.signer.fingerprint(),
+            })),
+            "lists": lists,
+        })
+    }
+}
+
 /// A form-field lock as the tools show it: `{"action": "all" | "include" | "exclude", "fields": [..]}`.
 fn lock_json(l: &FieldLock) -> Value {
     let action = match l {

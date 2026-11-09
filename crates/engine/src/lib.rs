@@ -3147,7 +3147,13 @@ impl Session {
 
     /// Snapshot the session state that affects open-time scripts, dates and signature trust.
     pub fn open_context(&self) -> OpenContext {
-        OpenContext { now: self.now(), js_off: self.js_off, trust: self.trust.clone() }
+        // A long-running session judges the Trusted Lists by today's date, not by the day they were loaded.
+        let trust = if self.trust.eutl.is_empty() {
+            self.trust.clone()
+        } else {
+            Arc::new(TrustStore { eutl_now: self.trust_time(), ..(*self.trust).clone() })
+        };
+        OpenContext { now: self.now(), js_off: self.js_off, trust }
     }
 
     /// Prepare a document without adding it to this session.
@@ -4561,7 +4567,7 @@ impl Session {
 
     /// Replace the trusted certificates and revalidate every open document's signatures.
     pub fn set_trusted_certificates(&mut self, certs: Vec<cleonpdf_sign::Certificate>) {
-        self.trust = Arc::new(TrustStore { certs, system: self.trust.system.clone() });
+        self.trust = Arc::new(TrustStore { certs, ..(*self.trust).clone() });
         self.revalidate();
     }
 
@@ -4574,8 +4580,28 @@ impl Session {
     /// and revalidate every open document's signatures. They stay apart from
     /// [`Session::trusted_certificates`], the user's own list.
     pub fn set_system_certificates(&mut self, certs: Vec<cleonpdf_sign::Certificate>) {
-        self.trust = Arc::new(TrustStore { certs: self.trust.certs.clone(), system: certs });
+        self.trust = Arc::new(TrustStore { system: certs, ..(*self.trust).clone() });
         self.revalidate();
+    }
+
+    /// The certification authorities of the EU Trusted Lists counted as trusted, if the user
+    /// loaded the lists.
+    pub fn eutl_anchors(&self) -> &[cleonpdf_sign::EutlAnchor] {
+        &self.trust.eutl
+    }
+
+    /// Count `anchors` (see `Snapshot::anchors`) as trusted while their service was granted, or
+    /// none with an empty list, and revalidate every open document's signatures. Today's date
+    /// comes from the session clock; with none, the anchors count for nothing.
+    pub fn set_eutl_anchors(&mut self, anchors: Vec<cleonpdf_sign::EutlAnchor>) {
+        let eutl_now = self.trust_time();
+        self.trust = Arc::new(TrustStore { eutl: anchors, eutl_now, ..(*self.trust).clone() });
+        self.revalidate();
+    }
+
+    /// Today as a UTC time, when the session has a clock.
+    pub fn trust_time(&self) -> Option<cleonpdf_sign::Time> {
+        self.now().map(cleonpdf_sign::Time::from_unix)
     }
 
     fn revalidate(&mut self) {

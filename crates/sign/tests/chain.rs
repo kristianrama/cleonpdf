@@ -215,9 +215,14 @@ fn a_signature_chaining_through_an_ordinary_certificate_is_not_trusted() {
 
 /// A signature by `leaf` (with `embedded`), validated against `trust`: status and English details.
 fn verdict_with(leaf: Party, embedded: Vec<Certificate>, trust: &TrustStore) -> (Status, Vec<String>) {
+    verdict_dated(leaf, embedded, trust, "D:20260601120000Z")
+}
+
+/// [`verdict_with`] for a signature that claims to have been made at `date`.
+fn verdict_dated(leaf: Party, embedded: Vec<Certificate>, trust: &TrustStore, date: &str) -> (Status, Vec<String>) {
     let id = DigitalId { key: leaf.key, certificate: leaf.cert, chain: embedded, friendly_name: None };
     let doc = Document::open(Arc::new(fixture())).unwrap();
-    let opts = SignOptions { page: 0, rect: None, date: "D:20260601120000Z".into(), ..SignOptions::default() };
+    let opts = SignOptions { page: 0, rect: None, date: date.into(), ..SignOptions::default() };
     let signed = cleonpdf_sign::sign(&doc, &id, &opts).unwrap();
     let s = signatures(&Document::open(Arc::new(signed.clone())).unwrap(), &signed, trust).into_iter().rfind(|s| s.signed).unwrap();
     (s.status, s.details.iter().map(|d| d.message.clone()).collect())
@@ -240,7 +245,7 @@ fn a_root_the_system_trusts_vouches_for_a_signer_and_the_signature_says_why() {
     assert!(details.iter().any(|d| d == said), "{details:?}");
     assert!(!details.iter().any(|d| d == "The signer's identity is valid."), "{details:?}");
     // The user's own list needs no such excuse: it is the plain sentence, whatever the system holds.
-    let both = TrustStore { certs: vec![r.cert.clone()], system: vec![r.cert.clone()] };
+    let both = TrustStore { certs: vec![r.cert.clone()], system: vec![r.cert.clone()], ..TrustStore::default() };
     let (status, details) = verdict_with(end_entity("Signer", &i), embedded.clone(), &both);
     assert_eq!(status, Status::Valid, "{details:?}");
     assert!(details.iter().any(|d| d == "The signer's identity is valid.") && !details.iter().any(|d| d == said), "{details:?}");
@@ -334,4 +339,61 @@ fn unreadable_constraint_extensions_fail_closed() {
     let garbage = ext("2.5.29.19", &[0x30, 0x05, 0x01]);
     let c = issue("Garbled Constraints", None, FOREVER, &[garbage]);
     assert!(c.cert.has_basic_constraints && !c.cert.is_ca && !c.cert.may_issue());
+}
+
+/// A certification authority an EU Trusted List names vouches for a signer while its service is
+/// granted, and the signature says who vouched.
+#[test]
+fn a_certification_authority_on_an_eu_trusted_list_vouches_while_it_is_granted() {
+    let r = root();
+    let i = ca("Issuing CA", &r, None);
+    let embedded = vec![i.cert.clone()];
+    let said = "The signer's identity is valid: it chains to Qualified Issuing Service (Test Provider, IT), a certification authority on a European Union Trusted List.";
+    let anchor = |cert: &Certificate, granted: Vec<(Time, Option<Time>)>| cleonpdf_sign::EutlAnchor {
+        certificate: cert.clone(),
+        territory: "IT".into(),
+        provider: "Test Provider".into(),
+        service: "Qualified Issuing Service".into(),
+        granted,
+    };
+    let trust = |a: Vec<cleonpdf_sign::EutlAnchor>, now: Option<Time>| TrustStore { eutl: a, eutl_now: now, ..TrustStore::default() };
+    let today = Some(Time { year: 2026, month: 11, day: 20, hour: 12, minute: 0, second: 0 });
+    let granted_since_2016 = vec![(time(2016), None)];
+    // Granted now: valid, and the detail says where the trust comes from.
+    let (status, details) =
+        verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, granted_since_2016.clone())], today));
+    assert_eq!(status, Status::Valid, "{details:?}");
+    assert!(details.iter().any(|d| d == said) && !details.iter().any(|d| d == "The signer's identity is valid."), "{details:?}");
+    // The authority's certificate need not be embedded in the document.
+    let (status, _) = verdict_with(end_entity("Signer", &i), vec![], &trust(vec![anchor(&i.cert, granted_since_2016.clone())], today));
+    assert_eq!(status, Status::Valid);
+    // With no date to judge by, the list counts for nothing.
+    assert_eq!(
+        verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, granted_since_2016.clone())], None)).0,
+        Status::Unknown
+    );
+    // Withdrawn since 2022, or not granted yet: not a voucher. The signer cannot help by claiming
+    // an earlier signing time.
+    let withdrawn = vec![(time(2016), Some(time(2022)))];
+    let (status, details) = verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, withdrawn.clone())], today));
+    assert_eq!(status, Status::Unknown, "{details:?}");
+    assert_eq!(
+        verdict_dated(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, withdrawn)], today), "D:20200601120000Z").0,
+        Status::Unknown
+    );
+    assert_eq!(
+        verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&i.cert, vec![(time(2027), None)])], today)).0,
+        Status::Unknown
+    );
+    // A different authority vouches for nothing.
+    let other = issue("Other Root", None, FOREVER, &[basic_constraints(true, None), key_usage(KEY_CERT_SIGN)]);
+    assert_eq!(
+        verdict_with(end_entity("Signer", &i), embedded.clone(), &trust(vec![anchor(&other.cert, granted_since_2016.clone())], today)).0,
+        Status::Unknown
+    );
+    // The user's own list needs no such excuse.
+    let both = TrustStore { certs: vec![r.cert.clone()], eutl: vec![anchor(&i.cert, granted_since_2016)], eutl_now: today, ..TrustStore::default() };
+    let (status, details) = verdict_with(end_entity("Signer", &i), embedded, &both);
+    assert_eq!(status, Status::Valid, "{details:?}");
+    assert!(details.iter().any(|d| d == "The signer's identity is valid.") && !details.iter().any(|d| d == said), "{details:?}");
 }

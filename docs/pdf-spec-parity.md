@@ -109,7 +109,7 @@ are borrowed; PDF 2.0 additions and most subset standards are missing. **150–2
 | UR3 usage rights | preserved, Reader-extending is Adobe-only | none (P3) |
 | Seed values | yes | none |
 | Validation: chain, key usage, EKU, critical extensions, changes after signing, signed version | yes | yes; name constraints and issuer critical extensions missing |
-| Trust: own store, OS store, AATL, EUTL | yes | own store and the OS store; AATL out of scope; EUTL: the lists can be verified and read (library), not yet downloaded or used |
+| Trust: own store, OS store, AATL, EUTL | yes | own store and the OS store; AATL out of scope; EUTL: downloaded, verified, cached and trusted while granted through the `sign_eutl` tool; no interface or built-in anchors yet |
 | Smart cards and tokens (PKCS #11, CryptoTokenKit) | yes | Windows CNG store (with PIN prompt) only |
 
 ## Subset standards
