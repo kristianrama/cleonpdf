@@ -2415,3 +2415,23 @@ window	Zoom	拡大／縮小
 	Couldn't read the system's trusted certificates: {e}	システムの信頼済み証明書を読み取れませんでした: {e}
 	Server address (https://…)	サーバーのアドレス (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	署名時に選べるサーバーです。署名が使用しない限り、どのサーバーにも何も送信されません。使用する場合も送られるのはダイジェストのみで、文書そのものは送られません。
+	Use the European Union Trusted Lists	欧州連合の信頼リストを使用する
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	国の信頼リストに載っている認証局にたどり着く署名者は、そのサービスが認可されていた間は有効と表示されます。リストは「今すぐ更新」を押したときにだけ取得されます。
+	Certificates that sign the list of lists	リストのリストに署名する証明書
+	SHA-256 fingerprint: {fp}	SHA-256 フィンガープリント: {fp}
+	Add certificate…	証明書を追加…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF には組み込みの証明書はありません。信頼する前に、各フィンガープリントを欧州委員会が欧州連合官報で公表しているものと照合してください。
+	Update now	今すぐ更新
+	Updating…	更新中…
+	List of lists: sequence {n}, next update {date}	リストのリスト: シーケンス {n}、次回更新 {date}
+	{a} certification authorities from {c} national lists	{c} 件の国別リストから認証局 {a} 件
+	{country}: updated	{country}: 更新しました
+	{country}: unchanged	{country}: 変更なし
+	{country}: kept the copy held ({why})	{country}: 保持していたコピーを使用 ({why})
+	{country}: not used ({why})	{country}: 使用しません ({why})
+	Trusted Lists updated: {n} national lists	信頼リストを更新しました: 国別リスト {n} 件
+	The Trusted Lists could not be fetched; the lists already kept are used	信頼リストを取得できませんでした。保存済みのリストを使用します
+	Couldn't update the Trusted Lists: {e}	信頼リストを更新できませんでした: {e}
+	Couldn't read the certificate: {e}	証明書を読み込めませんでした: {e}
+	That certificate is already in the list	この証明書はすでにリストにあります
+	Certificate	証明書

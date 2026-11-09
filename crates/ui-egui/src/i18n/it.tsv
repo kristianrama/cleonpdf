@@ -2426,3 +2426,23 @@ window	Zoom	Ridimensiona
 	Couldn't read the system's trusted certificates: {e}	Impossibile leggere i certificati attendibili del sistema: {e}
 	Server address (https://…)	Indirizzo del server (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Server tra cui scegliere quando firmi. Non viene inviato nulla a nessun server a meno che una firma lo usi, e in quel caso solo un'impronta, mai il documento.
+	Use the European Union Trusted Lists	Usa le liste di fiducia dell'Unione europea
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	I firmatari che risalgono a un'autorità di certificazione indicata da una lista di fiducia nazionale sono mostrati come validi finché quel servizio era attivo. Le liste vengono scaricate solo quando premi Aggiorna ora.
+	Certificates that sign the list of lists	Certificati che firmano l'elenco delle liste
+	SHA-256 fingerprint: {fp}	Impronta SHA-256: {fp}
+	Add certificate…	Aggiungi certificato…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF non ne include nessuno. Prima di fidarti, confronta ogni impronta con quella pubblicata dalla Commissione europea nella Gazzetta ufficiale dell'Unione europea.
+	Update now	Aggiorna ora
+	Updating…	Aggiornamento in corso…
+	List of lists: sequence {n}, next update {date}	Elenco delle liste: sequenza {n}, prossimo aggiornamento {date}
+	{a} certification authorities from {c} national lists	{a} autorità di certificazione da {c} liste nazionali
+	{country}: updated	{country}: aggiornata
+	{country}: unchanged	{country}: invariata
+	{country}: kept the copy held ({why})	{country}: mantenuta la copia già presente ({why})
+	{country}: not used ({why})	{country}: non utilizzata ({why})
+	Trusted Lists updated: {n} national lists	Liste di fiducia aggiornate: {n} liste nazionali
+	The Trusted Lists could not be fetched; the lists already kept are used	Impossibile scaricare le liste di fiducia; vengono usate quelle già conservate
+	Couldn't update the Trusted Lists: {e}	Impossibile aggiornare le liste di fiducia: {e}
+	Couldn't read the certificate: {e}	Impossibile leggere il certificato: {e}
+	That certificate is already in the list	Questo certificato è già nell'elenco
+	Certificate	Certificato

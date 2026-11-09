@@ -45,6 +45,8 @@ mod create_multiple_ui;
 mod create_ui;
 mod crop;
 mod drag_pointer;
+#[cfg(not(target_arch = "wasm32"))]
+mod eutl_ui;
 mod export_ui;
 mod js_ui;
 mod marks_ui;
@@ -54,6 +56,8 @@ mod ocr_ui;
 mod optimize_ui;
 mod search_ui;
 mod sign_ui;
+#[cfg(not(target_arch = "wasm32"))]
+pub use eutl_ui::{EutlState, EutlSummary};
 mod stamps_ui;
 mod standards_ui;
 pub mod toc_ui;
@@ -674,6 +678,10 @@ pub struct CleonPdfApp {
     /// Preferences ▸ Signatures: the operating system's root certificates count as trusted for
     /// validating signatures (Acrobat: Windows Integration). Off until the user turns it on.
     pub trust_system_roots: bool,
+    /// Preferences ▸ Signatures: the European Union Trusted Lists (opt in, with the certificates
+    /// the list of lists is verified against, and the lists in force).
+    #[cfg(not(target_arch = "wasm32"))]
+    pub eutl: eutl_ui::EutlState,
     /// Digital ID files the user has created or added.
     pub digital_ids: Vec<DigitalIdEntry>,
     /// Signatures panel: expanded entries (field names).
@@ -1015,6 +1023,8 @@ impl CleonPdfApp {
             pkcs11_modules: Vec::new(),
             validation_private_hosts: false,
             trust_system_roots: false,
+            #[cfg(not(target_arch = "wasm32"))]
+            eutl: eutl_ui::EutlState::default(),
             digital_ids: Vec::new(),
             sig_expanded: Vec::new(),
             a11y_options: a11y_ui::A11yOptions::default(),
@@ -2234,6 +2244,11 @@ impl CleonPdfApp {
         settings["timestamp_servers"] = serde_json::json!(self.timestamp_servers);
         settings["validation_private_hosts"] = serde_json::Value::Bool(self.validation_private_hosts);
         settings["trust_system_roots"] = serde_json::Value::Bool(self.trust_system_roots);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            settings["eutl_lists"] = serde_json::Value::Bool(self.eutl.on);
+            settings["eutl_signers"] = serde_json::json!(self.eutl.signers.iter().map(cleonpdf_engine::sign::x509::to_pem).collect::<Vec<_>>());
+        }
         settings["pkcs11_modules"] = serde_json::json!(self.pkcs11_modules);
         settings.to_string()
     }
@@ -2388,6 +2403,19 @@ impl CleonPdfApp {
         if v["trust_system_roots"].as_bool() == Some(true) {
             let _ = self.set_trust_system_roots(true);
         }
+        // The lists are read from the copy kept on disk, never fetched, when the app starts.
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.eutl.signers = serde_json::from_value::<Vec<String>>(v["eutl_signers"].clone())
+                .unwrap_or_default()
+                .iter()
+                .take(16)
+                .filter_map(|p| cleonpdf_engine::sign::x509::load_certificates(p.as_bytes()).ok())
+                .flatten()
+                .collect();
+            self.eutl.on = v["eutl_lists"].as_bool() == Some(true) && !self.eutl.signers.is_empty();
+            self.reload_eutl_lists();
+        }
         self.pkcs11_modules = sign_ui::restore_modules(&v["pkcs11_modules"]);
         if let Ok(ids) = serde_json::from_value::<Vec<DigitalIdEntry>>(v["digital_ids"].clone()) {
             self.digital_ids = ids;
@@ -2477,6 +2505,22 @@ impl CleonPdfApp {
                     _ => return Err("trust-system-roots must be on or off".into()),
                 };
                 self.set_trust_system_roots(on)?;
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            ("eutl-lists", _) => {
+                let on = match value {
+                    "on" => true,
+                    "off" => false,
+                    _ => return Err("eutl-lists must be on or off".into()),
+                };
+                self.set_use_eutl_lists(on)?;
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            ("eutl-lists-update", _) => self.update_eutl_lists()?,
+            #[cfg(not(target_arch = "wasm32"))]
+            ("eutl-signer", _) => {
+                let bytes = std::fs::read(value).map_err(|e| format!("{value}: {e}"))?;
+                self.add_eutl_signers(&bytes)?;
             }
             ("validation-private-hosts", _) => {
                 self.validation_private_hosts = match value {
@@ -3029,6 +3073,8 @@ impl eframe::App for CleonPdfApp {
         self.poll_signing();
         self.poll_validation();
         self.poll_token_scan();
+        #[cfg(not(target_arch = "wasm32"))]
+        self.poll_eutl();
         // Shortcuts deferred last frame: the text field has taken that frame's typing since.
         let deferred = std::mem::take(&mut self.deferred_commands);
         self.run_system_choices(ctx);

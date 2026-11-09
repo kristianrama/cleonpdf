@@ -2413,3 +2413,23 @@ window	Zoom	Өлшемін өзгерту
 	Couldn't read the system's trusted certificates: {e}	Жүйенің сенімді сертификаттарын оқу мүмкін болмады: {e}
 	Server address (https://…)	Сервер мекенжайы (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Қол қою кезінде таңдауға болатын серверлер. Қол оны қолданбағанша, ешқандай серверге ештеңе жіберілмейді, ал қолданғанда тек дайджест жіберіледі, құжат ешқашан жіберілмейді.
+	Use the European Union Trusted Lists	Еуропалық Одақтың сенімді тізімдерін пайдалану
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Сертификаты ұлттық сенімді тізімде аталған куәландырушы орталыққа апаратын қол қоюшылар сол қызмет берілген кезде жарамды деп көрсетіледі. Тізімдер тек «Қазір жаңарту» түймесін басқанда жүктеледі.
+	Certificates that sign the list of lists	Тізімдер тізіміне қол қоятын сертификаттар
+	SHA-256 fingerprint: {fp}	SHA-256 саусақ ізі: {fp}
+	Add certificate…	Сертификат қосу…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF-те кіріктірілген сертификат жоқ. Сенер алдында әр саусақ ізін Еуропалық комиссия Еуропалық Одақтың Ресми журналында жариялағанмен салыстырыңыз.
+	Update now	Қазір жаңарту
+	Updating…	Жаңартылуда…
+	List of lists: sequence {n}, next update {date}	Тізімдер тізімі: реттік нөмірі {n}, келесі жаңарту {date}
+	{a} certification authorities from {c} national lists	Куәландырушы орталықтар: {a}, ұлттық тізімдер: {c}
+	{country}: updated	{country}: жаңартылды
+	{country}: unchanged	{country}: өзгеріссіз
+	{country}: kept the copy held ({why})	{country}: бар көшірме сақталды ({why})
+	{country}: not used ({why})	{country}: пайдаланылмайды ({why})
+	Trusted Lists updated: {n} national lists	Сенімді тізімдер жаңартылды: ұлттық тізімдер — {n}
+	The Trusted Lists could not be fetched; the lists already kept are used	Сенімді тізімдерді жүктеу мүмкін болмады; бұрын сақталғандары пайдаланылады
+	Couldn't update the Trusted Lists: {e}	Сенімді тізімдерді жаңарту мүмкін болмады: {e}
+	Couldn't read the certificate: {e}	Сертификатты оқу мүмкін болмады: {e}
+	That certificate is already in the list	Бұл сертификат тізімде бұрыннан бар
+	Certificate	Сертификат

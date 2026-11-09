@@ -485,6 +485,7 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tok
     #[cfg(not(target_arch = "wasm32"))]
     {
         system_roots(ui, app, t);
+        eutl_lists(ui, app, t);
         timestamp_servers(ui, app, t);
     }
     ui.label(egui::RichText::new("JavaScript").font(theme::semibold(13.0)));
@@ -615,6 +616,88 @@ fn system_roots(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) {
     ui.add_space(8.0);
 }
 
+/// Signatures ▸ Use the European Union Trusted Lists: the opt-in, the certificates the list of
+/// lists is verified against (with their fingerprints, to check against the Official Journal),
+/// Update now, and what the lists in force are.
+#[cfg(not(target_arch = "wasm32"))]
+fn eutl_lists(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) {
+    use cleonpdf_engine::sign::trusted_lists::Outcome;
+    let mut on = app.eutl.on;
+    let can_turn_on = on || !app.eutl.signers.is_empty();
+    if ui.add_enabled(can_turn_on, widgets::checkbox(&mut on, tl!("Use the European Union Trusted Lists"))).changed()
+        && let Err(e) = app.set_use_eutl_lists(on)
+    {
+        app.notify(e);
+    }
+    ui.label(
+        egui::RichText::new(tl!(
+            "Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now."
+        ))
+        .small()
+        .color(t.text_muted),
+    );
+    ui.label(tl!("Certificates that sign the list of lists"));
+    let mut remove = None;
+    for (i, cert) in app.eutl.signers.iter().enumerate() {
+        ui.horizontal_wrapped(|ui| {
+            ui.label(cert.display_name());
+            ui.label(
+                egui::RichText::new(crate::i18n::fmt(tl!("SHA-256 fingerprint: {fp}"), &[("fp", &cert.fingerprint())])).small().color(t.text_muted),
+            );
+            if widgets::pill_button(ui, tl!("Remove"), false).clicked() {
+                remove = Some(i);
+            }
+        });
+    }
+    if let Some(i) = remove {
+        app.remove_eutl_signer(i);
+    }
+    if widgets::pill_button(ui, tl!("Add certificate…"), false).clicked() {
+        app.pick_eutl_signers();
+    }
+    ui.label(
+        egui::RichText::new(tl!(
+            "CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it."
+        ))
+        .small()
+        .color(t.text_muted),
+    );
+    if app.eutl.on {
+        let label = if app.eutl.updating() { tl!("Updating…") } else { tl!("Update now") };
+        let busy = app.eutl.updating();
+        if ui.add_enabled_ui(!busy, |ui| widgets::pill_button(ui, label, false).clicked()).inner
+            && let Err(e) = app.update_eutl_lists()
+        {
+            app.notify(e);
+        }
+    }
+    if let Some(problem) = &app.eutl.problem {
+        ui.colored_label(egui::Color32::from_rgb(0xD7, 0x37, 0x3F), problem);
+    }
+    if let Some(s) = &app.eutl.summary {
+        let date = s.next_update.map(|d| format!("{:04}-{:02}-{:02}", d.year, d.month, d.day)).unwrap_or_default();
+        let head = crate::i18n::fmt(tl!("List of lists: sequence {n}, next update {date}"), &[("n", &s.sequence.to_string()), ("date", &date)]);
+        ui.label(egui::RichText::new(head).small());
+        let authorities = crate::i18n::fmt(
+            tl!("{a} certification authorities from {c} national lists"),
+            &[("a", &s.authorities.to_string()), ("c", &s.countries.len().to_string())],
+        );
+        ui.label(egui::RichText::new(authorities).small());
+        for r in &s.countries {
+            let line = match &r.outcome {
+                Outcome::Updated => crate::i18n::fmt(tl!("{country}: updated"), &[("country", &r.territory)]),
+                Outcome::Unchanged => crate::i18n::fmt(tl!("{country}: unchanged"), &[("country", &r.territory)]),
+                Outcome::KeptPrevious(why) => {
+                    crate::i18n::fmt(tl!("{country}: kept the copy held ({why})"), &[("country", &r.territory), ("why", why)])
+                }
+                Outcome::Unusable(why) => crate::i18n::fmt(tl!("{country}: not used ({why})"), &[("country", &r.territory), ("why", why)]),
+            };
+            ui.label(egui::RichText::new(line).small().color(t.text_muted));
+        }
+    }
+    ui.add_space(8.0);
+}
+
 /// Signatures ▸ Timestamp servers: addresses to pick from in the Sign dialog. None is asked unless
 /// a signature picks it.
 #[cfg(not(target_arch = "wasm32"))]
@@ -709,5 +792,103 @@ mod timestamp_server_tests {
         h.get_by_label("Add").click();
         h.run_steps(3);
         assert!(h.state().timestamp_servers.is_empty());
+    }
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
+mod eutl_lists_tests {
+    use std::sync::{Arc, Mutex};
+
+    use cleonpdf_engine::sign::SignError;
+    use cleonpdf_engine::sign::trusted_lists::ListFetcher;
+    use egui_kittest::Harness;
+    use egui_kittest::kittest::{NodeT, Queryable};
+
+    use super::*;
+
+    /// A server that is never up, and a record of how often it was asked.
+    #[derive(Default)]
+    struct Down(Mutex<usize>);
+    impl ListFetcher for Down {
+        fn fetch(&self, url: &str, _max: u64) -> Result<String, SignError> {
+            *self.0.lock().unwrap() += 1;
+            Err(SignError::Transport(format!("{url}: no route")))
+        }
+    }
+
+    fn harness(app: CleonPdfApp) -> Harness<'static, CleonPdfApp> {
+        let mut fonts = false;
+        let mut h = Harness::builder().with_size(egui::vec2(760.0, 700.0)).build_ui_state(
+            move |ui, app: &mut CleonPdfApp| {
+                // The app's fonts (the semibold headings) take effect from the next frame.
+                if !fonts {
+                    ui.ctx().set_fonts(theme::font_definitions());
+                    fonts = true;
+                    return;
+                }
+                let t = Tokens::get(ui.ctx());
+                eutl_lists(ui, app, &t);
+            },
+            app,
+        );
+        h.run();
+        h
+    }
+
+    /// The switch needs a certificate first, shows each certificate's fingerprint, and only once
+    /// it is on offers Update now, which is the one thing that asks the network.
+    #[test]
+    fn preferences_turn_the_lists_on_only_with_a_certificate_and_update_on_request() {
+        let mut app = CleonPdfApp::new();
+        app.set_option("language", "en").unwrap();
+        app.session = cleonpdf_engine::Session::new().with_clock(|| 1_795_000_000);
+        app.eutl.cache_dir = Some(std::env::temp_dir().join(format!("cleonpdf-eutl-prefs-{}", std::process::id())));
+        let down = Arc::new(Down::default());
+        let source: Arc<Down> = down.clone();
+        app.eutl.source = Some(source);
+        let mut h = harness(app);
+        h.get_by_label("Use the European Union Trusted Lists");
+        assert!(h.query_by_label("Update now").is_none() && h.query_by_label_contains("SHA-256 fingerprint").is_none());
+        h.get_by_label("Add certificate…");
+        h.get_by_label_contains("CleonPDF has none built in");
+        // The switch is greyed out with no certificate, and clicking it changes nothing.
+        assert!(h.get_by_label("Use the European Union Trusted Lists").accesskit_node().is_disabled());
+        h.get_by_label("Use the European Union Trusted Lists").click();
+        h.run_steps(3);
+        assert!(!h.state().eutl.on);
+        // With a certificate imported its fingerprint is shown and the switch works.
+        let der = std::fs::read(format!("{}/../sign/tests/data/xml/tsl-signer-eu.der", env!("CARGO_MANIFEST_DIR"))).unwrap();
+        let fingerprint = {
+            let app = h.state_mut();
+            app.add_eutl_signers(&der).unwrap();
+            app.eutl.signers[0].fingerprint()
+        };
+        h.run_steps(3);
+        h.get_by_label_contains(&format!("SHA-256 fingerprint: {fingerprint}"));
+        assert!(h.query_by_label("Update now").is_none(), "off: no button");
+        assert!(!h.get_by_label("Use the European Union Trusted Lists").accesskit_node().is_disabled());
+        h.get_by_label("Use the European Union Trusted Lists").click();
+        h.run_steps(3);
+        assert!(h.state().eutl.on);
+        assert_eq!(*down.0.lock().unwrap(), 0, "turning it on asks nothing");
+        h.get_by_label("Update now").click();
+        for _ in 0..200 {
+            h.run_steps(2);
+            h.state_mut().poll_eutl();
+            if !h.state().eutl.updating() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        assert_eq!(*down.0.lock().unwrap(), 1, "one request, for the list of lists");
+        h.run_steps(3);
+        h.get_by_label_contains("no route");
+        // Removing the only certificate switches it off and hides the button.
+        h.get_by_label("Remove").click();
+        h.run_steps(3);
+        assert!(!h.state().eutl.on && h.state().eutl.signers.is_empty());
+        assert!(h.query_by_label("Update now").is_none());
+        let _ = std::fs::remove_dir_all(std::env::temp_dir().join(format!("cleonpdf-eutl-prefs-{}", std::process::id())));
     }
 }

@@ -2415,3 +2415,23 @@ window	Zoom	Αλλαγή μεγέθους
 	Couldn't read the system's trusted certificates: {e}	Δεν ήταν δυνατή η ανάγνωση των αξιόπιστων πιστοποιητικών του συστήματος: {e}
 	Server address (https://…)	Διεύθυνση διακομιστή (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Διακομιστές που μπορείτε να επιλέξετε κατά την υπογραφή. Δεν στέλνεται τίποτα σε κανέναν διακομιστή αν δεν τον χρησιμοποιήσει μια υπογραφή, και τότε μόνο ένα συνοπτικό αποτύπωμα, ποτέ το έγγραφο.
+	Use the European Union Trusted Lists	Χρήση των καταλόγων εμπιστοσύνης της Ευρωπαϊκής Ένωσης
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Οι υπογράφοντες των οποίων το πιστοποιητικό οδηγεί σε αρχή πιστοποίησης που αναφέρει εθνικός κατάλογος εμπιστοσύνης εμφανίζονται ως έγκυροι όσο η υπηρεσία ήταν σε ισχύ. Οι κατάλογοι λαμβάνονται μόνο όταν πατήσετε Ενημέρωση τώρα.
+	Certificates that sign the list of lists	Πιστοποιητικά που υπογράφουν τον κατάλογο των καταλόγων
+	SHA-256 fingerprint: {fp}	Αποτύπωμα SHA-256: {fp}
+	Add certificate…	Προσθήκη πιστοποιητικού…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	Το CleonPDF δεν περιλαμβάνει κανένα. Πριν βασιστείτε σε αυτό, συγκρίνετε κάθε αποτύπωμα με εκείνο που δημοσιεύει η Ευρωπαϊκή Επιτροπή στην Επίσημη Εφημερίδα της Ευρωπαϊκής Ένωσης.
+	Update now	Ενημέρωση τώρα
+	Updating…	Ενημέρωση…
+	List of lists: sequence {n}, next update {date}	Κατάλογος καταλόγων: αύξων αριθμός {n}, επόμενη ενημέρωση {date}
+	{a} certification authorities from {c} national lists	{a} αρχές πιστοποίησης από {c} εθνικούς καταλόγους
+	{country}: updated	{country}: ενημερώθηκε
+	{country}: unchanged	{country}: αμετάβλητος
+	{country}: kept the copy held ({why})	{country}: διατηρήθηκε το υπάρχον αντίγραφο ({why})
+	{country}: not used ({why})	{country}: δεν χρησιμοποιείται ({why})
+	Trusted Lists updated: {n} national lists	Οι κατάλογοι εμπιστοσύνης ενημερώθηκαν: {n} εθνικοί κατάλογοι
+	The Trusted Lists could not be fetched; the lists already kept are used	Δεν ήταν δυνατή η λήψη των καταλόγων εμπιστοσύνης· χρησιμοποιούνται οι ήδη αποθηκευμένοι
+	Couldn't update the Trusted Lists: {e}	Δεν ήταν δυνατή η ενημέρωση των καταλόγων εμπιστοσύνης: {e}
+	Couldn't read the certificate: {e}	Δεν ήταν δυνατή η ανάγνωση του πιστοποιητικού: {e}
+	That certificate is already in the list	Αυτό το πιστοποιητικό υπάρχει ήδη στη λίστα
+	Certificate	Πιστοποιητικό

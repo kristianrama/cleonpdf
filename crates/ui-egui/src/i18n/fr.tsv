@@ -2415,3 +2415,23 @@ window	Zoom	Réduire/agrandir
 	Couldn't read the system's trusted certificates: {e}	Impossible de lire les certificats de confiance du système : {e}
 	Server address (https://…)	Adresse du serveur (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Serveurs à choisir lors de la signature. Rien n'est envoyé à un serveur, sauf si une signature l'utilise, et alors seulement une empreinte, jamais le document.
+	Use the European Union Trusted Lists	Utiliser les listes de confiance de l'Union européenne
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Les signataires rattachés à une autorité de certification que nomme une liste de confiance nationale sont affichés comme valides tant que ce service était accordé. Les listes ne sont téléchargées que lorsque vous cliquez sur Mettre à jour maintenant.
+	Certificates that sign the list of lists	Certificats qui signent la liste des listes
+	SHA-256 fingerprint: {fp}	Empreinte SHA-256 : {fp}
+	Add certificate…	Ajouter un certificat…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF n'en intègre aucun. Comparez chaque empreinte à celle que la Commission européenne publie au Journal officiel de l'Union européenne avant de vous y fier.
+	Update now	Mettre à jour maintenant
+	Updating…	Mise à jour…
+	List of lists: sequence {n}, next update {date}	Liste des listes : séquence {n}, prochaine mise à jour {date}
+	{a} certification authorities from {c} national lists	{a} autorités de certification issues de {c} listes nationales
+	{country}: updated	{country} : mise à jour
+	{country}: unchanged	{country} : inchangée
+	{country}: kept the copy held ({why})	{country} : copie existante conservée ({why})
+	{country}: not used ({why})	{country} : non utilisée ({why})
+	Trusted Lists updated: {n} national lists	Listes de confiance mises à jour : {n} listes nationales
+	The Trusted Lists could not be fetched; the lists already kept are used	Impossible de télécharger les listes de confiance ; les listes déjà conservées sont utilisées
+	Couldn't update the Trusted Lists: {e}	Impossible de mettre à jour les listes de confiance : {e}
+	Couldn't read the certificate: {e}	Impossible de lire le certificat : {e}
+	That certificate is already in the list	Ce certificat figure déjà dans la liste
+	Certificate	Certificat

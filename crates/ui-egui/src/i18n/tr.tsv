@@ -2411,3 +2411,23 @@ window	Zoom	Boyutlandır
 	Couldn't read the system's trusted certificates: {e}	Sistemin güvenilir sertifikaları okunamadı: {e}
 	Server address (https://…)	Sunucu adresi (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	İmzalarken seçebileceğiniz sunucular. Bir imza kullanmadıkça hiçbir sunucuya bir şey gönderilmez, kullanıldığında da yalnızca bir özet gönderilir, belge asla.
+	Use the European Union Trusted Lists	Avrupa Birliği Güvenilir Listelerini kullan
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Sertifikası, bir ulusal Güvenilir Liste'nin adını verdiği sertifika otoritesine uzanan imzacılar, o hizmet verilmişken geçerli olarak gösterilir. Listeler yalnızca Şimdi güncelle düğmesine bastığınızda indirilir.
+	Certificates that sign the list of lists	Listelerin listesini imzalayan sertifikalar
+	SHA-256 fingerprint: {fp}	SHA-256 parmak izi: {fp}
+	Add certificate…	Sertifika ekle…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	CleonPDF'de yerleşik sertifika yoktur. Güvenmeden önce her parmak izini Avrupa Komisyonu'nun Avrupa Birliği Resmî Gazetesi'nde yayımladığıyla karşılaştırın.
+	Update now	Şimdi güncelle
+	Updating…	Güncelleniyor…
+	List of lists: sequence {n}, next update {date}	Listelerin listesi: sıra {n}, sonraki güncelleme {date}
+	{a} certification authorities from {c} national lists	{c} ulusal listeden {a} sertifika otoritesi
+	{country}: updated	{country}: güncellendi
+	{country}: unchanged	{country}: değişmedi
+	{country}: kept the copy held ({why})	{country}: eldeki kopya korundu ({why})
+	{country}: not used ({why})	{country}: kullanılmıyor ({why})
+	Trusted Lists updated: {n} national lists	Güvenilir Listeler güncellendi: {n} ulusal liste
+	The Trusted Lists could not be fetched; the lists already kept are used	Güvenilir Listeler indirilemedi; önceden kaydedilen listeler kullanılıyor
+	Couldn't update the Trusted Lists: {e}	Güvenilir Listeler güncellenemedi: {e}
+	Couldn't read the certificate: {e}	Sertifika okunamadı: {e}
+	That certificate is already in the list	Bu sertifika zaten listede
+	Certificate	Sertifika

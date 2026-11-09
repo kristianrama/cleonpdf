@@ -2438,3 +2438,23 @@ window	Zoom	تغيير الحجم
 	Couldn't read the system's trusted certificates: {e}	تعذّرت قراءة الشهادات الموثوقة في النظام: {e}
 	Server address (https://…)	عنوان الخادم (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	خوادم يمكنك اختيارها عند التوقيع. لا يُرسل أي شيء إلى أي خادم ما لم يستخدمه توقيع، وعندها يُرسل بصمة فقط، وليس المستند أبدًا.
+	Use the European Union Trusted Lists	استخدام القوائم الموثوقة للاتحاد الأوروبي
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	يُعرض الموقّعون الذين تعود شهادتهم إلى سلطة تصديق تذكرها قائمة موثوقة وطنية على أنهم صالحون ما دامت تلك الخدمة ممنوحة. لا تُنزَّل القوائم إلا عند الضغط على «تحديث الآن».
+	Certificates that sign the list of lists	الشهادات التي توقّع قائمة القوائم
+	SHA-256 fingerprint: {fp}	بصمة SHA-256: {fp}
+	Add certificate…	إضافة شهادة…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	لا يتضمن CleonPDF أي شهادة مدمجة. قارن كل بصمة بتلك التي تنشرها المفوضية الأوروبية في الجريدة الرسمية للاتحاد الأوروبي قبل الاعتماد عليها.
+	Update now	تحديث الآن
+	Updating…	جارٍ التحديث…
+	List of lists: sequence {n}, next update {date}	قائمة القوائم: التسلسل {n}، التحديث التالي {date}
+	{a} certification authorities from {c} national lists	{a} سلطة تصديق من {c} قائمة وطنية
+	{country}: updated	{country}: تم التحديث
+	{country}: unchanged	{country}: دون تغيير
+	{country}: kept the copy held ({why})	{country}: أُبقيت النسخة الموجودة ({why})
+	{country}: not used ({why})	{country}: غير مستخدمة ({why})
+	Trusted Lists updated: {n} national lists	تم تحديث القوائم الموثوقة: {n} قائمة وطنية
+	The Trusted Lists could not be fetched; the lists already kept are used	تعذّر تنزيل القوائم الموثوقة؛ تُستخدم القوائم المحفوظة سابقًا
+	Couldn't update the Trusted Lists: {e}	تعذّر تحديث القوائم الموثوقة: {e}
+	Couldn't read the certificate: {e}	تعذّرت قراءة الشهادة: {e}
+	That certificate is already in the list	هذه الشهادة موجودة في القائمة بالفعل
+	Certificate	شهادة

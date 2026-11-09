@@ -2439,3 +2439,23 @@ window	Zoom	Змінити масштаб
 	Couldn't read the system's trusted certificates: {e}	Не вдалося прочитати довірені сертифікати системи: {e}
 	Server address (https://…)	Адреса сервера (https://…)
 	Servers you can pick when signing. Nothing is sent to any server unless a signature uses it, and then only a digest, never the document.	Сервери, які можна вибрати під час підписання. Нічого не надсилається на сервер, доки підпис його не використає, і тоді надсилається лише хеш, а не документ.
+	Use the European Union Trusted Lists	Використовувати довірчі списки Європейського Союзу
+	Signers that chain to a certification authority a national Trusted List names are shown as valid while that service was granted. The lists are fetched only when you press Update now.	Підписанти, чий сертифікат сходить до центру сертифікації з національного довірчого списку, показуються як дійсні, поки ця послуга була надана. Списки завантажуються лише після натискання «Оновити зараз».
+	Certificates that sign the list of lists	Сертифікати, що підписують список списків
+	SHA-256 fingerprint: {fp}	Відбиток SHA-256: {fp}
+	Add certificate…	Додати сертифікат…
+	CleonPDF has none built in. Check each fingerprint against the one the European Commission publishes in the Official Journal of the European Union before relying on it.	У CleonPDF немає вбудованих сертифікатів. Перш ніж довіряти, звірте кожен відбиток із тим, який Європейська комісія публікує в Офіційному віснику Європейського Союзу.
+	Update now	Оновити зараз
+	Updating…	Оновлення…
+	List of lists: sequence {n}, next update {date}	Список списків: номер {n}, наступне оновлення {date}
+	{a} certification authorities from {c} national lists	Центрів сертифікації: {a}, національних списків: {c}
+	{country}: updated	{country}: оновлено
+	{country}: unchanged	{country}: без змін
+	{country}: kept the copy held ({why})	{country}: збережено наявну копію ({why})
+	{country}: not used ({why})	{country}: не використовується ({why})
+	Trusted Lists updated: {n} national lists	Довірчі списки оновлено: національних списків — {n}
+	The Trusted Lists could not be fetched; the lists already kept are used	Не вдалося завантажити довірчі списки; використовуються вже збережені
+	Couldn't update the Trusted Lists: {e}	Не вдалося оновити довірчі списки: {e}
+	Couldn't read the certificate: {e}	Не вдалося прочитати сертифікат: {e}
+	That certificate is already in the list	Цей сертифікат уже є в списку
+	Certificate	Сертифікат
