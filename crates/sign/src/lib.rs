@@ -27,6 +27,7 @@ pub mod timestamp;
 #[cfg(target_os = "windows")]
 pub mod windows;
 pub mod x509;
+pub mod xmldsig;
 
 pub use der::Time;
 pub use graphic::Graphic;

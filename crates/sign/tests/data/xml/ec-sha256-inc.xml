@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ns:Doc xmlns:ns="urn:example:doc" xmlns:unused="urn:example:unused" xml:lang="en" Id="root" b="2" a="1 &amp; &lt;">
+  <!-- a comment that is not canonicalized -->
+  <ns:Item id="i1" z="&quot;q&quot;">text with &amp; &lt; &gt; and a CDATA &lt;raw &amp; text&gt;</ns:Item>
+  <ns:Empty/>
+  <other xmlns="urn:example:other" xmlns:ns="urn:example:doc"><ns:Inner k="v">tab	tab é €</ns:Inner></other>
+  <?pi-target some data?>
+<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"/><ds:Reference URI="#root"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><ds:Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>A2hiqGDC/dA8nAJ/rUy8gXEcE/Sn4abvlxfVXwpmyFw=</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>5nhPE6WyQNRpQsYQTZxmfrRYGJx2XQoLwHBJo/Zx2pXyK9ljEJG1b/FSvWwk0xIRAGHE97bQyDfXsrun4oeIWg==</ds:SignatureValue><ds:KeyInfo><ds:X509Data><ds:X509Certificate>MIIB0jCCAXegAwIBAgIUdiO4z1IyDCXlLuWXrYHCLJXTKz0wCgYIKoZIzj0EAwIw
+PjEkMCIGA1UEAwwbVGVzdCBUcnVzdGVkIExpc3QgU2lnbmVyIEVDMRYwFAYDVQQK
+DA1DbGVvblBERiB0ZXN0MB4XDTI2MTEwOTA5MDcyNFoXDTM2MTEwNjA5MDcyNFow
+PjEkMCIGA1UEAwwbVGVzdCBUcnVzdGVkIExpc3QgU2lnbmVyIEVDMRYwFAYDVQQK
+DA1DbGVvblBERiB0ZXN0MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAXmVmInd
+h01qHYnn0tdpTcmJ8893nS8/bljxLCTCM9yH47BmF6dOBoKSr4l92RKfv4DKlrvQ
+v0i099iWf+NIRaNTMFEwHQYDVR0OBBYEFExIpHhIGC0WqC2pcX63LzzGwZENMB8G
+A1UdIwQYMBaAFExIpHhIGC0WqC2pcX63LzzGwZENMA8GA1UdEwEB/wQFMAMBAf8w
+CgYIKoZIzj0EAwIDSQAwRgIhAMp6OsLdISrJdpgP1wqCeQgsZPDGwykC8QjjIx45
+X0mOAiEAvL6QrrGWVYu0H6LlyY5ZvYgtTIRp/h9tHAop4me/AdM=
+</ds:X509Certificate></ds:X509Data></ds:KeyInfo></ds:Signature></ns:Doc>

@@ -1,0 +1,7 @@
+<ns:Doc xmlns:ns="urn:example:doc" Id="root" a="1 &amp; &lt;" b="2" xml:lang="en">
+  
+  <ns:Item id="i1" z="&quot;q&quot;">text with &amp; &lt; &gt; and a CDATA &lt;raw &amp; text&gt;</ns:Item>
+  <ns:Empty></ns:Empty>
+  <other xmlns="urn:example:other"><ns:Inner k="v">tab	tab é €</ns:Inner></other>
+  <?pi-target some data?>
+</ns:Doc>
