@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ns:Doc xmlns:ns="urn:example:doc" xmlns:unused="urn:example:unused" xml:lang="en" Id="root" b="2" a="1 &amp; &lt;">
+  <!-- a comment that is not canonicalized -->
+  <ns:Item id="i1" z="&quot;q&quot;">text with &amp; &lt; &gt; and a CDATA <![CDATA[<raw & text>]]></ns:Item>
+  <ns:Empty/>
+  <other xmlns="urn:example:other" xmlns:ns="urn:example:doc"><ns:Inner k="v">tab&#9;tab é €</ns:Inner></other>
+  <?pi-target some data?>
+</ns:Doc>

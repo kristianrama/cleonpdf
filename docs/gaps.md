@@ -304,7 +304,7 @@ update the numbers.
 - **Missing:** a check of PKCS #11 tokens and smart cards on real cards (the Sign dialog lists them, asks for the PIN and signs, and `sign_document` takes `pkcs11:…`; all tested against SoftHSM only), RSA-PSS and keypad readers; setting a field's own lock in Prepare Form and showing what a signature locked in the Signatures panel (signing with a lock and validating it work, in the Sign dialog and headless); the OS trust store on Linux/Windows/macOS is read but not compared with Acrobat's Windows Integration (no purpose or trust-setting filtering of roots); EU
   Trusted Lists; signature graphics and saved appearances; compare signed version; signing in the
   browser.
-- **Evidence:** `sign.eutl` planned; `sign.os-trust`, `sign.field-mdp`, `sign.pkcs11`, `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial (evidence fetched in
+- **Evidence:** `sign.eutl` planned (the library that verifies and reads the lists exists, nothing uses it yet); `sign.os-trust`, `sign.field-mdp`, `sign.pkcs11`, `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial (evidence fetched in
   tests against a loopback CA only). Users ask for Acrobat-like validation
   ([#824](https://github.com/storytold/pdfcraft/issues/824),
   [#775](https://github.com/storytold/pdfcraft/issues/775),

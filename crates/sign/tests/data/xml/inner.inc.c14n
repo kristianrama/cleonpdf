@@ -1,0 +1,1 @@
+<ns:Inner xmlns="urn:example:other" xmlns:ns="urn:example:doc" xmlns:unused="urn:example:unused" k="v">tab	tab é €</ns:Inner>

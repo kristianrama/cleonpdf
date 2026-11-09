@@ -1,0 +1,152 @@
+//! XML signatures against files made by lxml and signxml, which share no code with this crate.
+#![allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
+
+use cleonpdf_sign::xmldsig::{XmlSignatureError, canonical_xml, parse, verify_enveloped};
+use cleonpdf_sign::{Certificate, Time};
+
+fn data(name: &str) -> Vec<u8> {
+    std::fs::read(format!("{}/tests/data/xml/{name}", env!("CARGO_MANIFEST_DIR"))).unwrap()
+}
+fn text(name: &str) -> String {
+    String::from_utf8(data(name)).unwrap()
+}
+fn cert(name: &str) -> Certificate {
+    Certificate::parse(&data(name)).unwrap()
+}
+fn at(year: u32) -> Time {
+    Time { year, month: 6, day: 1, hour: 12, minute: 0, second: 0 }
+}
+fn check(xml: &str, signers: &[&str], year: u32) -> Result<Certificate, XmlSignatureError> {
+    let doc = parse(xml)?;
+    let certs: Vec<Certificate> = signers.iter().map(|s| cert(s)).collect();
+    verify_enveloped(&doc, xml, &certs, at(year))
+}
+
+#[test]
+fn canonical_forms_match_libxml2() {
+    let src = text("doc.xml");
+    let doc = parse(&src).unwrap();
+    assert_eq!(String::from_utf8(canonical_xml(&src, doc.root_element(), true).unwrap()).unwrap(), text("doc.exc.c14n"));
+    assert_eq!(String::from_utf8(canonical_xml(&src, doc.root_element(), false).unwrap()).unwrap(), text("doc.inc.c14n"));
+    let inner = doc.descendants().find(|n| n.tag_name().name() == "Inner").unwrap();
+    assert_eq!(String::from_utf8(canonical_xml(&src, inner, true).unwrap()).unwrap(), text("inner.exc.c14n"));
+    assert_eq!(String::from_utf8(canonical_xml(&src, inner, false).unwrap()).unwrap(), text("inner.inc.c14n"));
+}
+
+#[test]
+fn signatures_by_another_implementation_verify() {
+    for (file, signer) in [
+        ("rsa-sha256-exc.xml", "rsa.der"),
+        ("rsa-sha256-inc.xml", "rsa.der"),
+        ("rsa-sha512-exc.xml", "rsa.der"),
+        ("ec-sha256-exc.xml", "ec.der"),
+        ("ec-sha256-inc.xml", "ec.der"),
+        ("rsa-sha256-emptyuri.xml", "rsa.der"),
+    ] {
+        let got = check(&text(file), &[signer], 2027).unwrap_or_else(|e| panic!("{file}: {e}"));
+        assert_eq!(got.raw, cert(signer).raw, "{file}");
+    }
+}
+
+#[test]
+fn the_signer_must_be_one_the_caller_trusts() {
+    let xml = text("other-signer.xml");
+    // Validly signed, but by a certificate that is not on the caller's list.
+    assert_eq!(check(&xml, &["rsa.der", "ec.der"], 2027), Err(XmlSignatureError::UntrustedSigner));
+    assert!(check(&xml, &["other.der"], 2027).is_ok());
+    assert_eq!(check(&xml, &[], 2027), Err(XmlSignatureError::UntrustedSigner));
+}
+
+#[test]
+fn the_signer_must_be_valid_at_that_time() {
+    let xml = text("rsa-sha256-exc.xml");
+    assert_eq!(check(&xml, &["rsa.der"], 2050), Err(XmlSignatureError::SignerNotValid));
+    assert_eq!(check(&xml, &["rsa.der"], 2020), Err(XmlSignatureError::SignerNotValid));
+}
+
+#[test]
+fn any_change_to_the_document_or_the_signature_is_caught() {
+    let xml = text("rsa-sha256-exc.xml");
+    let ok = |s: &str| check(s, &["rsa.der"], 2027);
+    assert!(ok(&xml).is_ok());
+    // Content.
+    assert_eq!(ok(&xml.replace("text with", "text WITH")), Err(XmlSignatureError::DigestMismatch));
+    // An attribute, and a namespace URI.
+    assert_eq!(ok(&xml.replace("b=\"2\"", "b=\"3\"")), Err(XmlSignatureError::DigestMismatch));
+    assert_eq!(ok(&xml.replace("urn:example:other", "urn:example:evil")), Err(XmlSignatureError::DigestMismatch));
+    // The digest and the signed information it sits in.
+    let digest = xml.split("<ds:DigestValue>").nth(1).unwrap().split('<').next().unwrap();
+    let mut other = digest.to_string();
+    other.replace_range(0..1, if digest.starts_with('A') { "B" } else { "A" });
+    assert_eq!(ok(&xml.replace(digest, &other)), Err(XmlSignatureError::DigestMismatch));
+    assert_eq!(ok(&xml.replace("xmldsig-more#rsa-sha256", "xmldsig-more#rsa-sha384")), Err(XmlSignatureError::BadSignature));
+    // The signature value.
+    let value = xml.split("<ds:SignatureValue>").nth(1).unwrap().split('<').next().unwrap();
+    let mut forged = value.to_string();
+    forged.replace_range(10..11, if &value[10..11] == "A" { "B" } else { "A" });
+    assert_eq!(ok(&xml.replace(value, &forged)), Err(XmlSignatureError::BadSignature));
+}
+
+#[test]
+fn what_is_not_signed_is_not_accepted() {
+    // A correct signature over one element only does not vouch for the document.
+    let partial = text("rsa-sha256-partial.xml");
+    assert!(matches!(check(&partial, &["rsa.der"], 2027), Err(XmlSignatureError::Unsupported(_))), "{:?}", check(&partial, &["rsa.der"], 2027));
+    // No signature at all, or one that is not a direct child of the document element.
+    assert_eq!(check(&text("doc.xml"), &["rsa.der"], 2027), Err(XmlSignatureError::Unsigned));
+    let xml = text("rsa-sha256-exc.xml");
+    let start = xml.find("<ds:Signature").unwrap();
+    let end = xml.find("</ds:Signature>").unwrap() + "</ds:Signature>".len();
+    let sig = &xml[start..end];
+    let moved = format!("{}{}", xml.replace(sig, ""), "").replace("</ns:Empty>", &format!("{sig}</ns:Empty>"));
+    assert_eq!(check(&moved, &["rsa.der"], 2027), Err(XmlSignatureError::Unsigned));
+    // Two signatures are refused outright.
+    let doubled = xml.replace("</ns:Doc>", &format!("{sig}</ns:Doc>"));
+    assert!(matches!(check(&doubled, &["rsa.der"], 2027), Err(XmlSignatureError::Unsupported(_))));
+}
+
+#[test]
+fn a_duplicate_id_cannot_swap_the_signed_element() {
+    let xml = text("rsa-sha256-exc.xml");
+    // A second element with the signed id, placed ahead of the real one (signature wrapping).
+    let wrapped = xml.replacen("<ns:Empty/>", "<ns:Empty Id=\"root\"/>", 1);
+    assert!(matches!(check(&wrapped, &["rsa.der"], 2027), Err(XmlSignatureError::Malformed(_))));
+}
+
+#[test]
+fn algorithms_outside_the_list_are_refused() {
+    let xml = text("rsa-sha256-exc.xml");
+    for (from, to) in [
+        ("xmldsig-more#rsa-sha256", "xmldsig#rsa-sha1"),
+        ("xmlenc#sha256", "xmldsig#sha1"),
+        ("xml-exc-c14n#\"/><ds:SignatureMethod", "REC-xml-c14n11-20080502\"/><ds:SignatureMethod"),
+    ] {
+        assert!(matches!(check(&xml.replace(from, to), &["rsa.der"], 2027), Err(XmlSignatureError::Unsupported(_))), "{from}");
+    }
+}
+
+#[test]
+fn hostile_xml_is_refused_without_trouble() {
+    // A DTD, so no entity tricks.
+    let bomb = "<?xml version=\"1.0\"?><!DOCTYPE d [<!ENTITY a \"aaaaaaaaaa\"><!ENTITY b \"&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;\">]><d>&b;&b;&b;</d>";
+    assert!(matches!(parse(bomb), Err(XmlSignatureError::NotXml(_))));
+    // Not XML, and nothing.
+    for junk in ["", "<a>", "<a></b>", "\u{0}", "<a b=1/>"] {
+        assert!(parse(junk).is_err(), "{junk:?}");
+    }
+    // Deep nesting is bounded rather than blowing the stack.
+    for depth in [300, 5_000, 200_000] {
+        let deep = format!("{}{}", "<a>".repeat(depth), "</a>".repeat(depth));
+        assert!(matches!(parse(&deep), Err(XmlSignatureError::NotXml(_))), "{depth}");
+        // Self-closing and quoted `>` do not hide the nesting.
+        let tricky = format!("{}<b x=\">\"/>{}", "<a y='>'>".repeat(depth), "</a>".repeat(depth));
+        assert!(parse(&tricky).is_err(), "{depth}");
+    }
+    // Real documents are nowhere near the limit, and what is in comments or CDATA does not count.
+    let fine = format!("{}<!-- <x><x><x> --><![CDATA[<x><x>]]>{}", "<a>".repeat(200), "</a>".repeat(200));
+    assert!(parse(&fine).is_ok());
+    // The canonicalizer has its own bound, for a tree built some other way.
+    let nested = format!("{}{}", "<a>".repeat(300), "</a>".repeat(300));
+    let doc = roxmltree::Document::parse(&nested).unwrap();
+    assert!(matches!(canonical_xml(&nested, doc.root_element(), true), Err(XmlSignatureError::Unsupported(_))));
+}

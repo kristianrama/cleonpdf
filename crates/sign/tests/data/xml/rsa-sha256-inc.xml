@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ns:Doc xmlns:ns="urn:example:doc" xmlns:unused="urn:example:unused" xml:lang="en" Id="root" b="2" a="1 &amp; &lt;">
+  <!-- a comment that is not canonicalized -->
+  <ns:Item id="i1" z="&quot;q&quot;">text with &amp; &lt; &gt; and a CDATA &lt;raw &amp; text&gt;</ns:Item>
+  <ns:Empty/>
+  <other xmlns="urn:example:other" xmlns:ns="urn:example:doc"><ns:Inner k="v">tab	tab é €</ns:Inner></other>
+  <?pi-target some data?>
+<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><ds:Reference URI="#root"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><ds:Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>A2hiqGDC/dA8nAJ/rUy8gXEcE/Sn4abvlxfVXwpmyFw=</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>XWMPeCnIclnY3e29NbMQLnBGJV1mwiS/nglqHnKZH4SP6JBl9pzxltJOZMkmjJvoAdEtASB+2uIl21ZvSrrUxJogMNZ+NbPNPJA+w2FR6qRm2QSh4i8ef/rAZdzQGBcDGEPr6OEgFKa+LrvxJedGUjeufBGsyvDoqwGpkt6yCdce0PDm5OlSS35vNvadPllS57k6vHq432misjuqwAjf5KPGDcI/CyrvQrP0dqz92jnputoBba6er3Q4diiPHa3BQdXzYEiY+Ei4P/7XQza70WvLGc9CKrimaifH4CWzY39Y71vg/jN0PAxffROiYly2u/4ZAk0kGtgFhz5CwAmSfw==</ds:SignatureValue><ds:KeyInfo><ds:X509Data><ds:X509Certificate>MIIDXzCCAkegAwIBAgIUAdI32g2jyfxl0qpjG1DOBPRrhB0wDQYJKoZIhvcNAQEL
+BQAwPzElMCMGA1UEAwwcVGVzdCBUcnVzdGVkIExpc3QgU2lnbmVyIFJTQTEWMBQG
+A1UECgwNQ2xlb25QREYgdGVzdDAeFw0yNjExMDkwOTA3MjRaFw0zNjExMDYwOTA3
+MjRaMD8xJTAjBgNVBAMMHFRlc3QgVHJ1c3RlZCBMaXN0IFNpZ25lciBSU0ExFjAU
+BgNVBAoMDUNsZW9uUERGIHRlc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+AoIBAQComNqkxPSXpU3QgqaYHmQvh5qS5de2h4GIAp5+97VG/323b1C9He8clIIx
+FtmVU/4t9qrH7CwMpUdQTlDbrpwNp4P0C8tt+flgucARnLEb+cheP4S5gJaqB1pf
+p+zQRK1DO05nNxncbRyn2lBkDMRJek/W9LJZcugeHsusLIr0VNZ38iPAQJtnmO1v
+3pqjEpheWWgesBWzBNxmznI8mlaFGrsxuTw+ies5M2HECfv12YXI5WXxVHD8q2WW
+rnwyycwu/SGDCcJ1JKYBeuJy0ezm4kzi4K03Zn8yBHMIsQzuWY3ljI584/Z3JuLg
+AzEw/NXS+gO+y1ax7DGZw5jQfy8vAgMBAAGjUzBRMB0GA1UdDgQWBBSvDCIdbLdu
+8klbN1yZT5YkJK48fzAfBgNVHSMEGDAWgBSvDCIdbLdu8klbN1yZT5YkJK48fzAP
+BgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCjUSZPZPqcdAtb2a7M
+u5fLcdL2E1JUysNAtSvJtw2JwERG5809BQEaNUBgC45od+c0DV6VBjTz5Vr5mbRf
+ZK7juwAdrc51mJ36Bg5q31dD/x4LU6eXSdbJBe+ZJeApaHNBb50Vf4pah4ObFcdk
+nZd9HvD9Uq0gZ8Lgzza2KzLkB1hia1AoAD3QHhkfRQPCDuIG78VsVHBMmeEfU7Jz
+yApW1XtQjgNfUR0ZvaIXcHKJllM+/M4yKoFG/bC2YLhrR/YwjRCk6ToY0eq6b2n+
+9Q/tQk6gFXyAWiyrX3Ds5vRRvqo90p2cx5EZ3igZRBAcKSxGUD1d3ezan8T3Lm6H
+0EjR
+</ds:X509Certificate></ds:X509Data></ds:KeyInfo></ds:Signature></ns:Doc>

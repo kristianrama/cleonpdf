@@ -1,0 +1,30 @@
+# XML signature test data
+
+Made for these tests with OpenSSL 3, Python `lxml` 6 and `signxml` 5 (an implementation unrelated to the
+code under test) and `cryptography` for the two hand-built signatures. The keys protect nothing. Regenerate
+any file and its certificate together: each run creates new keys.
+
+| File | What |
+|---|---|
+| `doc.xml` | the unsigned document: prefixes, an unused namespace, a re-declared prefix, a comment, a CDATA section, entities, a processing instruction, `xml:lang` |
+| `doc.exc.c14n`, `doc.inc.c14n` | its canonical form (exclusive and inclusive), from libxml2 |
+| `inner.exc.c14n`, `inner.inc.c14n` | the canonical form of the inner `ns:Inner` element on its own |
+| `rsa.der`, `ec.der`, `other.der`, `old.der` | the signers' certificates (`old.der` is valid for one day only) |
+| `rsa-sha256-exc.xml`, `rsa-sha256-inc.xml`, `rsa-sha512-exc.xml` | `doc.xml` with an enveloped RSA signature by `rsa.der` (exclusive or inclusive canonicalization, SHA-256 or SHA-512), by `#root` |
+| `ec-sha256-exc.xml`, `ec-sha256-inc.xml` | the same, ECDSA P-256 by `ec.der` |
+| `other-signer.xml` | signed by `other.der` |
+| `rsa-sha256-emptyuri.xml` | signed with `URI=""` |
+| `rsa-sha256-partial.xml` | a valid signature that covers only the `i1` element |
+
+## Trusted Lists
+
+Synthetic lists in the shape of ETSI TS 119 612 (the names, locations and certificates are invented),
+signed with XAdES-style enveloped signatures (a reference to the whole document and one to the
+`SignedProperties`) by a script on `lxml` and `cryptography`.
+
+| File | What |
+|---|---|
+| `lotl.xml` | a list of lists (`EU`, sequence 371), signed by `tsl-signer-eu.der` (RSA); points to an `IT` list (signer `tsl-signer-it.der`), a `DE` list (two signers) and a PDF rendering (no signer) |
+| `tl-it.xml` | the `IT` list, signed by `tsl-signer-it.der` (ECDSA P-256): two providers; granted, withdrawn-with-history, ceased-with-history and unreadable-certificate services; a qualified time stamping service and a non-qualified CA |
+| `tl-it-plain.xml` | the same without the XAdES properties |
+| `qca1.der`, `qca2.der`, `qca3.der`, `qca-old.der`, `qtsa.der`, `pkc.der` | the certificates the `IT` list names |

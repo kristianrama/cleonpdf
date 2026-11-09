@@ -16,6 +16,8 @@ cleonpdf-annot = { workspace = true }
 cleonpdf-fonts = { workspace = true }
 thiserror.workspace = true
 base64 = "0.22"
+# XML Trusted Lists (ETSI TS 119 612) and their XML signatures. Pure Rust, MIT OR Apache-2.0.
+roxmltree = "0.20"
 sha1 = "0.11"
 sha2 = "0.11"
 p256 = { version = "0.14", default-features = false, features = ["ecdsa", "std"] }

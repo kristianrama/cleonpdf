@@ -1354,6 +1354,7 @@ dependencies = [
  "pbkdf2",
  "rc2",
  "ripemd",
+ "roxmltree",
  "rsa",
  "rustls-cng",
  "secrecy",
