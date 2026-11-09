@@ -62,6 +62,16 @@ for s in signatures(&doc, &bytes, &trust) {                                // li
   and whose signing certificates start the chain (the Commission's, from the Official Journal), is
   the caller's decision.
 
+- **Keeping the lists up to date (`trusted_lists`):** `Snapshot::refresh` fetches the list of lists through a
+  `ListFetcher` (`cleonpdf-net` is the HTTP one; this crate opens no socket), verifies it against the
+  anchors the caller names, then follows each pointer to a Trusted List in XML and verifies it against
+  the signers *that* list of lists names. A list is used only if it is signed, has not passed its
+  `NextUpdate`, has a sequence number not lower than the copy already held, and is for the territory
+  the pointer says; a territory has one list. One list failing does not stop the others, a copy held is
+  kept only while it still verifies and has not expired, and every list's outcome is recorded.
+  `Snapshot::load` verifies kept documents again, so a copy changed on disk is not believed.
+  `qualified_roots_at` gives the qualified CA certificates across all lists.
+
 - **Gathering evidence (PAdES B-LT):** `ltv::gather` takes the signers' chains and a
   `RevocationFetcher` (this crate never opens a socket; `cleonpdf-net` is the HTTP one). For
   each certificate below a root it asks the OCSP responders the certificate names, then its CRL

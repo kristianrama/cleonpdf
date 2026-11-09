@@ -25,6 +25,7 @@ pub mod revocation;
 mod rsa_pad;
 pub mod timestamp;
 pub mod tl;
+pub mod trusted_lists;
 #[cfg(target_os = "windows")]
 pub mod windows;
 pub mod x509;
