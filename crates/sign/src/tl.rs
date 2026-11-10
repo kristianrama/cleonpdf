@@ -28,6 +28,9 @@ pub const CA_QC: &str = "http://uri.etsi.org/TrstSvc/Svctype/CA/QC";
 const MAX_ITEMS: usize = 200_000;
 /// Most certificates one service or pointer may carry.
 const MAX_CERTS_PER_ITEM: usize = 64;
+/// Most `SchemeInformationURI` entries read, and the longest one.
+const MAX_INFORMATION_URIS: usize = 64;
+const MAX_URI_LEN: usize = 2048;
 
 /// Why a Trusted List was not accepted.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -246,6 +249,34 @@ fn pointer(n: Node<'_, '_>, unreadable: &mut usize) -> Result<Option<ListPointer
     Ok(Some(p))
 }
 
+/// The `SchemeInformationURI` entries of `xml`, in document order, **without any check of its
+/// signature**: addresses to look at, never something to believe. The list of lists names its
+/// pivots here (see [`crate::trusted_lists`]), and they have to be read before the list itself can
+/// be verified; each pivot is then verified on its own.
+///
+/// Empty when the document is not a Trusted List or cannot be read. Entries that are too long
+/// are left out, and no more than a fixed number are returned.
+#[must_use]
+pub fn unverified_information_uris(xml: &str) -> Vec<String> {
+    let Ok(doc) = xmldsig::parse(xml) else { return Vec::new() };
+    let root = doc.root_element();
+    if !is_tsl(root, "TrustServiceStatusList") {
+        return Vec::new();
+    }
+    let Some(uris) = child(root, "SchemeInformation").and_then(|info| child(info, "SchemeInformationURI")) else { return Vec::new() };
+    let mut out: Vec<String> = Vec::new();
+    for uri in children(uris, "URI").map(text) {
+        if out.len() >= MAX_INFORMATION_URIS {
+            break;
+        }
+        // The same address is given once per language.
+        if !uri.is_empty() && uri.len() <= MAX_URI_LEN && !out.contains(&uri) {
+            out.push(uri);
+        }
+    }
+    out
+}
+
 impl TrustedList {
     /// Verify `xml` as a Trusted List signed by one of `signers` (valid at `now`) and read it.
     ///
@@ -253,9 +284,35 @@ impl TrustedList {
     /// [`TrustedListError`]: the signature does not verify, the document is not a Trusted List, or
     /// it is too large or too broken to read.
     pub fn parse(xml: &str, signers: &[Certificate], now: Time) -> Result<TrustedList, TrustedListError> {
+        Self::read(xml, signers, Some(now))
+    }
+
+    /// Verify `xml` as a Trusted List signed by one of `signers`, with the signer's certificate
+    /// judged at the time the list says it was issued, and read it. This is for a list from the
+    /// past that is one link of a chain (a pivot of the list of lists): its signer may have
+    /// expired since, and what it says is believed only as far as the chain goes. A list that
+    /// gives no issue time is refused.
+    ///
+    /// # Errors
+    /// [`TrustedListError`], as [`TrustedList::parse`].
+    pub fn parse_as_issued(xml: &str, signers: &[Certificate]) -> Result<TrustedList, TrustedListError> {
+        Self::read(xml, signers, None)
+    }
+
+    /// `at`: when the signer must have been valid, or `None` for the list's own issue time.
+    fn read(xml: &str, signers: &[Certificate], at: Option<Time>) -> Result<TrustedList, TrustedListError> {
         let doc = xmldsig::parse(xml)?;
-        let signer = xmldsig::verify_enveloped(&doc, xml, signers, now)?;
         let root = doc.root_element();
+        let at = match at {
+            Some(t) => t,
+            // Read before the signature is checked, and covered by it once it is.
+            None => child(root, "SchemeInformation")
+                .filter(|_| is_tsl(root, "TrustServiceStatusList"))
+                .and_then(|info| child_text(info, "ListIssueDateTime"))
+                .and_then(|t| datetime(&t))
+                .ok_or_else(|| TrustedListError::Malformed("no issue time".into()))?,
+        };
+        let signer = xmldsig::verify_enveloped(&doc, xml, signers, at)?;
         if !is_tsl(root, "TrustServiceStatusList") {
             return Err(TrustedListError::NotATrustedList);
         }

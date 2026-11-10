@@ -522,6 +522,8 @@ impl Automation {
                 "issued": s.lotl.scheme.issued.map(|t| t.to_string()),
                 "next_update": s.lotl.scheme.next_update.map(|t| t.to_string()),
                 "signer": s.lotl.signer.fingerprint(),
+                // The pivots followed from the certificates given to the one that signs the list.
+                "pivots": s.documents.pivots.iter().map(|(location, _)| location.as_str()).collect::<Vec<_>>(),
             })),
             "lists": lists,
         })

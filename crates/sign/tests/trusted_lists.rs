@@ -262,7 +262,153 @@ fn documents_round_trip_through_files_and_a_damaged_set_is_read_as_far_as_it_goe
     assert_eq!(got.lists.len(), 1);
     assert_eq!(*asked.borrow(), ["lotl.xml", "locations.txt", "list-0.xml"]);
     // Files a smaller set no longer uses.
-    let one = Documents { lotl: docs.lotl.clone(), lists: docs.lists[..1].to_vec() };
+    let one = Documents { lotl: docs.lotl.clone(), lists: docs.lists[..1].to_vec(), pivots: Vec::new() };
     let names: Vec<String> = ["lotl.xml", "list-0.xml", "list-1.xml", "list-7.xml", "notes.txt", "list-x.xml"].map(String::from).to_vec();
     assert_eq!(one.stale_files(&names), ["list-1.xml", "list-7.xml"]);
+}
+
+// ---- Pivots: the list of lists signed with certificates newer than the ones the caller has ----
+
+const P300: &str = "https://ec.europa.eu/tools/lotl/eu-lotl-pivot-300.xml";
+const P320: &str = "https://ec.europa.eu/tools/lotl/eu-lotl-pivot-320.xml";
+const P380: &str = "https://ec.europa.eu/tools/lotl/eu-lotl-pivot-380.xml";
+
+/// The chain of the fixtures: `a` was published in the Official Journal; pivot 300 (signed by
+/// `a`) names `a` and `b`; pivot 320 (signed by `b`) names `c`, which signs `lotl-pivoted.xml`.
+/// Later `c` is published too, pivot 380 (signed by `c`) names `d`, which signs
+/// `lotl-transition.xml`.
+fn pivoted(lotl: &'static str, p320: &'static str) -> Vec<(&'static str, &'static str)> {
+    vec![(LOTL_URL, lotl), (P300, "pivot-300.xml"), (P320, p320), (P380, "pivot-380.xml"), (IT, "tl-it.xml"), (DE, "tl-de.xml")]
+}
+fn through(files: &[(&str, &str)], anchor: &str) -> (Result<Snapshot, RefreshError>, Vec<String>) {
+    let server = Server::with(files);
+    let s = Snapshot::refresh(&server, LOTL_URL, &[cert(anchor)], now(), None);
+    (s, server.asked.into_inner())
+}
+fn pivot_addresses(s: &Snapshot) -> Vec<&str> {
+    s.documents.pivots.iter().map(|(loc, _)| loc.as_str()).collect()
+}
+
+#[test]
+fn a_list_signed_with_newer_certificates_is_reached_through_its_pivots() {
+    let files = pivoted("lotl-pivoted.xml", "pivot-320.xml");
+    // `a` expired in 2022: it is judged when each pivot was issued, and the list itself today.
+    let (s, asked) = through(&files, "tsl-pivot-a.der");
+    let s = s.unwrap();
+    assert_eq!(asked, [LOTL_URL, P300, P320, IT, DE], "oldest pivot first, none twice, nothing else");
+    assert_eq!(pivot_addresses(&s), [P300, P320]);
+    assert_eq!(s.lotl.signer.raw, cert("tsl-pivot-c.der").raw);
+    assert_eq!(s.lotl.scheme.sequence_number, 371);
+    assert_eq!(roots(&s, now()), ["DE:DE one CA", "IT:Qualified CA One", "IT:Qualified CA Three"]);
+    // Whoever already has today's certificate needs no pivot and asks for none.
+    let (s, asked) = through(&files, "tsl-pivot-c.der");
+    assert_eq!(asked, [LOTL_URL, IT, DE]);
+    assert!(s.unwrap().documents.pivots.is_empty());
+}
+
+#[test]
+fn every_link_of_the_chain_must_hold() {
+    let refused = |files: &[(&str, &str)], anchor: &str, say: &str| match through(files, anchor).0 {
+        Err(RefreshError::Pivots(why)) => assert!(why.contains(say), "{why:?} does not say {say:?}"),
+        other => panic!("{say}: {:?}", other.map(|s| s.lotl.scheme.sequence_number)),
+    };
+    // A pivot signed by someone the chain does not name.
+    refused(&pivoted("lotl-pivoted.xml", "pivot-320-stranger.xml"), "tsl-pivot-a.der", "not made by a certificate that is trusted");
+    // A pivot issued after its signer's certificate had expired.
+    refused(&pivoted("lotl-pivoted.xml", "pivot-320-late.xml"), "tsl-pivot-a.der", "not valid at this time");
+    // A pivot that names no certificate for what comes next.
+    refused(&pivoted("lotl-pivoted.xml", "pivot-320-nosigners.xml"), "tsl-pivot-a.der", "names no certificate");
+    // A pivot older than the one before it, and one for another territory.
+    refused(&pivoted("lotl-pivoted.xml", "pivot-320-sequence.xml"), "tsl-pivot-a.der", "does not follow 300");
+    refused(&pivoted("lotl-pivoted.xml", "pivot-320-it.xml"), "tsl-pivot-a.der", "for IT and not for EU");
+    // A list of lists older than its own last pivot.
+    refused(&pivoted("lotl-pivoted-low.xml", "pivot-320.xml"), "tsl-pivot-a.der", "older than its pivot's 320");
+    // A chain is followed from its start: `b` is named by pivot 300, but who holds only `b`
+    // cannot verify pivot 300 and does not get to skip it.
+    refused(&pivoted("lotl-pivoted.xml", "pivot-320.xml"), "tsl-pivot-b.der", P300);
+    refused(&pivoted("lotl-pivoted.xml", "pivot-320.xml"), "tsl-pivot-stranger.der", P300);
+    // The same pivot served at both addresses is not a chain.
+    refused(&[(LOTL_URL, "lotl-pivoted.xml"), (P300, "pivot-300.xml"), (P320, "pivot-300.xml")], "tsl-pivot-a.der", "does not follow 300");
+    // A list of lists that was changed is refused for that, whatever pivots it names.
+    let mut server = Server::with(&pivoted("lotl-pivoted.xml", "pivot-320.xml"));
+    let changed = text("lotl-pivoted.xml").replace("<TSLSequenceNumber>371<", "<TSLSequenceNumber>999<");
+    server.files.insert(LOTL_URL.to_string(), changed);
+    assert_eq!(
+        Snapshot::refresh(&server, LOTL_URL, &[cert("tsl-pivot-a.der")], now(), None).unwrap_err(),
+        RefreshError::Refused(TrustedListError::Signature(XmlSignatureError::DigestMismatch))
+    );
+    assert_eq!(*server.asked.borrow(), [LOTL_URL], "and no pivot is asked for");
+    // Without pivots the refusal is the plain one.
+    assert_eq!(
+        through(&[(LOTL_URL, "lotl.xml")], "tsl-pivot-a.der").0.unwrap_err(),
+        RefreshError::Refused(TrustedListError::Signature(XmlSignatureError::UntrustedSigner))
+    );
+}
+
+#[test]
+fn a_pivot_that_cannot_be_fetched_is_a_failure_to_fetch_and_only_the_lists_host_is_asked() {
+    // Unreachable: the caller keeps what it holds, as when the list of lists is unreachable.
+    let (s, asked) = through(&[(LOTL_URL, "lotl-pivoted.xml"), (P300, "pivot-300.xml")], "tsl-pivot-a.der");
+    assert!(matches!(s, Err(RefreshError::Fetch(ref why)) if why.contains(P320)), "{:?}", s.err());
+    assert_eq!(asked, [LOTL_URL, P300, P320]);
+    // A pivot named at another host is not asked for at all.
+    let elsewhere = "https://example.invalid/eu-lotl-pivot-320.xml";
+    let files = [(LOTL_URL, "lotl-pivoted-elsewhere.xml"), (P300, "pivot-300.xml"), (elsewhere, "pivot-320.xml")];
+    let (s, asked) = through(&files, "tsl-pivot-a.der");
+    assert!(matches!(s, Err(RefreshError::Pivots(ref why)) if why.contains("not at the address")), "{:?}", s.err());
+    assert_eq!(asked, [LOTL_URL, P300]);
+}
+
+#[test]
+fn while_two_publications_are_listed_each_ones_holders_follow_their_own_pivots() {
+    let files = pivoted("lotl-transition.xml", "pivot-320.xml");
+    // The newer publication's certificate: only the pivot made since.
+    let (s, asked) = through(&files, "tsl-pivot-c.der");
+    let s = s.unwrap();
+    assert_eq!(asked, [LOTL_URL, P380, IT, DE]);
+    assert_eq!(pivot_addresses(&s), [P380]);
+    assert_eq!(s.lotl.signer.raw, cert("tsl-pivot-d.der").raw);
+    // The older publication's: the pivots between the two, then the newer ones.
+    let (s, asked) = through(&files, "tsl-pivot-a.der");
+    let s = s.unwrap();
+    assert_eq!(asked, [LOTL_URL, P380, P300, P320, IT, DE], "pivot 380 is tried first and fetched once");
+    assert_eq!(pivot_addresses(&s), [P300, P320, P380]);
+    assert_eq!(s.lotl.signer.raw, cert("tsl-pivot-d.der").raw);
+    // A certificate from the middle of a chain starts nothing.
+    assert!(matches!(through(&files, "tsl-pivot-b.der").0, Err(RefreshError::Pivots(_))));
+}
+
+#[test]
+fn the_pivots_are_kept_verified_again_and_not_fetched_twice() {
+    let files = pivoted("lotl-pivoted.xml", "pivot-320.xml");
+    let a = [cert("tsl-pivot-a.der")];
+    let s = through(&files, "tsl-pivot-a.der").0.unwrap();
+    // On disk: one file per pivot, named in the file that says where each came from.
+    let kept: HashMap<String, String> = s.documents.to_files().into_iter().collect();
+    assert!(kept.contains_key("pivot-0.xml") && kept.contains_key("pivot-1.xml") && !kept.contains_key("pivot-2.xml"));
+    assert!(kept["locations.txt"].contains(&format!("pivot-0.xml\t{P300}\n")) && kept["locations.txt"].contains(&format!("pivot-1.xml\t{P320}\n")));
+    let back = Documents::from_files(|n| kept.get(n).cloned()).unwrap();
+    assert_eq!(back, s.documents);
+    let names = ["pivot-0.xml", "pivot-1.xml", "pivot-2.xml", "pivot-x.xml", "list-0.xml"].map(String::from);
+    assert_eq!(s.documents.stale_files(&names), ["pivot-2.xml"]);
+    // Loaded again with no network: the same chain, from the same certificate.
+    let loaded = Snapshot::load(&back, &a, now()).unwrap();
+    assert_eq!(pivot_addresses(&loaded), [P300, P320]);
+    assert_eq!(loaded.anchors().len(), s.anchors().len());
+    // A pivot missing or changed on disk breaks the chain, and nothing is believed.
+    let mut missing = back.clone();
+    missing.pivots.remove(0);
+    assert!(matches!(Snapshot::load(&missing, &a, now()), Err(RefreshError::Pivots(ref why)) if why.contains("not held")));
+    let mut changed = back.clone();
+    changed.pivots[1].1 = changed.pivots[1].1.replace("<TSLSequenceNumber>320<", "<TSLSequenceNumber>321<");
+    assert!(matches!(Snapshot::load(&changed, &a, now()), Err(RefreshError::Pivots(_))));
+    let mut swapped = back.clone();
+    swapped.pivots[1].1 = text("pivot-320-stranger.xml");
+    assert!(matches!(Snapshot::load(&swapped, &a, now()), Err(RefreshError::Pivots(_))));
+    // The next refresh has the pivots already: it asks for the lists only.
+    let server = Server::with(&files);
+    let again = Snapshot::refresh(&server, LOTL_URL, &a, now(), Some(&loaded)).unwrap();
+    assert_eq!(*server.asked.borrow(), [LOTL_URL, IT, DE]);
+    assert_eq!(pivot_addresses(&again), [P300, P320]);
+    assert_eq!(*outcome(&again, "IT"), Outcome::Unchanged);
 }

@@ -28,3 +28,21 @@ signed with XAdES-style enveloped signatures (a reference to the whole document 
 | `tl-it.xml` | the `IT` list, signed by `tsl-signer-it.der` (ECDSA P-256): two providers; granted, withdrawn-with-history, ceased-with-history and unreadable-certificate services; a qualified time stamping service and a non-qualified CA |
 | `tl-it-plain.xml` | the same without the XAdES properties |
 | `qca1.der`, `qca2.der`, `qca3.der`, `qca-old.der`, `qtsa.der`, `pkc.der` | the certificates the `IT` list names |
+
+### Pivots of the list of lists
+
+Invented signers `tsl-pivot-a.der` (RSA, 2019–2022), `-b` (P-256, 2020–2024), `-c` (RSA, 2023–2030),
+`-d` (P-256, 2025–2032) and `-stranger.der`, made with `cryptography`; the lists are signed like the ones
+above. The pivot addresses are `https://ec.europa.eu/tools/lotl/eu-lotl-pivot-N.xml` (served by the tests'
+fake fetcher, never fetched), each address given twice in `SchemeInformationURI` (two languages).
+
+| File | What |
+|---|---|
+| `pivot-300.xml` | sequence 300, issued 2021, signed by `a`, names `a` and `b` |
+| `pivot-320.xml` | sequence 320, issued 2023, signed by `b`, names `c` |
+| `lotl-pivoted.xml` | sequence 371, signed by `c`; lists pivots 320, 300, then the Official Journal; points to the `IT` and `DE` lists |
+| `pivot-380.xml` | sequence 380, signed by `c`, names `d`; lists a second Official Journal publication above 320 and 300 |
+| `lotl-transition.xml` | sequence 381, signed by `d`, with pivot 380's addresses (two publications listed) |
+| `pivot-320-stranger.xml`, `-late.xml`, `-nosigners.xml`, `-sequence.xml`, `-it.xml` | pivot 320 signed by `stranger`, issued in 2025 (after `b` expired), naming no signer, with sequence 290, for `IT` |
+| `lotl-pivoted-low.xml` | sequence 310, lower than its pivot's |
+| `lotl-pivoted-elsewhere.xml` | names pivot 320 at another host |

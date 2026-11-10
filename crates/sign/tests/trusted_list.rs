@@ -175,3 +175,36 @@ fn damaged_lists_never_panic_and_are_never_believed_by_accident() {
         }
     }
 }
+
+#[test]
+fn the_addresses_a_list_gives_about_itself_are_read_without_believing_it() {
+    use cleonpdf_sign::tl::unverified_information_uris;
+    // Each address once, however many languages it is given in, in the list's order.
+    let uris = unverified_information_uris(&text("lotl-pivoted.xml"));
+    assert_eq!(uris.len(), 3, "{uris:?}");
+    assert!(uris[0].ends_with("eu-lotl-pivot-320.xml") && uris[1].ends_with("eu-lotl-pivot-300.xml") && uris[2].contains("eur-lex.europa.eu"));
+    // A list without the element, something that is not a list, and something that is not XML.
+    assert!(unverified_information_uris(&text("lotl.xml")).is_empty());
+    assert!(unverified_information_uris(&text("rsa-sha256-exc.xml")).is_empty());
+    assert!(unverified_information_uris("<<<").is_empty());
+    assert!(unverified_information_uris("").is_empty());
+}
+
+#[test]
+fn a_past_list_is_judged_when_it_was_issued_and_must_say_when_that_was() {
+    let a = [Certificate::parse(&data("tsl-pivot-a.der")).unwrap()];
+    // Signed in 2021 by a certificate that expired in 2022.
+    let today = Time { year: 2026, month: 11, day: 20, hour: 12, minute: 0, second: 0 };
+    assert_eq!(TrustedList::parse(&text("pivot-300.xml"), &a, today).unwrap_err(), TrustedListError::Signature(XmlSignatureError::SignerNotValid));
+    let list = TrustedList::parse_as_issued(&text("pivot-300.xml"), &a).unwrap();
+    assert_eq!(list.scheme.sequence_number, 300);
+    // Its signer is still checked: someone else's certificate does not do.
+    let b = [Certificate::parse(&data("tsl-pivot-b.der")).unwrap()];
+    assert_eq!(
+        TrustedList::parse_as_issued(&text("pivot-300.xml"), &b).unwrap_err(),
+        TrustedListError::Signature(XmlSignatureError::UntrustedSigner)
+    );
+    // A signed document that gives no issue time cannot be placed in time.
+    let rsa = [Certificate::parse(&data("rsa.der")).unwrap()];
+    assert!(matches!(TrustedList::parse_as_issued(&text("rsa-sha256-exc.xml"), &rsa), Err(TrustedListError::Malformed(_))));
+}
