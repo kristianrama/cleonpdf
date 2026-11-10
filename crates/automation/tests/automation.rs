@@ -1741,6 +1741,38 @@ fn the_systems_roots_are_asked_for_and_kept_apart_from_the_trusted_list() {
     assert!(matches!(a.call("sign_trust", &json!({ "system": "yes" })), Err(ToolError::InvalidArgs(_))));
 }
 
+/// A list of lists signed with a certificate newer than the anchors is reached through the
+/// pivots kept in the cache, and not without them.
+#[test]
+fn the_eu_trusted_lists_follow_the_pivots_kept_in_the_cache() {
+    let xml = |name: &str| std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../sign/tests/data/xml/").to_string() + name).unwrap();
+    let dir = workdir("sign-eutl-pivots");
+    std::fs::create_dir_all(dir.join("lists")).unwrap();
+    for (from, to) in [
+        ("lotl-pivoted.xml", "lists/lotl.xml"),
+        ("pivot-300.xml", "lists/pivot-0.xml"),
+        ("pivot-320.xml", "lists/pivot-1.xml"),
+        ("tl-it.xml", "lists/list-0.xml"),
+        ("tl-de.xml", "lists/list-1.xml"),
+        ("tsl-pivot-a.der", "a.der"),
+    ] {
+        std::fs::write(dir.join(to), xml(from)).unwrap();
+    }
+    let p300 = "https://ec.europa.eu/tools/lotl/eu-lotl-pivot-300.xml";
+    let p320 = "https://ec.europa.eu/tools/lotl/eu-lotl-pivot-320.xml";
+    let index = format!(
+        "pivot-0.xml\t{p300}\npivot-1.xml\t{p320}\nlist-0.xml\thttps://example.invalid/tl-it.xml\nlist-1.xml\thttps://example.invalid/tl-de.xml\n"
+    );
+    std::fs::write(dir.join("lists/locations.txt"), &index).unwrap();
+    let mut a = Automation::new().with_root(&dir).unwrap().with_clock(|| 1_795_000_000);
+    let loaded = ok(&mut a, "sign_eutl", json!({ "action": "load", "anchors": ["a.der"], "cache": "lists" }));
+    assert_eq!(loaded["list_of_lists"]["pivots"], json!([p300, p320]), "{loaded}");
+    assert_eq!(loaded["countries"], json!({ "DE": 1, "IT": 4 }));
+    // Without the second pivot the chain is broken and nothing counts.
+    std::fs::write(dir.join("lists/locations.txt"), index.replace(&format!("pivot-1.xml\t{p320}\n"), "")).unwrap();
+    assert!(matches!(a.call("sign_eutl", &json!({ "action": "load", "anchors": ["a.der"], "cache": "lists" })), Err(ToolError::Failed(_))));
+}
+
 /// The EU Trusted Lists through the tool: read from a cache, verified again, refused when
 /// changed, kept apart from every other kind of trust, and confined to the root.
 #[test]

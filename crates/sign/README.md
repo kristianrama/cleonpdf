@@ -76,6 +76,16 @@ for s in signatures(&doc, &bytes, &trust) {                                // li
   timestamp or `TrustStore::eutl_now` (today), never by the signing time the signer claims, and the
   signature says that a Trusted List vouched. `Documents::to_files` / `from_files` give the layout
   the signed text is kept in.
+  **Pivots:** when the list of lists is signed by a certificate that is not one of the anchors (the
+  Commission changed it after the Official Journal publication the caller has), `refresh` reads the
+  pivot addresses from its `SchemeInformationURI` (unverified: only where to look), groups them by
+  the publication they follow and follows each chain oldest first: every pivot must be signed by a
+  certificate of the set before it, valid when the pivot was issued (`TrustedList::parse_as_issued`),
+  name the next set in its own `EU` pointer, be for the same territory and carry a higher sequence
+  number; the list of lists must then verify against the last set today and be no older than the
+  last pivot. Pivots are asked for only at the list of lists' own host, at most `MAX_PIVOTS`, each
+  once; an unreachable pivot is a fetch failure (the copy held stays in use). The pivots used are
+  kept (`pivot-N.xml`) and verified again by `load`; one held is not fetched again.
 
 - **Gathering evidence (PAdES B-LT):** `ltv::gather` takes the signers' chains and a
   `RevocationFetcher` (this crate never opens a socket; `cleonpdf-net` is the HTTP one). For
