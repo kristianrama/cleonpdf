@@ -4,7 +4,10 @@ Layer L5: outbound network requests, in one crate. It is the only crate that ope
 "what does this app send over the network?" has one place to look.
 
 - `agent(timeout)`: the HTTPS client, rustls with the operating system's trusted roots (no
-  bundled root list). Used by Help ▸ Check for updates.
+  bundled root list). Used by Help ▸ Check for updates. Certificate signatures are checked with
+  `ring`, plus the ECDSA combinations it lacks (P-256/P-384 with SHA-512, P-521 with SHA-2), which
+  `src/tls.rs` verifies with the product's own ECDSA code and accepts only in canonical DER; some
+  Trusted List hosts (Hungary's) are served with such chains.
 - `HttpTimestampAuthority::new(url)`: an RFC 3161 timestamp client for
   `cleonpdf_sign::TimestampAuthority`. The query is POSTed as `application/timestamp-query`; the
   answer is only bytes here, and the signer checks the token (imprint, the TSA's signature)

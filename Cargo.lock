@@ -1230,6 +1230,8 @@ version = "0.2.3"
 dependencies = [
  "cleonpdf-cos",
  "cleonpdf-sign",
+ "p384",
+ "rustls",
  "rustls-native-certs",
  "ureq",
 ]
