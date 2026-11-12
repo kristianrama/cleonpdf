@@ -3,7 +3,8 @@
 //!
 //! Only what those lists use is read, and anything else is refused rather than guessed at:
 //! exclusive or inclusive canonical XML 1.0 without comments, the enveloped-signature transform,
-//! references by `""` or by `#id`, SHA-2 digests, and RSA PKCS #1 or ECDSA signatures. The signer
+//! references by `""` or by `#id`, SHA-2 digests, and RSA PKCS #1, RSA-PSS (RFC 6931's
+//! `#<hash>-rsa-MGF1`, with SHA-2 or SHA-3) or ECDSA signatures. The signer
 //! is never taken from the document: its certificate has to be one the caller already trusts, and
 //! the signature has to cover the whole document element, so that what is read afterwards is what
 //! was signed.
@@ -14,7 +15,7 @@ use base64::Engine as _;
 use roxmltree::{Document, Node, NodeId};
 
 use crate::der::Time;
-use crate::keys::{DigestAlg, Scheme};
+use crate::keys::{DigestAlg, PssParams, Scheme};
 use crate::x509::Certificate;
 
 const DSIG: &str = "http://www.w3.org/2000/09/xmldsig#";
@@ -323,8 +324,22 @@ fn digest_of(uri: &str) -> Result<DigestAlg, XmlSignatureError> {
     }
 }
 
+/// RSASSA-PSS "without parameters" (RFC 6931 §2.3.10): the hash is also MGF1's, the salt is as long
+/// as its output and the trailer is 0xBC. The SHA-1 and MD variants are left out, as for PKCS #1.
+fn pss(alg: DigestAlg) -> (Scheme, DigestAlg) {
+    (Scheme::RsaPss(PssParams { mgf: alg, salt_len: Some(alg.output_len()) }), alg)
+}
+
 fn signature_method(uri: &str) -> Result<(Scheme, DigestAlg), XmlSignatureError> {
     match uri {
+        "http://www.w3.org/2007/05/xmldsig-more#sha224-rsa-MGF1" => Ok(pss(DigestAlg::Sha224)),
+        "http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1" => Ok(pss(DigestAlg::Sha256)),
+        "http://www.w3.org/2007/05/xmldsig-more#sha384-rsa-MGF1" => Ok(pss(DigestAlg::Sha384)),
+        "http://www.w3.org/2007/05/xmldsig-more#sha512-rsa-MGF1" => Ok(pss(DigestAlg::Sha512)),
+        "http://www.w3.org/2007/05/xmldsig-more#sha3-224-rsa-MGF1" => Ok(pss(DigestAlg::Sha3_224)),
+        "http://www.w3.org/2007/05/xmldsig-more#sha3-256-rsa-MGF1" => Ok(pss(DigestAlg::Sha3_256)),
+        "http://www.w3.org/2007/05/xmldsig-more#sha3-384-rsa-MGF1" => Ok(pss(DigestAlg::Sha3_384)),
+        "http://www.w3.org/2007/05/xmldsig-more#sha3-512-rsa-MGF1" => Ok(pss(DigestAlg::Sha3_512)),
         "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" => Ok((Scheme::RsaPkcs1, DigestAlg::Sha256)),
         "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384" => Ok((Scheme::RsaPkcs1, DigestAlg::Sha384)),
         "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512" => Ok((Scheme::RsaPkcs1, DigestAlg::Sha512)),

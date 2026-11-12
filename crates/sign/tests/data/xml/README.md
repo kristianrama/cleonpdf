@@ -15,6 +15,9 @@ any file and its certificate together: each run creates new keys.
 | `other-signer.xml` | signed by `other.der` |
 | `rsa-sha256-emptyuri.xml` | signed with `URI=""` |
 | `rsa-sha256-partial.xml` | a valid signature that covers only the `i1` element |
+| `rsa-pss.der` | an RSA 3072 signer for the RSA-PSS files |
+| `rsa-pss-sha256-exc.xml`, `rsa-pss-sha384-exc.xml`, `rsa-pss-sha512-exc.xml`, `rsa-pss-sha3-256-exc.xml` | `doc.xml` signed by signxml with RFC 6931's `#<hash>-rsa-MGF1` (RSASSA-PSS, MGF1 with the same hash, salt as long as the hash), as the German Trusted List is |
+| `rsa-pss-sha256-salt20.xml` | the SHA-256 one with its value re-made by `cryptography` with a 20-byte salt |
 
 ## Trusted Lists
 

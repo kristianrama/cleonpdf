@@ -302,7 +302,7 @@ update the numbers.
   the signers' chains and embeds them (PAdES B-LT), refusing non-public hosts unless told otherwise, for the timestamp authority's chain too, and completing a chain from the caIssuers address. The Signatures panel has an Add validation
   information button for it (desktop).
 - **Missing:** a check of PKCS #11 tokens and smart cards on real cards (the Sign dialog lists them, asks for the PIN and signs, and `sign_document` takes `pkcs11:…`; all tested against SoftHSM only), RSA-PSS and keypad readers; setting a field's own lock in Prepare Form and showing what a signature locked in the Signatures panel (signing with a lock and validating it work, in the Sign dialog and headless); the OS trust store on Linux/Windows/macOS is read but not compared with Acrobat's Windows Integration (no purpose or trust-setting filtering of roots); EU
-  Trusted Lists (the interface and the cache are there; no built-in anchors, no check against the real lists or Acrobat); signature graphics and saved appearances; compare signed version; signing in the
+  Trusted Lists (the interface and the cache are there, checked once against the real lists; no built-in anchors, no comparison with Acrobat); signature graphics and saved appearances; compare signed version; signing in the
   browser.
 - **Evidence:** `sign.eutl` partial (`sign_eutl` and Preferences ▸ Signatures: the lists are verified, cached and trusted while granted; no built-in anchors yet); `sign.os-trust`, `sign.field-mdp`, `sign.pkcs11`, `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial (evidence fetched in
   tests against a loopback CA only). Users ask for Acrobat-like validation

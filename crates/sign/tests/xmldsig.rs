@@ -49,6 +49,30 @@ fn signatures_by_another_implementation_verify() {
 }
 
 #[test]
+fn rsa_pss_signatures_verify_with_the_salt_rfc_6931_fixes() {
+    // As the German Trusted List is signed: RSASSA-PSS "without parameters", by signxml.
+    for file in ["rsa-pss-sha256-exc.xml", "rsa-pss-sha384-exc.xml", "rsa-pss-sha512-exc.xml", "rsa-pss-sha3-256-exc.xml"] {
+        let got = check(&text(file), &["rsa-pss.der"], 2027).unwrap_or_else(|e| panic!("{file}: {e}"));
+        assert_eq!(got.raw, cert("rsa-pss.der").raw, "{file}");
+        // Any change still breaks it, and so does another signer.
+        let changed = text(file).replace("<ns:Inner", "<ns:Inner extra=\"1\"");
+        assert_ne!(changed, text(file));
+        assert_eq!(check(&changed, &["rsa-pss.der"], 2027), Err(XmlSignatureError::DigestMismatch), "{file}");
+        assert_eq!(check(&text(file), &["rsa.der"], 2027), Err(XmlSignatureError::UntrustedSigner), "{file}");
+    }
+    // A PSS value with a salt shorter than the hash is not what the method names.
+    assert_eq!(check(&text("rsa-pss-sha256-salt20.xml"), &["rsa-pss.der"], 2027), Err(XmlSignatureError::BadSignature));
+    // A PSS value under the PKCS #1 method, and the other way round, does not verify.
+    let as_pkcs1 = text("rsa-pss-sha256-exc.xml").replace("2007/05/xmldsig-more#sha256-rsa-MGF1", "2001/04/xmldsig-more#rsa-sha256");
+    assert_eq!(check(&as_pkcs1, &["rsa-pss.der"], 2027), Err(XmlSignatureError::BadSignature));
+    let as_pss = text("rsa-sha256-exc.xml").replace("2001/04/xmldsig-more#rsa-sha256", "2007/05/xmldsig-more#sha256-rsa-MGF1");
+    assert_eq!(check(&as_pss, &["rsa.der"], 2027), Err(XmlSignatureError::BadSignature));
+    // The SHA-1 variant stays outside the list.
+    let sha1 = text("rsa-pss-sha256-exc.xml").replace("#sha256-rsa-MGF1", "#sha1-rsa-MGF1");
+    assert!(matches!(check(&sha1, &["rsa-pss.der"], 2027), Err(XmlSignatureError::Unsupported(_))));
+}
+
+#[test]
 fn the_signer_must_be_one_the_caller_trusts() {
     let xml = text("other-signer.xml");
     // Validly signed, but by a certificate that is not on the caller's list.
