@@ -238,6 +238,14 @@ impl TrustStore {
         self.trusts_by_user(c) || self.system.iter().any(|t| t.raw == c.raw)
     }
 
+    /// Where a timestamp authority's chain is built from: the token's own certificates, the
+    /// user's and, when counted, the operating system's roots (a public TSA's root is there, and
+    /// the token does not carry it).
+    fn tsa_pool(&self, mut token_certs: Vec<Certificate>) -> Vec<Certificate> {
+        token_certs.extend(self.certs.iter().chain(&self.system).cloned());
+        token_certs
+    }
+
     fn trusts_by_user(&self, c: &Certificate) -> bool {
         self.certs.iter().any(|t| t.raw == c.raw)
     }
@@ -826,8 +834,7 @@ fn validate_into(doc: &Document, bytes: &[u8], trust: &TrustStore, v: &Dict, inf
                     // Only a token from a trusted authority (valid when it stamped) is trusted
                     // time; otherwise its time is reported but validation uses the signer's
                     // own claimed time, as without a timestamp.
-                    let mut pool = crate::timestamp::token_certs(raw);
-                    pool.extend(trust.certs.iter().cloned());
+                    let pool = trust.tsa_pool(crate::timestamp::token_certs(raw));
                     let tsa_chain: Vec<Certificate> =
                         t.signer_certificate().map(|c| build_chain(&c, &pool, Some(t.gen_time)).into_iter().cloned().collect()).unwrap_or_default();
                     let trusted_tsa = t.signer_certificate().is_some_and(|c| c.valid_at(t.gen_time)) && tsa_chain.iter().any(|x| trust.trusts(x));
@@ -1143,8 +1150,7 @@ fn validate_doc_timestamp(doc: &Document, bytes: &[u8], v: &Dict, info: &mut Sig
     if info.status != Status::Invalid {
         // An untrusted TSA is not proof of anything: the verdict stays Unknown, like an
         // ordinary signature from an unknown signer.
-        let mut pool = crate::timestamp::token_certs(&contents);
-        pool.extend(trust.certs.iter().cloned());
+        let pool = trust.tsa_pool(crate::timestamp::token_certs(&contents));
         // A trusted authority whose certificate was not valid at the time it stamped proves
         // nothing either (its detail is already recorded above): never upgrade that to Valid.
         let in_validity = token.signer_certificate().is_some_and(|c| c.valid_at(token.gen_time));
