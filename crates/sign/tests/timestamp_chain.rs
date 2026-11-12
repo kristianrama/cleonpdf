@@ -137,3 +137,30 @@ fn evidence_is_gathered_for_the_timestamp_authority_as_for_the_signer() {
     assert!(got.notes.iter().all(|n| matches!(n.outcome, Outcome::Fetched(_))), "{:?}", got.notes);
     assert!(got.evidence.certs.iter().any(|c| c.as_slice() == m.tsa.raw.as_slice()), "the authority's certificate is kept");
 }
+
+/// A public timestamp authority's token carries its own certificate and maybe intermediates, not
+/// the root, which sits among the operating system's roots. With those counted, the timestamp is
+/// trusted time, on a signature and as a document timestamp; DigiCert's was reported unverified
+/// because the chain was built without them.
+#[test]
+fn a_timestamp_authority_whose_root_the_system_trusts_is_trusted() {
+    let ca = root("Public Root");
+    let tsa_party = end_entity("Public TSA", &ca, &[]);
+    let signer = end_entity("Signer", &ca, &[]);
+    let tsa = Tsa { party: tsa_party, chain: Vec::new() };
+    let id = signer.into_id(&[&ca]);
+    let opts = SignOptions { date: "D:20260615120000Z".into(), ..SignOptions::default() };
+    let signed = cleonpdf_sign::sign_with_timestamp(&Document::open(Arc::new(fixture())).unwrap(), &id, &opts, &tsa).unwrap();
+    let stamped = cleonpdf_sign::timestamp_document(&Document::open(Arc::new(fixture())).unwrap(), &tsa, "D:20260615120000Z").unwrap();
+    let system = TrustStore { system: vec![ca.cert.clone()], ..TrustStore::default() };
+    let s = read(&signed, &system).into_iter().find(|s| s.signed).unwrap();
+    assert_eq!(s.timestamp_time, Some(time(2026, 6, 15)), "{:?}", s.details);
+    assert_eq!(s.timestamp_chain.iter().map(|c| c.display_name()).collect::<Vec<_>>(), ["Public TSA", "Public Root"]);
+    let d = read(&stamped, &system).into_iter().find(|s| s.doc_timestamp).unwrap();
+    assert_eq!(d.status, cleonpdf_sign::Status::Valid, "{:?}", d.details);
+    // Without the system's roots it stays unverified, as freeTSA's does.
+    let s = read(&signed, &TrustStore::default()).into_iter().find(|s| s.signed).unwrap();
+    assert_eq!(s.timestamp_time, None);
+    let d = read(&stamped, &TrustStore::default()).into_iter().find(|s| s.doc_timestamp).unwrap();
+    assert_eq!(d.status, cleonpdf_sign::Status::Unknown);
+}
