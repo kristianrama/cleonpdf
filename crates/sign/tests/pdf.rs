@@ -520,7 +520,16 @@ fn embedding_ltv_evidence_adds_a_dss_and_keeps_signatures_valid() {
         Modification::Allowed(k) => k,
         other => panic!("{other:?}"),
     };
-    assert!(allowed.contains(&kind::SECURITY_STORE), "{allowed:?}");
+    // Only the store: not metadata (the catalog gained /DSS), not form fill (the store itself).
+    assert_eq!(allowed.as_slice(), [kind::SECURITY_STORE], "{allowed:?}");
+    assert!(!dss_dict.contains(b"Filter"), "ISO 32000-2 gives a store no /Filter");
+    // A store written with /Filter /Adobe.PPKLite (CleonPDF 0.2.3 and earlier) is still only a store.
+    let mut with_filter = dss_dict.clone();
+    with_filter.set(b"Filter".to_vec(), cleonpdf_cos::Object::name("Adobe.PPKLite"));
+    let dss_ref = doc.get(root).as_dict().unwrap().get(b"DSS").and_then(cleonpdf_cos::Object::as_ref).unwrap();
+    let old = edit_after(&ltv, |d| d.set(dss_ref, cleonpdf_cos::Object::Dict(with_filter)));
+    let s = signatures(&open(&old), &old, &TrustStore::default()).into_iter().find(|s| s.signed && !s.doc_timestamp).unwrap();
+    assert!(matches!(&s.modification, Modification::Allowed(k) if k.as_slice() == [kind::SECURITY_STORE]), "{:?}", s.modification);
     // Embedding twice keeps one certificate (byte-identical dedup) and stays valid.
     let twice = dss::embed(&doc, &evidence).unwrap();
     let doc2 = open(&twice);

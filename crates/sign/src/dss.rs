@@ -64,8 +64,10 @@ pub fn embed(doc: &Document, evidence: &Evidence) -> Result<Vec<u8>, SignError> 
     let crl_refs: Vec<Object> = crls.iter().map(|c| Object::Ref(embed_stream(&mut doc, c))).collect();
 
     let mut dss = Dict::new();
+    // ISO 32000-2 §12.8.4.3: /Type, /Certs, /OCSPs, /CRLs and /VRI. Anything else (a /Filter
+    // this writer once added) makes the store look like something other than a store when the
+    // signature's changes are classified.
     dss.set(b"Type".to_vec(), Object::name("DSS"));
-    dss.set(b"Filter".to_vec(), Object::name("Adobe.PPKLite"));
     dss.set(b"Certs".to_vec(), Object::Ref(doc.add(Object::Array(cert_refs.clone()))));
     if !ocsp_refs.is_empty() {
         dss.set(b"OCSPs".to_vec(), Object::Ref(doc.add(Object::Array(ocsp_refs.clone()))));
