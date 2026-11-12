@@ -238,12 +238,29 @@ impl TrustStore {
         self.trusts_by_user(c) || self.system.iter().any(|t| t.raw == c.raw)
     }
 
-    /// Where a timestamp authority's chain is built from: the token's own certificates, the
-    /// user's and, when counted, the operating system's roots (a public TSA's root is there, and
-    /// the token does not carry it).
-    fn tsa_pool(&self, mut token_certs: Vec<Certificate>) -> Vec<Certificate> {
-        token_certs.extend(self.certs.iter().chain(&self.system).cloned());
-        token_certs
+    /// Where a timestamp authority's chain is built from: the user's certificates and, when
+    /// counted, the operating system's roots (a public TSA's root is there, and the token does not
+    /// carry it), then the token's own certificates. See [`anchors_first`](Self::anchors_first).
+    fn tsa_pool(&self, token_certs: Vec<Certificate>) -> Vec<Certificate> {
+        let mut pool: Vec<Certificate> = self.certs.iter().chain(&self.system).cloned().collect();
+        pool.extend(token_certs);
+        pool
+    }
+
+    /// Where a signer's chain is built from: the certificates trusted here, then those the
+    /// document carries.
+    ///
+    /// Trusted ones come first because the chain builder takes the first issuer that qualifies,
+    /// and a document or token may carry another certificate for a trusted root's own name and
+    /// key: DigiCert's timestamp tokens carry DigiCert Trusted Root G4 cross-signed by an older
+    /// root the system no longer lists, while the system lists G4's self-signed certificate.
+    /// Taking the carried one, the chain ended at a certificate nobody trusts. A trusted one is
+    /// the anchor itself, with its own validity, rather than a copy whose dates the file chose.
+    fn anchors_first(&self, embedded: &[Certificate]) -> Vec<Certificate> {
+        let mut pool: Vec<Certificate> = self.certs.iter().chain(&self.system).cloned().collect();
+        pool.extend(self.eutl.iter().map(|a| a.certificate.clone()));
+        pool.extend_from_slice(embedded);
+        pool
     }
 
     fn trusts_by_user(&self, c: &Certificate) -> bool {
@@ -906,9 +923,7 @@ fn finish_validation(
     unverified_time: Option<Time>,
 ) {
     info.signing_time = cms_time.or_else(|| info.date.as_deref().and_then(Time::from_pdf));
-    let mut pool = embedded.to_vec();
-    pool.extend(trust.certs.iter().chain(&trust.system).cloned());
-    pool.extend(trust.eutl.iter().map(|a| a.certificate.clone()));
+    let pool = trust.anchors_first(embedded);
     // The time the chain is judged at: trusted timestamp, else the signer's claimed time.
     let at = info.timestamp_time.or(info.signing_time);
     let (chain, refused) = build_chain_noted(&cert, &pool, at);

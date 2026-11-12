@@ -11,7 +11,7 @@ use std::sync::Arc;
 use cleonpdf_cos::Document;
 use cleonpdf_sign::ltv::{Outcome, RevocationFetcher, gather};
 use cleonpdf_sign::{DigestAlg, SignError, SignOptions, TimestampAuthority, TrustStore, signatures};
-use pki::{Answer, Party, aia_ocsp, end_entity, ocsp_response, root, time};
+use pki::{Answer, Party, aia_ocsp, cross_certify, end_entity, ocsp_response, root, time};
 
 /// A one-page document with a real cross-reference table.
 fn fixture() -> Vec<u8> {
@@ -163,4 +163,40 @@ fn a_timestamp_authority_whose_root_the_system_trusts_is_trusted() {
     assert_eq!(s.timestamp_time, None);
     let d = read(&stamped, &TrustStore::default()).into_iter().find(|s| s.doc_timestamp).unwrap();
     assert_eq!(d.status, cleonpdf_sign::Status::Unknown);
+}
+
+/// DigiCert's tokens carry DigiCert Trusted Root G4 cross-signed by an older root that the
+/// operating system no longer lists, while it lists G4's own self-signed certificate. The chain is
+/// built through the trusted certificate, not the carried copy, so the timestamp is trusted time;
+/// so for a signer whose file carries the cross-certificate.
+#[test]
+fn a_chain_reaches_the_trusted_root_not_its_cross_signed_copy() {
+    let old = root("Old Root");
+    let new = root("New Root");
+    let cross = cross_certify(&new, &old);
+    assert_ne!(cross.raw, new.cert.raw);
+    let tsa_party = end_entity("Public TSA", &new, &[]);
+    let signer = end_entity("Signer", &new, &[]);
+    let tsa = Tsa { party: tsa_party, chain: vec![cross.clone()] };
+    let id = cleonpdf_sign::pkcs12::DigitalId { key: signer.key, certificate: signer.cert, chain: vec![cross.clone()], friendly_name: None };
+    let opts = SignOptions { date: "D:20260615120000Z".into(), ..SignOptions::default() };
+    let signed = cleonpdf_sign::sign_with_timestamp(&Document::open(Arc::new(fixture())).unwrap(), &id, &opts, &tsa).unwrap();
+    let stamped = cleonpdf_sign::timestamp_document(&Document::open(Arc::new(fixture())).unwrap(), &tsa, "D:20260615120000Z").unwrap();
+    let system = TrustStore { system: vec![new.cert.clone()], ..TrustStore::default() };
+    let s = read(&signed, &system).into_iter().find(|s| s.signed).unwrap();
+    assert_eq!(s.timestamp_time, Some(time(2026, 6, 15)), "{:?}", s.details);
+    assert_eq!(s.status, cleonpdf_sign::Status::Valid, "{:?}", s.details);
+    assert_eq!(s.timestamp_chain.last().map(|c| &c.raw), Some(&new.cert.raw), "the chain ends at the trusted root itself");
+    assert_eq!(s.chain.last().map(|c| &c.raw), Some(&new.cert.raw));
+    let d = read(&stamped, &system).into_iter().find(|s| s.doc_timestamp).unwrap();
+    assert_eq!(d.status, cleonpdf_sign::Status::Valid, "{:?}", d.details);
+    // The same holds for a root the user trusts.
+    let user = TrustStore { certs: vec![new.cert.clone()], ..TrustStore::default() };
+    assert_eq!(read(&signed, &user).into_iter().find(|s| s.signed).unwrap().status, cleonpdf_sign::Status::Valid);
+    // A certificate with the root's name but another key is not the root.
+    let impostor = root("New Root");
+    let other = TrustStore { system: vec![impostor.cert.clone()], ..TrustStore::default() };
+    let s = read(&signed, &other).into_iter().find(|s| s.signed).unwrap();
+    assert_eq!(s.timestamp_time, None);
+    assert_eq!(s.status, cleonpdf_sign::Status::Unknown);
 }
