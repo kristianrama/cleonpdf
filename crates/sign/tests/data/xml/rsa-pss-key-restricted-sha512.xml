@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ns:Doc xmlns:ns="urn:example:doc" xmlns:unused="urn:example:unused" xml:lang="en" Id="root" b="2" a="1 &amp; &lt;">
+  <!-- a comment that is not canonicalized -->
+  <ns:Item id="i1" z="&quot;q&quot;">text with &amp; &lt; &gt; and a CDATA &lt;raw &amp; text&gt;</ns:Item>
+  <ns:Empty/>
+  <other xmlns="urn:example:other" xmlns:ns="urn:example:doc"><ns:Inner k="v">tab	tab é €</ns:Inner></other>
+  <?pi-target some data?>
+<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><ds:SignatureMethod Algorithm="http://www.w3.org/2007/05/xmldsig-more#sha512-rsa-MGF1"/><ds:Reference URI="#root"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"/><ds:DigestValue>Lpk6qoZxYxiFwaoNw/x/yafxb0GY6M/csTFHGhv48eLEjgUHIpmBlLwfEjVNFH4K2uidkAdoIGux81a8ZO8eUA==</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>Lm5zjuv357wTOuICgEX4+tu+fmNp2wGePUj7u9K4T9uNrTrkG7rdFVdKEeIHBsUOTuaOaoFLd6lUwmOeyOK6NeXceLpNeH/KdcqDXrRa+LuSS77PGaoUVL368dAReAv82GtDn9Er3qCHBZQDNyJ3m4m4L0PHxYx2qx/uaRqVcY5dG332Ttn6nsITrsJUmBwGpMOoykOjF6/kpXfcslRvOJCrwhGw4u4T2y4i1xur9hxwFejjCDkSJy01ygkbUHo8gDY5XSqbBxcFzjuE6LRLhjzr3DEsnKnry/5WNwIguxA8aYSUgjXMrdk0szkv+9UdQfr5XHrKs7eUMFk8qTpVIH5sQHem2NEite2f7DHG4QTy6J+kw8B6vDuZ8LmTxVgo/c4zGnKKlSHY6y3IW9WYl89TSZSpUy26FKtnbjDp4ezvIPdGbYfuh0yqf39edimpjrWZyvkBLiMxCcEpgT5WfA4N17V6OeLgjAKYihN1onMAaFXBbyK9grAoXUR6jH/6</ds:SignatureValue><ds:KeyInfo><ds:X509Data><ds:X509Certificate>MIIE1TCCAwmgAwIBAgIUA7j33qpib6xikZ4/ZRHiouuYjEUwQQYJKoZIhvcNAQEK
+MDSgDzANBglghkgBZQMEAgEFAKEcMBoGCSqGSIb3DQEBCDANBglghkgBZQMEAgEF
+AKIDAgEgMCwxKjAoBgNVBAMMIVhNTCBSU0EtUFNTIGtleSB0ZXN0IChyZXN0cmlj
+dGVkKTAeFw0yNjExMTIxMzU2MjRaFw0zNjExMDkxMzU2MjRaMCwxKjAoBgNVBAMM
+IVhNTCBSU0EtUFNTIGtleSB0ZXN0IChyZXN0cmljdGVkKTCCAdYwQQYJKoZIhvcN
+AQEKMDSgDzANBglghkgBZQMEAgEFAKEcMBoGCSqGSIb3DQEBCDANBglghkgBZQME
+AgEFAKIDAgEgA4IBjwAwggGKAoIBgQCo9G7MSsEo8tGsw9Kq3T0rIKSBOD25xTFS
+LlWz1PJzCGD6OP39+JJPvY2F144Htr1OlCwsBMBfk+MXxHGXOkxVeLbG4wynTGGu
+IprNvMgitCx5VfhZrhbrYtlyQuc9yGniA5DLgyNKtnGmGRiGGWPTmaSYJaykuXD2
+ks85DfIii7LPOGMDs8vKGPN/1FMsyXFS5FfKRqPJ/BF4ntPjsFAXTiGvNRfbvXow
+8llQXwIds2+uSmrOQBW1ZCyL03Mqvcu66jNx7kfatQhj0ycmpsXnAa475X1yw7wS
+9n7lIr9OOrQQWadkBELYb9NX5QOIW4ra8zZo86h2kYxy47P0/j6a4ThWgQv/ZDdq
+gH9VjpdM2BFwreL98WKb7vBvfBNsIIqcgzqEqYbuN0xo1U9KMjRWkmktFu0tt5FL
+3tDqxxqvQg/dZvDLHtj2xrkGdB0W8afpbOgdSrMYj7BFtBaBHioQYkEavHBBpIBe
+2DVAL11r9huZ7sQmVm8zmvIELH+Rm0ECAwEAAaNTMFEwHQYDVR0OBBYEFCtlJNJF
+kCC741mawIoKOad8MeL2MB8GA1UdIwQYMBaAFCtlJNJFkCC741mawIoKOad8MeL2
+MA8GA1UdEwEB/wQFMAMBAf8wQQYJKoZIhvcNAQEKMDSgDzANBglghkgBZQMEAgEF
+AKEcMBoGCSqGSIb3DQEBCDANBglghkgBZQMEAgEFAKIDAgEgA4IBgQB87JxZAkfR
+MfQB3zL5yzD88Yu7gXh5LTFI47Nwvk/FZ5darEP48I+M2txQwmyte7KVXd7/e443
+fheGEcAthtaDXkUZJyXpVLFWz2uLrMKpg863ot2+SW8N0nH8CS90qXcZhL9m1Vlq
+NOHRqkZVf+pkHcyWPZ9jXDSPR3Dqc5IIZ+0P0aUgvDQsbl29hcbUxP+wxdEM4F2w
+GyRXKPwH7nv4pSYfaGr/kcjDrAKlbcHv5OAx/bnHHd1ZLpqZBErsoybLzN8WT6/+
+7NlUfXXGR4KcyjzgN66gS/rSF20JgaI00RsCBikFPcGeTf/Jataez9wBtWflI99Q
+MyQfkMPq22Ag8uKoSA9CKgCeSxxI67UkZOS5cSiTrG1w93yZQCmB4wlgICrhHpr9
+sD9jjqMzGXNntII3Ms12GiHKvyoMOXGtGemEFLngiijdUqxgGDl1EYYJLN1wzi/J
++ClZvhGFK8jkWBtYLOAf4WcJDssS5xRHOVSKA3ysafWSJWxA0naeLXM=
+</ds:X509Certificate></ds:X509Data></ds:KeyInfo></ds:Signature></ns:Doc>

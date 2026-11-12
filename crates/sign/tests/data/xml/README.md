@@ -18,6 +18,9 @@ any file and its certificate together: each run creates new keys.
 | `rsa-pss.der` | an RSA 3072 signer for the RSA-PSS files |
 | `rsa-pss-sha256-exc.xml`, `rsa-pss-sha384-exc.xml`, `rsa-pss-sha512-exc.xml`, `rsa-pss-sha3-256-exc.xml` | `doc.xml` signed by signxml with RFC 6931's `#<hash>-rsa-MGF1` (RSASSA-PSS, MGF1 with the same hash, salt as long as the hash), as the German Trusted List is |
 | `rsa-pss-sha256-salt20.xml` | the SHA-256 one with its value re-made by `cryptography` with a 20-byte salt |
+| `rsa-pss-key-restricted.der`, `rsa-pss-key-open.der` | RSA 3072 keys marked for RSA-PSS only (SubjectPublicKeyInfo `id-RSASSA-PSS`), made with `openssl genpkey -algorithm RSA-PSS`: one restricted to SHA-256, MGF1-SHA-256 and a salt of at least 32, one unrestricted. Germany's Trusted List signer has such a key |
+| `rsa-pss-key-restricted-sha256.xml`, `-sha512.xml`, `rsa-pss-key-open-sha256.xml`, `-sha512.xml` | `doc.xml` signed by signxml with each key and `#sha256-rsa-MGF1` / `#sha512-rsa-MGF1` (the restricted key's SHA-512 one must be refused) |
+| `rsa-pss-key-open-pkcs1.xml` | the open key's SHA-256 file re-signed by `cryptography` with PKCS #1 v1.5 under `#rsa-sha256` (refused: the key is for PSS only) |
 
 ## Trusted Lists
 
