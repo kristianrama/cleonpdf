@@ -132,6 +132,29 @@ pub fn end_entity_for_key(cn: &str, under: &Party, spki: Vec<u8>, extensions: &[
     Certificate::parse(&der::seq(&[&tbs, &sig_alg, &der::bit_string(&signature)])).unwrap()
 }
 
+/// Another certificate for `of`'s own name and key, issued by `under`: a cross-certificate, as an
+/// older root signs a newer one so that clients trusting only the old root still reach it.
+pub fn cross_certify(of: &Party, under: &Party) -> Certificate {
+    let exts = [basic_constraints(true), key_usage(KEY_CERT_SIGN)];
+    let exts: Vec<&[u8]> = exts.iter().map(Vec::as_slice).collect();
+    let alg = under.key.preferred_digest();
+    let sig_alg = under.key.signature_algorithm(alg);
+    let mut fields: Vec<Vec<u8>> = vec![der::explicit(0, &der::int(2))];
+    fields.extend([
+        der::uint(&[0x7f]),
+        sig_alg.clone(),
+        under.name.raw.clone(),
+        der::seq(&[&time(2020, 1, 1).encode(), &time(2040, 1, 1).encode()]),
+        of.name.raw.clone(),
+        of.key.public_key().spki(),
+    ]);
+    fields.push(der::explicit(3, &der::seq(&exts)));
+    let refs: Vec<&[u8]> = fields.iter().map(Vec::as_slice).collect();
+    let tbs = der::seq(&refs);
+    let signature = under.key.sign(alg, &tbs).unwrap();
+    Certificate::parse(&der::seq(&[&tbs, &sig_alg, &der::bit_string(&signature)])).unwrap()
+}
+
 pub fn root(cn: &str) -> Party {
     issue(cn, None, &[basic_constraints(true), key_usage(KEY_CERT_SIGN)])
 }
