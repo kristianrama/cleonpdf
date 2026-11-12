@@ -24,8 +24,12 @@ use cleonpdf_sign::ltv::RevocationFetcher;
 use crate::check_address;
 use crate::{TIMEOUT, host_of};
 
-/// The most bytes read from one answer. The signer's parsers refuse anything larger.
+/// The most bytes read from an OCSP answer or an issuer certificate. The signer's parsers refuse
+/// anything larger.
 pub const MAX_EVIDENCE: u64 = 2 * 1024 * 1024;
+/// The most bytes read from a CRL: a qualified CA's full list runs to many megabytes (see
+/// `cleonpdf_sign::revocation::MAX_CRL`, which this matches).
+pub const MAX_CRL: u64 = cleonpdf_sign::revocation::MAX_CRL as u64;
 /// How many redirects one request follows.
 const MAX_HOPS: u32 = 3;
 
@@ -254,7 +258,9 @@ impl HttpRevocationFetcher {
 
 impl RevocationFetcher for HttpRevocationFetcher {
     fn crl(&self, url: &str) -> Result<Vec<u8>, SignError> {
-        self.fetch("the CRL address", url, None, MAX_EVIDENCE)
+        // A large CRL takes longer than an OCSP answer: six times the time per request.
+        let slow = Self { timeout: self.timeout.saturating_mul(6), allow_private: self.allow_private };
+        slow.fetch("the CRL address", url, None, MAX_CRL)
     }
 
     fn ocsp(&self, url: &str, request: &[u8]) -> Result<Vec<u8>, SignError> {

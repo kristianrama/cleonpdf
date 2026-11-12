@@ -26,7 +26,7 @@ mod revocation;
 #[cfg(not(target_arch = "wasm32"))]
 mod tls;
 pub use lists::HttpListFetcher;
-pub use revocation::{HttpRevocationFetcher, MAX_EVIDENCE, is_public};
+pub use revocation::{HttpRevocationFetcher, MAX_CRL, MAX_EVIDENCE, is_public};
 
 /// The most bytes read from a timestamp server's answer. A token with its certificate chain is a
 /// few kilobytes.
