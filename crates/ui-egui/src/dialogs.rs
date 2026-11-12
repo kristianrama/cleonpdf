@@ -906,8 +906,15 @@ fn dialogs(app: &mut CleonPdfApp, ctx: &egui::Context) {
             }
             Dialog::Preferences => {
                 // The settings outgrow a short window: scroll them rather than run off the screen.
+                // The card takes the window's height (a short one hid every section past the first
+                // few), and its scroll bar is always drawn, so it is plain there is more below.
                 let max = (ui.ctx().content_rect().height() - 120.0).max(200.0);
-                close = egui::ScrollArea::vertical().max_height(max).show(ui, |ui| crate::js_ui::preferences_body(ui, app, &t)).inner;
+                close = egui::ScrollArea::vertical()
+                    .max_height(max)
+                    .min_scrolled_height(max)
+                    .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
+                    .show(ui, |ui| crate::js_ui::preferences_body(ui, app, &t))
+                    .inner;
                 return;
             }
             Dialog::RecognizeText => {

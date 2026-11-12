@@ -81,3 +81,22 @@ fn password_prompt_field_is_tall_and_inset() {
     let heading = h.get_by_label("Password required").rect();
     assert!(heading.top() - card.top() >= 16.0, "heading inset {heading:?} in {card:?}");
 }
+
+/// Preferences hold far more than one screen: the card uses most of the window's height, so the
+/// sections below the first few (Signatures, Trusted Lists) are visibly there to scroll to. It
+/// was once a short card with its scroll bar hidden, and people could not find them.
+#[test]
+fn preferences_use_the_windows_height_and_show_that_they_scroll() {
+    for height in [700.0, 900.0, 1400.0] {
+        let mut h = Harness::builder().with_size(egui::vec2(1440.0, height)).build_eframe(|_cc| {
+            let mut app = CleonPdfApp::new();
+            app.set_option("language", "en").unwrap();
+            app.set_option("dialog", "preferences").unwrap();
+            app
+        });
+        h.run_steps(6);
+        let card = card(&h, "dialog");
+        assert!(card.height() >= height - 200.0, "window {height}: preferences card {card:?}");
+        assert!(card.bottom() <= height, "window {height}: preferences card {card:?} runs off the window");
+    }
+}
