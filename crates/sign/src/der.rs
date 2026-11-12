@@ -22,6 +22,7 @@ pub mod tag {
     pub const OCTET_STRING_SEGMENTS: u8 = 0x24;
     pub const NULL: u8 = 0x05;
     pub const OID: u8 = 0x06;
+    pub const ENUMERATED: u8 = 0x0A;
     pub const UTF8_STRING: u8 = 0x0C;
     pub const PRINTABLE_STRING: u8 = 0x13;
     pub const T61_STRING: u8 = 0x14;
@@ -205,10 +206,28 @@ impl<'a> Tlv<'a> {
 
     /// A non-negative INTEGER that fits in a u64.
     pub fn u64(&self) -> Result<u64, SignError> {
-        if self.tag != tag::INTEGER || self.value.is_empty() || self.value.len() > 9 || self.value[0] & 0x80 != 0 {
+        if self.tag != tag::INTEGER {
             return Err(bad("expected a small non-negative INTEGER"));
         }
-        Ok(self.value.iter().fold(0u64, |acc, b| (acc << 8) | *b as u64))
+        self.small_value().ok_or_else(|| bad("expected a small non-negative INTEGER"))
+    }
+
+    /// The value of an ENUMERATED (X.690 §8.4: encoded as an INTEGER, with its own tag). An
+    /// INTEGER in its place is read too: some encoders write one.
+    pub fn enumerated(&self) -> Result<u64, SignError> {
+        if self.tag != tag::ENUMERATED && self.tag != tag::INTEGER {
+            return Err(bad("expected an ENUMERATED"));
+        }
+        self.small_value().ok_or_else(|| bad("expected a small non-negative ENUMERATED"))
+    }
+
+    /// The contents as a non-negative number that fits in a u64.
+    fn small_value(&self) -> Option<u64> {
+        let first = *self.value.first()?;
+        if self.value.len() > 9 || first & 0x80 != 0 || (self.value.len() == 9 && first != 0) {
+            return None;
+        }
+        Some(self.value.iter().fold(0u64, |acc, b| (acc << 8) | u64::from(*b)))
     }
 
     /// The magnitude of an INTEGER (leading zero dropped).

@@ -179,7 +179,8 @@ pub fn ocsp_response(responder: &Party, cert: &Certificate, issuer: &Certificate
     }
     let refs: Vec<&[u8]> = basic.iter().map(Vec::as_slice).collect();
     let basic = der::seq(&refs);
-    der::seq(&[&der::int(0), &der::explicit(0, &der::seq(&[&der::oid("1.3.6.1.5.5.7.48.1.1"), &der::octets(&basic)]))])
+    // responseStatus is an ENUMERATED, as responders send it.
+    der::seq(&[&der::tlv(tag::ENUMERATED, &[0]), &der::explicit(0, &der::seq(&[&der::oid("1.3.6.1.5.5.7.48.1.1"), &der::octets(&basic)]))])
 }
 
 /// A CRL from `issuer`, listing `revoked` serials.

@@ -7,8 +7,11 @@ use crate::keys::{self, DigestAlg, PublicKey};
 use crate::x509::Certificate;
 use crate::{SignError, Time};
 
-/// A DER size cap: real CRLs and OCSP responses are far smaller.
+/// A DER size cap for OCSP responses: real ones are a few kilobytes.
 const MAX_EVIDENCE: usize = 2 * 1024 * 1024;
+/// A DER size cap for CRLs. A qualified CA's full CRL runs to many megabytes (ArubaPEC's is
+/// past 2 MiB), and is still read whole: entries are kept as (serial, date) only.
+pub const MAX_CRL: usize = 64 * 1024 * 1024;
 
 const ID_PKIX_OCSP_BASIC: &str = "1.3.6.1.5.5.7.48.1.1";
 const EKU_OCSP_SIGNING: &str = "1.3.6.1.5.5.7.3.9";
@@ -65,8 +68,8 @@ pub struct CertificateList {
 
 impl CertificateList {
     pub fn parse(bytes: &[u8]) -> Result<CertificateList, SignError> {
-        if bytes.is_empty() || bytes.len() > MAX_EVIDENCE {
-            return Err(bad("CRL is empty or exceeds the 2 MiB limit"));
+        if bytes.is_empty() || bytes.len() > MAX_CRL {
+            return Err(bad("CRL is empty or exceeds the 64 MiB limit"));
         }
         let parts = Tlv::parse_all(bytes)?.expect(tag::SEQUENCE, "CertificateList")?.children()?;
         let [tbs, alg, sig] = parts.as_slice() else { return Err(bad("CertificateList")) };
@@ -192,7 +195,8 @@ impl OcspResponse {
             return Err(bad("OCSP response is empty or exceeds the 2 MiB limit"));
         }
         let resp = Tlv::parse_all(bytes)?.expect(tag::SEQUENCE, "OCSPResponse")?.children()?;
-        let status = resp.first().ok_or_else(|| bad("missing responseStatus"))?.u64()?;
+        // OCSPResponseStatus is an ENUMERATED (RFC 6960 §4.2.1).
+        let status = resp.first().ok_or_else(|| bad("missing responseStatus"))?.enumerated()?;
         if status != 0 {
             return Err(bad(format!("responder reported an error (status {status})")));
         }

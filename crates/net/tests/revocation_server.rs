@@ -7,7 +7,7 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc;
 use std::time::Duration;
 
-use cleonpdf_net::{HttpRevocationFetcher, MAX_EVIDENCE};
+use cleonpdf_net::{HttpRevocationFetcher, MAX_CRL, MAX_EVIDENCE};
 use cleonpdf_sign::ltv::RevocationFetcher;
 
 struct Seen {
@@ -141,7 +141,13 @@ fn bad_answers_are_errors_that_name_the_host_and_not_the_path() {
     assert!(err.contains("http status 404") && err.contains("127.0.0.1") && !err.contains("SECRET"), "{err}");
     let (base, _s) = serve(1, |_| ("200 OK", String::new(), Vec::new()));
     assert!(local().crl(&format!("{base}/x")).unwrap_err().to_string().contains("empty"));
+    // An OCSP answer past its cap is refused.
     let (base, _s) = serve(1, |_| ("200 OK", String::new(), vec![0u8; MAX_EVIDENCE as usize + 1]));
+    assert!(local().ocsp(&format!("{base}/x"), b"req").unwrap_err().to_string().contains("oversized"));
+    // A CRL may be far larger (a qualified CA's runs to megabytes), up to its own cap.
+    let (base, _s) = serve(1, |_| ("200 OK", String::new(), vec![0u8; MAX_EVIDENCE as usize + 1]));
+    assert_eq!(local().crl(&format!("{base}/x")).unwrap().len(), MAX_EVIDENCE as usize + 1);
+    let (base, _s) = serve(1, |_| ("200 OK", String::new(), vec![0u8; MAX_CRL as usize + 1]));
     assert!(local().crl(&format!("{base}/x")).unwrap_err().to_string().contains("oversized"));
 }
 

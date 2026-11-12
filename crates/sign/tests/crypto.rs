@@ -237,7 +237,7 @@ fn ocsp(issuer: &pkcs12::DigitalId, status: RevocationStatus, this: Time, next: 
     let sig = issuer.key.sign(DigestAlg::Sha256, &tbs).unwrap();
     let basic = der::seq(&[&tbs, &alg, &der::bit_string(&sig)]);
     let basic_type = der::oid("1.3.6.1.5.5.7.48.1.1");
-    der::seq(&[&der::int(0), &der::explicit(0, &der::seq(&[&basic_type, &der::octets(&basic)]))])
+    der::seq(&[&der::tlv(tag::ENUMERATED, &[0]), &der::explicit(0, &der::seq(&[&basic_type, &der::octets(&basic)]))])
 }
 
 fn mid_june() -> Time {
@@ -596,4 +596,53 @@ fn verifies_ecdsa_on_p521_and_the_brainpool_curves() {
         // P-521 etc.): that is a different digest, so it must not verify this signature.
         assert!(!key.verify(Scheme::Ecdsa, alg, &digest[..digest.len() / 2], &sig).unwrap(), "{name}: short digest");
     }
+}
+
+/// Responses from another encoder (OpenSSL), as a real responder sends them: `responseStatus`
+/// is an ENUMERATED. ArubaPEC's responder answered so, and none of its answers could be read.
+#[test]
+fn ocsp_responses_made_by_openssl_are_read_and_checked() {
+    let pem = |name: &str| {
+        let bytes = data(&format!("openssl-ocsp/{name}"));
+        cleonpdf_sign::x509::load_certificates(&bytes).unwrap().remove(0)
+    };
+    let (ca, good, revoked) = (pem("ca.pem"), pem("leaf-good.pem"), pem("leaf-revoked.pem"));
+    let at = Time { year: 2027, month: 1, day: 1, hour: 0, minute: 0, second: 0 };
+    let ok = OcspResponse::parse(&data("openssl-ocsp/good.ocsp")).unwrap();
+    assert_eq!(ok.check(&good, &ca, at), RevocationStatus::Good);
+    // It answers for 0x1001 only.
+    assert_eq!(ok.check(&revoked, &ca, at), RevocationStatus::Unknown);
+    // Revoked, with a revocationReason after the time.
+    let no = OcspResponse::parse(&data("openssl-ocsp/revoked.ocsp")).unwrap();
+    assert_eq!(no.check(&revoked, &ca, at), RevocationStatus::Revoked { at: Time { year: 2026, month: 11, day: 1, hour: 12, minute: 0, second: 0 } });
+    // Before thisUpdate the answer says nothing.
+    let early = Time { year: 2026, month: 1, day: 1, hour: 0, minute: 0, second: 0 };
+    assert_eq!(ok.check(&good, &ca, early), RevocationStatus::Unknown);
+    // A responder error (unauthorized, 6) is an error that says so, ENUMERATED or not.
+    for status in [tag::ENUMERATED, tag::INTEGER] {
+        let Err(err) = OcspResponse::parse(&der::seq(&[&der::tlv(status, &[6])])) else { panic!("status 6 read as a response") };
+        assert!(err.to_string().contains("status 6"), "{err}");
+    }
+    // Anything else in its place is refused.
+    assert!(OcspResponse::parse(&der::seq(&[&der::tlv(tag::OCTET_STRING, &[0])])).is_err());
+    assert!(OcspResponse::parse(&der::seq(&[&der::tlv(tag::ENUMERATED, &[])])).is_err());
+    assert!(OcspResponse::parse(&der::seq(&[&der::tlv(tag::ENUMERATED, &[0x80])])).is_err());
+}
+
+/// A qualified CA's full CRL runs to megabytes (ArubaPEC's is past 2 MiB): it is read whole.
+#[test]
+fn a_crl_of_several_megabytes_is_read() {
+    let id = pkcs12::open(&data("ec-p256.p12"), "test").unwrap();
+    let (this, next) = (mid_june(), Time { year: 2026, month: 7, day: 15, hour: 12, minute: 0, second: 0 });
+    let at = Time { year: 2026, month: 5, day: 1, hour: 0, minute: 0, second: 0 };
+    let entries: Vec<Vec<u8>> =
+        (0u32..120_000).map(|n| der::seq(&[&der::uint(&[0x40, (n >> 24) as u8, (n >> 16) as u8, (n >> 8) as u8, n as u8]), &at.encode()])).collect();
+    let refs: Vec<&[u8]> = entries.iter().map(Vec::as_slice).collect();
+    let alg = id.key.signature_algorithm(DigestAlg::Sha256);
+    let tbs = der::seq(&[&der::int(1), &alg, &id.certificate.subject.raw, &this.encode(), &next.encode(), &der::seq(&refs)]);
+    let sig = id.key.sign(DigestAlg::Sha256, &tbs).unwrap();
+    let bytes = der::seq(&[&tbs, &alg, &der::bit_string(&sig)]);
+    assert!(bytes.len() > 2 * 1024 * 1024, "{} bytes", bytes.len());
+    let list = CertificateList::parse(&bytes).unwrap();
+    assert_eq!(list.revoked.len(), 120_000);
 }
