@@ -1519,7 +1519,12 @@ fn dss_parts(doc: &Document, old: &Document) -> HashSet<u32> {
     for (r, role) in dss_walk(doc) {
         let now = doc.get(r);
         let shaped = match (role, &*now) {
-            (DssRole::Dss, Object::Dict(d)) => d.iter().all(|(k, _)| matches!(k.as_slice(), b"Type" | b"Certs" | b"CRLs" | b"OCSPs" | b"VRI")),
+            // A /Filter name is tolerated: CleonPDF 0.2.3 and earlier wrote /Filter /Adobe.PPKLite.
+            (DssRole::Dss, Object::Dict(d)) => d.iter().all(|(k, v)| match k.as_slice() {
+                b"Type" | b"Certs" | b"CRLs" | b"OCSPs" | b"VRI" => true,
+                b"Filter" => matches!(v, Object::Name(_)),
+                _ => false,
+            }),
             (DssRole::DataArray, Object::Array(a)) => a.iter().all(|e| matches!(e, Object::Ref(_)) && is_stream(e)),
             (DssRole::VriMap, Object::Dict(d)) => d.iter().all(|(_, v)| matches!(&*doc.resolve(v), Object::Dict(_))),
             (DssRole::VriEntry, Object::Dict(d)) => {
@@ -1635,8 +1640,12 @@ fn change_kind(doc: &Document, old: &Document, d: &Dict, before: Option<&Dict>) 
                         acroform_kind(doc, old, &now, None)
                     } else if b.get(b"Perms") != d.get(b"Perms") {
                         kind::SIGNATURE
-                    } else {
+                    } else if b.get(b"Metadata") != d.get(b"Metadata") || b.get(b"NeedsRendering") != d.get(b"NeedsRendering") {
                         kind::METADATA
+                    } else {
+                        // Only /DSS: adding validation information. What the store holds is
+                        // judged object by object (`dss_parts`).
+                        kind::SECURITY_STORE
                     }
                 }
                 None => kind::FORM_FILL,
