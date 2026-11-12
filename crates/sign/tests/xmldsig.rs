@@ -2,7 +2,7 @@
 #![allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 
 use cleonpdf_sign::xmldsig::{XmlSignatureError, canonical_xml, parse, verify_enveloped};
-use cleonpdf_sign::{Certificate, Time};
+use cleonpdf_sign::{Certificate, PublicKey, Time};
 
 fn data(name: &str) -> Vec<u8> {
     std::fs::read(format!("{}/tests/data/xml/{name}", env!("CARGO_MANIFEST_DIR"))).unwrap()
@@ -70,6 +70,27 @@ fn rsa_pss_signatures_verify_with_the_salt_rfc_6931_fixes() {
     // The SHA-1 variant stays outside the list.
     let sha1 = text("rsa-pss-sha256-exc.xml").replace("#sha256-rsa-MGF1", "#sha1-rsa-MGF1");
     assert!(matches!(check(&sha1, &["rsa-pss.der"], 2027), Err(XmlSignatureError::Unsupported(_))));
+}
+
+#[test]
+fn keys_marked_for_rsa_pss_only_verify_pss_within_their_restrictions() {
+    // As Germany's Trusted List signer: SubjectPublicKeyInfo `id-RSASSA-PSS`, made by OpenSSL.
+    let restricted = cert("rsa-pss-key-restricted.der");
+    let open = cert("rsa-pss-key-open.der");
+    assert!(matches!(restricted.public_key, PublicKey::RsaPss { only: Some(_), .. }), "{:?}", restricted.public_key.describe());
+    assert!(matches!(open.public_key, PublicKey::RsaPss { only: None, .. }));
+    assert_eq!(open.public_key.describe(), "RSA-PSS 3072-bit");
+    // The key keeps its own SubjectPublicKeyInfo, parameters and all.
+    let spki = PublicKey::from_spki(&cleonpdf_sign::der::Tlv::parse_all(&restricted.public_key.spki()).unwrap()).unwrap();
+    assert_eq!(spki, restricted.public_key);
+    for file in ["rsa-pss-key-restricted-sha256.xml", "rsa-pss-key-open-sha256.xml", "rsa-pss-key-open-sha512.xml"] {
+        let signer = if file.contains("restricted") { "rsa-pss-key-restricted.der" } else { "rsa-pss-key-open.der" };
+        check(&text(file), &[signer], 2027).unwrap_or_else(|e| panic!("{file}: {e}"));
+    }
+    // The restricted key names SHA-256: a SHA-512 signature by it is refused.
+    assert_eq!(check(&text("rsa-pss-key-restricted-sha512.xml"), &["rsa-pss-key-restricted.der"], 2027), Err(XmlSignatureError::BadSignature));
+    // A PKCS #1 v1.5 signature by a PSS-only key is refused, though the arithmetic would check.
+    assert_eq!(check(&text("rsa-pss-key-open-pkcs1.xml"), &["rsa-pss-key-open.der"], 2027), Err(XmlSignatureError::BadSignature));
 }
 
 #[test]

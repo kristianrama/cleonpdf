@@ -294,6 +294,17 @@ pub enum PublicKey {
     BrainpoolP512(Vec<u8>),
     /// The 32-byte public key (RFC 8032). Signs the message itself, see [`Scheme::Ed25519`].
     Ed25519(Vec<u8>),
+    /// An RSA key marked for RSASSA-PSS only (`id-RSASSA-PSS`, RFC 4055 §1.2): it never verifies
+    /// a PKCS #1 v1.5 signature, and when its parameters are given, a signature must use their
+    /// hash and mask and at least their salt length. Germany's Trusted List is signed with one.
+    RsaPss {
+        n: Vec<u8>,
+        e: Vec<u8>,
+        /// The hash and PSS parameters the key is restricted to, if any.
+        only: Option<(DigestAlg, PssParams)>,
+        /// The `SubjectPublicKeyInfo` as given, parameters included.
+        spki: Vec<u8>,
+    },
     /// A key algorithm or curve CleonPDF can't check signatures with. The certificate still
     /// parses (so its name and dates show); verifying with it gives [`SignError::Unsupported`].
     Unsupported {
@@ -316,7 +327,7 @@ impl PublicKey {
     /// (RFC 6960 §4.1.1). RSA keys are re-encoded; EC points are the stored bytes.
     pub fn key_bits(&self) -> Vec<u8> {
         match self {
-            PublicKey::Rsa { n, e } => der::seq(&[&der::uint(n), &der::uint(e)]),
+            PublicKey::Rsa { n, e } | PublicKey::RsaPss { n, e, .. } => der::seq(&[&der::uint(n), &der::uint(e)]),
             PublicKey::P256(bits)
             | PublicKey::P384(bits)
             | PublicKey::P521(bits)
@@ -346,6 +357,16 @@ impl PublicKey {
                 let [n, e] = k.as_slice() else { return Err(SignError::Malformed("RSAPublicKey".into())) };
                 Ok(PublicKey::Rsa { n: n.uint_bytes().to_vec(), e: e.uint_bytes().to_vec() })
             }
+            oid::RSA_PSS => {
+                let k = Tlv::parse_all(bits)?.children()?;
+                let [n, e] = k.as_slice() else { return Err(SignError::Malformed("RSAPublicKey".into())) };
+                // Absent parameters (or NULL) leave the key unrestricted beyond PSS itself.
+                let only = match alg.get(1) {
+                    Some(p) if p.children().is_ok_and(|c| !c.is_empty()) => Some(pss_params(Some(p))?),
+                    _ => None,
+                };
+                Ok(PublicKey::RsaPss { n: n.uint_bytes().to_vec(), e: e.uint_bytes().to_vec(), only, spki: spki.raw.to_vec() })
+            }
             oid::EC => match alg.get(1).map(|c| c.oid()).transpose()?.as_deref() {
                 Some(oid::P256) => Ok(PublicKey::P256(bits.to_vec())),
                 Some(oid::P384) => Ok(PublicKey::P384(bits.to_vec())),
@@ -373,7 +394,7 @@ impl PublicKey {
             PublicKey::BrainpoolP384(p) => der::seq(&[&der::seq(&[&der::oid(oid::EC), &der::oid(oid::BRAINPOOL_P384)]), &der::bit_string(p)]),
             PublicKey::BrainpoolP512(p) => der::seq(&[&der::seq(&[&der::oid(oid::EC), &der::oid(oid::BRAINPOOL_P512)]), &der::bit_string(p)]),
             PublicKey::Ed25519(p) => der::seq(&[&der::seq(&[&der::oid(oid::ED25519)]), &der::bit_string(p)]),
-            PublicKey::Unsupported { spki, .. } => spki.clone(),
+            PublicKey::Unsupported { spki, .. } | PublicKey::RsaPss { spki, .. } => spki.clone(),
         }
     }
 
@@ -381,6 +402,7 @@ impl PublicKey {
     pub fn describe(&self) -> String {
         match self {
             PublicKey::Rsa { n, .. } => format!("RSA {}-bit", n.len() * 8),
+            PublicKey::RsaPss { n, .. } => format!("RSA-PSS {}-bit", n.len() * 8),
             PublicKey::P256(_) => "ECDSA P-256".into(),
             PublicKey::P384(_) => "ECDSA P-384".into(),
             PublicKey::P521(_) => "ECDSA P-521".into(),
@@ -409,6 +431,8 @@ impl PublicKey {
             | PublicKey::BrainpoolP384(_)
             | PublicKey::BrainpoolP512(_)
             | PublicKey::Ed25519(_)
+            // Platform key stores are asked for PKCS #1 RSA and ECDSA only.
+            | PublicKey::RsaPss { .. }
             | PublicKey::Unsupported { .. } => None,
         }
     }
@@ -430,6 +454,7 @@ impl PublicKey {
             | PublicKey::BrainpoolP384(_)
             | PublicKey::BrainpoolP512(_)
             | PublicKey::Ed25519(_)
+            | PublicKey::RsaPss { .. }
             | PublicKey::Unsupported { .. } => Err(SignError::Unsupported(format!("signing with {} keys", self.describe()))),
         }
     }
@@ -449,6 +474,21 @@ impl PublicKey {
             (PublicKey::Unsupported { what, .. }, _) => Err(SignError::Unsupported(what.clone())),
             (PublicKey::Rsa { n, e }, Scheme::RsaPkcs1) => crate::rsa_pad::pkcs1_verify(n, e, alg, digest, sig, notes),
             (PublicKey::Rsa { n, e }, Scheme::RsaPss(params)) => crate::rsa_pad::pss_verify(n, e, alg, params, digest, sig, notes),
+            (PublicKey::RsaPss { n, e, only, .. }, Scheme::RsaPss(params)) => {
+                // RFC 4055 §3.3: a restricted key verifies only with its hash and mask, and with at
+                // least its salt (an unknown salt length is checked against it once recovered).
+                if let Some((hash, wanted)) = only {
+                    let salt_ok = match (params.salt_len, wanted.salt_len) {
+                        (Some(have), Some(min)) => have >= min,
+                        _ => true,
+                    };
+                    if *hash != alg || wanted.mgf != params.mgf || !salt_ok {
+                        return Ok(false);
+                    }
+                }
+                crate::rsa_pad::pss_verify(n, e, alg, params, digest, sig, notes)
+            }
+            (PublicKey::RsaPss { .. }, _) => Ok(false),
             (PublicKey::Ed25519(_), _) => Err(SignError::Unsupported("Ed25519 signs the message, not a digest".into())),
             (PublicKey::P256(p), Scheme::Ecdsa) => {
                 use p256::ecdsa::signature::hazmat::PrehashVerifier;

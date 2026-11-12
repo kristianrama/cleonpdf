@@ -18,6 +18,7 @@ fn every_kind() -> Vec<(PublicKey, Option<StoreKey>)> {
         (PublicKey::BrainpoolP384(point.clone()), None),
         (PublicKey::BrainpoolP512(point.clone()), None),
         (PublicKey::Ed25519(vec![7; 32]), None),
+        (PublicKey::RsaPss { n: vec![0xC5; 256], e: vec![1, 0, 1], only: None, spki: Vec::new() }, None),
         (PublicKey::Unsupported { what: "elliptic curve 1.3.132.0.10".into(), spki: Vec::new() }, None),
     ];
     // Every variant is named, with no `_` arm: a new one stops this test compiling until it is
@@ -32,6 +33,7 @@ fn every_kind() -> Vec<(PublicKey, Option<StoreKey>)> {
             | PublicKey::BrainpoolP384(_)
             | PublicKey::BrainpoolP512(_)
             | PublicKey::Ed25519(_)
+            | PublicKey::RsaPss { .. }
             | PublicKey::Unsupported { .. } => {}
         }
     }
