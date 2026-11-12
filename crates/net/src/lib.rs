@@ -23,6 +23,8 @@ use cleonpdf_sign::{SignError, TimestampAuthority};
 
 mod lists;
 mod revocation;
+#[cfg(not(target_arch = "wasm32"))]
+mod tls;
 pub use lists::HttpListFetcher;
 pub use revocation::{HttpRevocationFetcher, MAX_EVIDENCE, is_public};
 
@@ -80,7 +82,8 @@ pub(crate) fn host_of(url: &str) -> Option<&str> {
 }
 
 /// The HTTPS client: rustls with the certificate authorities the operating system trusts, a
-/// global timeout, and a short redirect limit. There is no bundled root list.
+/// global timeout, and a short redirect limit. There is no bundled root list. Certificate
+/// signatures are checked with `ring` plus the ECDSA combinations it lacks (`tls.rs`).
 #[cfg(not(target_arch = "wasm32"))]
 pub fn agent(timeout: Duration) -> Result<ureq::Agent, String> {
     client(timeout, MAX_REDIRECTS, true)
@@ -94,7 +97,7 @@ pub(crate) fn client(timeout: Duration, redirects: u32, redirects_error: bool) -
         .timeout_global(Some(timeout))
         .max_redirects(redirects)
         .max_redirects_will_error(redirects_error)
-        .tls_config(ureq::tls::TlsConfig::builder().root_certs(os_roots()?).build())
+        .tls_config(ureq::tls::TlsConfig::builder().root_certs(os_roots()?).unversioned_rustls_crypto_provider(tls::provider()).build())
         .build()
         .new_agent())
 }

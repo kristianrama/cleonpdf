@@ -19,7 +19,11 @@ cleonpdf-sign = { workspace = true }
 # CDLA-licensed).
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ureq = { version = "3.4", default-features = false, features = ["rustls-no-provider", "_ring"] }
+# The same rustls ureq uses, to add the ECDSA certificate signatures ring lacks (src/tls.rs).
+rustls = { version = "0.23.22", default-features = false, features = ["ring", "std"] }
 rustls-native-certs = "0.8"
 
 [dev-dependencies]
 cleonpdf-cos = { workspace = true }
+# A key to sign with in the TLS verifier's unit tests (the version cleonpdf-sign uses).
+p384 = { version = "0.14", default-features = false, features = ["ecdsa", "std"] }
