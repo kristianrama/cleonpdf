@@ -6129,7 +6129,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = ["crates/sign/tests/pdf.rs::signing_with_a_timestamp_embeds_a_verified_rfc3161_token"]
-notes = "Sign with an embedded RFC 3161 token (sign_with_timestamp): imprint and TSA signature verified at signing and validation time, trusted time reported. The HTTP(S) fetcher and the sign_document `timestamp_url` argument exist (sign.timestamp-servers). The Sign dialog's Timestamp server field exists. Missing: a server list in Preferences, the standalone document timestamp from a tool."
+notes = "Sign with an embedded RFC 3161 token (sign_with_timestamp): imprint and TSA signature verified at signing and validation time, trusted time reported. The HTTP(S) fetcher and the sign_document `timestamp_url` argument exist (sign.timestamp-servers). The Sign dialog's Timestamp server field exists, and Preferences ▸ Timestamp servers keeps a list. Checked against real servers (2026-11-12): DigiCert's token is trusted with the system's roots, freeTSA's stays unverified unless its root is trusted. Missing: the standalone document timestamp from a tool or button (see sign.pades-blta)."
 
 [[feature]]
 id = "sign.ltv"
@@ -6165,7 +6165,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = ["crates/sign/tests/crypto.rs::crls_verify_and_report_revocation", "crates/sign/tests/crypto.rs::ocsp_responses_verify_and_match_the_certificate", "crates/sign/tests/pdf.rs::an_embedded_verified_revocation_invalidates_the_signature", "crates/sign/tests/ltv.rs::a_delegated_responders_certificate_is_kept_with_its_answer", "crates/net/tests/revocation_server.rs::the_default_fetcher_does_not_reach_the_loopback_server_at_all"]
-notes = "RFC 5280 CRLs and RFC 6960 OCSP responses are parsed and verified (issuer/responder signature, delegated responder's OCSP-signing EKU, CertID hash match, validity window) and checked against the DSS during validation. The OCSP response's certificates [0] EXPLICIT SEQUENCE OF Certificate are now read as RFC 6960 writes them (before, a delegated responder's certificate was never found, so such responses did not verify). Fresh evidence is fetched on request (sign_add_validation_info), never during validation: opening a document makes no request. The addresses come from the certificates, so non-public hosts are refused unless the caller opts in. Missing: the OS trust store, checking revocation live when a document is opened (by design not done), OCSP stapling and nonces."
+notes = "RFC 5280 CRLs and RFC 6960 OCSP responses are parsed and verified (issuer/responder signature, delegated responder's OCSP-signing EKU, CertID hash match, validity window) and checked against the DSS during validation. The OCSP response's certificates [0] EXPLICIT SEQUENCE OF Certificate are now read as RFC 6960 writes them (before, a delegated responder's certificate was never found, so such responses did not verify). Fresh evidence is fetched on request (sign_add_validation_info), never during validation: opening a document makes no request. The addresses come from the certificates, so non-public hosts are refused unless the caller opts in. Checked against a real CA (ArubaPEC, 2026-11-12) through sign_add_validation_info. Missing: checking revocation live when a document is opened (by design not done), OCSP stapling and nonces."
 
 [[feature]]
 id = "sign.validate-all"
