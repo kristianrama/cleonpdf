@@ -8,7 +8,7 @@ use crate::x509::Certificate;
 use crate::{SignError, Time};
 
 /// A DER size cap for OCSP responses: real ones are a few kilobytes.
-const MAX_EVIDENCE: usize = 2 * 1024 * 1024;
+pub(crate) const MAX_EVIDENCE: usize = 2 * 1024 * 1024;
 /// A DER size cap for CRLs. A qualified CA's full CRL runs to many megabytes (ArubaPEC's is
 /// past 2 MiB), and is still read whole: entries are kept as (serial, date) only.
 pub const MAX_CRL: usize = 64 * 1024 * 1024;

@@ -13,7 +13,12 @@ fn data(name: &str) -> Vec<u8> {
 
 /// One page with text and an unsigned signature field "Approval".
 fn fixture() -> Vec<u8> {
-    let objs: Vec<&[u8]> = vec![
+    fixture_with(&[])
+}
+
+/// `fixture()` with `extra` as objects 7, 8 and so on.
+fn fixture_with(extra: &[&[u8]]) -> Vec<u8> {
+    let mut objs: Vec<&[u8]> = vec![
         b"<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [6 0 R] >> >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
         b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> /Annots [6 0 R] >>",
@@ -21,6 +26,7 @@ fn fixture() -> Vec<u8> {
         b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
         b"<< /Type /Annot /Subtype /Widget /FT /Sig /T (Approval) /Rect [150 20 280 70] /P 3 0 R /F 4 >>",
     ];
+    objs.extend_from_slice(extra);
     let mut out = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
     for (i, o) in objs.iter().enumerate() {
@@ -1989,5 +1995,63 @@ fn a_cross_reference_entry_that_misses_its_object_is_not_an_unchanged_object() {
     // The same copy under an entry that does point at it is the unchanged object it looks like.
     let honest = append_content_revision(&signed, "Contract text", |new| format!("4 1\n{}", xref_entry(new)));
     let s = signatures(&open(&honest), &honest, &trust).into_iter().find(|s| s.signed).unwrap();
+    assert_eq!(s.status, Status::Valid, "{:?}", s.details);
+}
+
+/// A later revision that only points the trailer at another catalog already in the signed file
+/// shows a different document while every signed object is unchanged. That is not permitted.
+#[test]
+fn switching_the_trailer_to_another_signed_catalog_is_not_permitted() {
+    let base = fixture_with(&[
+        b"<< /Type /Catalog /Pages 8 0 R /AcroForm << /Fields [6 0 R] >> >>",
+        b"<< /Type /Pages /Kids [9 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 8 0 R /MediaBox [0 0 300 300] /Contents 10 0 R /Resources << /Font << /F1 5 0 R >> >> /Annots [6 0 R] >>",
+        b"<< /Length 44 >>\nstream\nBT /F1 14 Tf 20 250 Td (Contract void) Tj ET\nendstream",
+    ]);
+    let id = pkcs12::open(&data("rsa-aes.p12"), "test").unwrap();
+    let trust = TrustStore { certs: vec![id.certificate.clone()], ..TrustStore::default() };
+    let signed = cleonpdf_sign::sign(&open(&base), &id, &SignOptions { field: Some("Approval".into()), rect: None, ..opts() }).unwrap();
+    let s = signatures(&open(&signed), &signed, &trust).into_iter().find(|s| s.signed).unwrap();
+    assert_eq!(s.status, Status::Valid, "{:?}", s.details);
+    let switched = edit_after(&signed, |doc| doc.trailer_mut().set(b"Root".to_vec(), oref(7)));
+    assert_eq!(open(&switched).root().map(|r| r.num), Some(7), "the new revision shows the other catalog");
+    let s = signatures(&open(&switched), &switched, &trust).into_iter().find(|s| s.signed).expect("the signature is still listed");
+    assert!(matches!(s.modification, Modification::Disallowed(_)), "{:?}", s.modification);
+    assert_eq!(s.status, Status::Invalid, "{:?}", s.details);
+}
+
+/// Revocation evidence is read within caps: one stream referenced many times is read once, so
+/// a revoking CRL listed after a thousand repeats still counts; and when the caps stop an array
+/// before its end with nothing revoking found, the signature is not reported valid, because
+/// what was left unread could revoke it.
+#[test]
+fn dss_evidence_is_read_within_caps_and_a_cut_is_not_valid() {
+    let id = pkcs12::open(&data("ec-p256.p12"), "test").unwrap();
+    let trust = TrustStore { certs: vec![id.certificate.clone()], ..TrustStore::default() };
+    let signed = cleonpdf_sign::sign(&open(&fixture()), &id, &opts()).unwrap();
+    let t = |year| Time { year, month: 1, day: 1, hour: 0, minute: 0, second: 0 };
+    let crl = self_crl(&id, t(2026), t(2027), Time { year: 2026, month: 6, day: 1, hour: 8, minute: 0, second: 0 });
+    let check = |crls: &dyn Fn(&mut Document) -> Vec<Object>| {
+        let bytes = edit_after(&signed, |doc| {
+            let list = crls(doc);
+            set_dss(doc, Object::Dict(dict_of(vec![("CRLs", Object::Array(list))])));
+        });
+        signatures(&open(&bytes), &bytes, &trust).into_iter().find(|s| s.signed).unwrap()
+    };
+    // A thousand and more references to one benign stream, then the revoking CRL.
+    let s = check(&|doc| {
+        let benign = doc.add(stream_of(b"not a CRL"));
+        let revoking = doc.add(stream_of(&crl));
+        let mut list = vec![Object::Ref(benign); 3000];
+        list.push(Object::Ref(revoking));
+        list
+    });
+    assert_eq!(s.status, Status::Invalid, "{:?}", s.details);
+    // More distinct entries than are read, none revoking: unknown, and the details say why.
+    let s = check(&|doc| (0..1100).map(|i| Object::Ref(doc.add(stream_of(format!("not a CRL {i}").as_bytes())))).collect());
+    assert_eq!(s.status, Status::Unknown, "{:?}", s.details);
+    assert!(s.details.iter().any(|d| d.message.contains("more revocation evidence")), "{:?}", s.details);
+    // Under the caps, nothing changes: a trusted signer with unreadable evidence stays valid.
+    let s = check(&|doc| (0..10).map(|i| Object::Ref(doc.add(stream_of(format!("not a CRL {i}").as_bytes())))).collect());
     assert_eq!(s.status, Status::Valid, "{:?}", s.details);
 }
