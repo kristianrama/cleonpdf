@@ -34,7 +34,7 @@ update the numbers.
 | 7 | OCR reads only unaccented Latin | feature | 40–75 | [file-format-parity.md](file-format-parity.md) |
 | 8 | Office export weak, Office import absent | file format | 55–100 | [file-format-parity.md](file-format-parity.md) |
 | 9 | No Preflight; PDF/A partial; PDF/X and PDF/UA absent | standards | 65–115 | [pdf-spec-parity.md](pdf-spec-parity.md) |
-| 10 | Signatures: no PKCS #11, timestamp servers or online revocation | feature, hardware | 40–70 | [pdf-spec-parity.md](pdf-spec-parity.md) |
+| 10 | Signatures: no real-card check, no document timestamp tool, no appearances | feature, hardware | 40–70 | [pdf-spec-parity.md](pdf-spec-parity.md) |
 | 11 | Accessibility: checker only, no tagging tools | feature | 40–70 | [target-app-parity.md](target-app-parity.md) |
 | 12 | No measured fidelity harness against Acrobat | quality | (in 2) | [target-app-parity.md](target-app-parity.md) |
 | 13 | Performance budgets and lazy loading of very large files | performance | 25–45 | this file |
@@ -294,7 +294,7 @@ update the numbers.
 - **Impact:** blocks print shops, archives and accessibility compliance work.
 - **Estimate:** 65–115 h. **Doc:** [pdf-spec-parity.md](pdf-spec-parity.md).
 
-### 10. Signatures: no PKCS #11, timestamp servers or online revocation
+### 10. Signatures: no real-card check, no document timestamp tool, no appearances
 
 - **Done so far:** `cleonpdf-net` asks an RFC 3161 server the caller names (sign_document
   `timestamp_url` and a Timestamp server field in the Sign dialog, PAdES B-T); nothing is
@@ -304,8 +304,9 @@ update the numbers.
 - **Missing:** a check of PKCS #11 tokens and smart cards on real cards (the Sign dialog lists them, asks for the PIN and signs, and `sign_document` takes `pkcs11:…`; all tested against SoftHSM only), RSA-PSS and keypad readers; setting a field's own lock in Prepare Form and showing what a signature locked in the Signatures panel (signing with a lock and validating it work, in the Sign dialog and headless); the OS trust store on Linux/Windows/macOS is read but not compared with Acrobat's Windows Integration (no purpose or trust-setting filtering of roots); EU
   Trusted Lists (the interface and the cache are there, checked once against the real lists; no built-in anchors, no comparison with Acrobat); signature graphics and saved appearances; compare signed version; signing in the
   browser.
-- **Evidence:** `sign.eutl` partial (`sign_eutl` and Preferences ▸ Signatures: the lists are verified, cached and trusted while granted; no built-in anchors yet); `sign.os-trust`, `sign.field-mdp`, `sign.pkcs11`, `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial (evidence fetched in
-  tests against a loopback CA only). Users ask for Acrobat-like validation
+- **Evidence:** `sign.eutl` partial (`sign_eutl` and Preferences ▸ Signatures: the lists are verified, cached and trusted while granted; no built-in anchors yet); `sign.os-trust`, `sign.field-mdp`, `sign.pkcs11`, `sign.pades-bt`, `sign.ltv`, `sign.ocsp-crl` partial. Checked against real servers for 0.2.4
+  (2026-11-12): DigiCert and freeTSA timestamps, the live EU lists, and validation information
+  for a real ArubaPEC signature; the eight faults this found are fixed (#79–#86). Users ask for Acrobat-like validation
   ([#824](https://github.com/storytold/pdfcraft/issues/824),
   [#775](https://github.com/storytold/pdfcraft/issues/775),
   [#718](https://github.com/storytold/pdfcraft/issues/718)).
