@@ -54,3 +54,11 @@ black-point normalization is unchanged. `lab_bradford_tests` checks independent
 D50/equal-energy neutral and chromatic oracles, D65 identity, and direct/Indexed
 consistency (including an asymmetric chromatic Range), and zero/overflowing
 cone-response fallback.
+
+Signs in numbers (hayro-syntax, ported from PdfCraft 766ff9d0, 386c92c0 and b06bedef): a doubled
+sign (`--280`, `+-280`, `-+280`, `++280`) is one number, read and skipped alike; before, `--280`
+read as 0 and left `-280` as a second number, so a `cm` carrying it hid the page. A lone sign
+that no number is read from (`+`, `++`) is an unreadable value: a dictionary leaves the entry out
+and an array reads it as null in its slot, where `Dict::entries`, `Array::raw_iter` and `Dict`'s
+`Debug` unwrapped the failed read and panicked. Covered by `crates/cos/tests/hayro_sign_tokens.rs`
+(the vendored crate's own tests do not run: it is not a workspace member).
