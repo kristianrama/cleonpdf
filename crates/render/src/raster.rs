@@ -3697,10 +3697,16 @@ trailer << /Root 1 0 R >>
     /// no decomposition, reversible wavelet, and one empty packet per component. Empty
     /// coefficients decode to the midpoint (128) after the unsigned DC level shift.
     fn jpx_midpoint_pdf(bpc: u8, components: u16) -> Vec<u8> {
+        jpx_sized_pdf(bpc, components, 1, 1)
+    }
+
+    /// [`jpx_midpoint_pdf`] whose codestream's SIZ declares `xsiz` x `ysiz` (one tile spanning
+    /// it), while the image dictionary still says 1 x 1.
+    fn jpx_sized_pdf(bpc: u8, components: u16, xsiz: u32, ysiz: u32) -> Vec<u8> {
         let mut codestream = vec![0xff, 0x4f, 0xff, 0x51]; // SOC, SIZ.
         codestream.extend_from_slice(&(38 + 3 * components).to_be_bytes());
         codestream.extend_from_slice(&0_u16.to_be_bytes()); // Rsiz.
-        for value in [1_u32, 1, 0, 0, 1, 1, 0, 0] {
+        for value in [xsiz, ysiz, 0, 0, xsiz, ysiz, 0, 0] {
             codestream.extend_from_slice(&value.to_be_bytes());
         }
         codestream.extend_from_slice(&components.to_be_bytes());
@@ -3747,6 +3753,24 @@ trailer << /Root 1 0 R >>
             assert_eq!((image.width, image.height, image.bits_per_component), (1, 1, bpc));
             assert_eq!(decoded.data.len(), usize::from(bpc).div_ceil(8));
             assert_eq!(BitReader::new(&decoded.data).read(bpc), Some(expected), "{bpc}-bit midpoint");
+        }
+    }
+
+    /// A codestream whose SIZ declares more than 2^28 pixels (50000 x 50000 here, from a file of
+    /// a few hundred bytes whose image dictionary says 1 x 1) is refused before the decoder's
+    /// full-size, infallible allocation, which aborted the process (ported from PdfCraft
+    /// 1b86ace5, #5078). hayro-jpeg2000 refuses a side over 60000 itself, so a side under that
+    /// is the case the cap is for. The same image at 1 x 1 decodes, so the refusal is the cap.
+    #[test]
+    fn a_jpx_codestream_over_the_pixel_cap_is_refused() {
+        use hayro::hayro_syntax::object::stream::ImageDecodeParams;
+
+        for (size, decodes) in [(1, true), (50_000, false)] {
+            let pdf = Pdf::new(Arc::new(jpx_sized_pdf(8, 1, size, size))).unwrap();
+            let stream = pdf.objects().into_iter().filter_map(|object| object.into_stream()).find(|stream| !stream.filters().is_empty()).unwrap();
+            assert_eq!(stream.decoded_image(&ImageDecodeParams::default()).is_ok(), decodes, "{size} x {size}");
+            let small_target = ImageDecodeParams { target_dimension: Some((1, 1)), ..Default::default() };
+            assert_eq!(stream.decoded_image(&small_target).is_ok(), decodes, "{size} x {size} at a 1 x 1 target");
         }
     }
 

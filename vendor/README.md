@@ -62,3 +62,9 @@ that no number is read from (`+`, `++`) is an unreadable value: a dictionary lea
 and an array reads it as null in its slot, where `Dict::entries`, `Array::raw_iter` and `Dict`'s
 `Debug` unwrapped the failed read and panicked. Covered by `crates/cos/tests/hayro_sign_tokens.rs`
 (the vendored crate's own tests do not run: it is not a workspace member).
+
+JPEG 2000 size (hayro-syntax, ported from PdfCraft 1b86ace5): a codestream whose SIZ declares
+more than 2^28 pixels at full resolution is refused before `Image::decode`, which allocates it
+infallibly (a 50000 x 50000 SIZ in a file of a few hundred bytes asked for 10 GB and aborted;
+hayro-jpeg2000 itself refuses only a side over 60000). Covered by
+`raster::tests::a_jpx_codestream_over_the_pixel_cap_is_refused`.
