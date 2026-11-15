@@ -3774,6 +3774,52 @@ trailer << /Root 1 0 R >>
         }
     }
 
+    /// A JBIG2 segment header in long form claims a 29-bit referred-to count (536,870,911),
+    /// which the decoder reserved room for before reading one: about 2 GiB from a few bytes, and
+    /// the failed allocation aborted the process. Counts past 65535 are refused (vendored
+    /// hayro-jbig2, ported from PdfCraft 0c748e34).
+    #[test]
+    fn a_jbig2_referred_to_count_is_capped_before_it_is_allocated() {
+        use hayro::hayro_syntax::object::stream::ImageDecodeParams;
+
+        // Segment 65536, type 6 (immediate text region), one-byte page association, the
+        // long-form count, and the 64 MiB of retention bytes it claims, which the decoder skips
+        // before it reserves room for the referred-to numbers. Compressed, they are 65 KiB.
+        let count = 0x1FFF_FFFF_u32;
+        let mut data = vec![0x00, 0x01, 0x00, 0x00, 0x86];
+        data.extend_from_slice(&(0xE000_0000_u32 | count).to_be_bytes());
+        data.resize(data.len() + (count as usize + 1).div_ceil(8), 0);
+        let mut deflate = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::best());
+        std::io::Write::write_all(&mut deflate, &data).unwrap();
+        let data = deflate.finish().unwrap();
+        let mut pdf = format!(
+            "%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\n\
+5 0 obj << /Type /XObject /Subtype /Image /Width 8 /Height 8 /BitsPerComponent 1 /ImageMask true /Filter [/FlateDecode /JBIG2Decode] /Length {} >> stream\n",
+            data.len()
+        )
+        .into_bytes();
+        pdf.extend_from_slice(&data);
+        pdf.extend_from_slice(b"\nendstream endobj\ntrailer << /Root 1 0 R >>\n%%EOF");
+        let pdf = Pdf::new(Arc::new(pdf)).unwrap();
+        let stream = pdf.objects().into_iter().filter_map(|object| object.into_stream()).find(|stream| !stream.filters().is_empty()).unwrap();
+        assert!(stream.decoded_image(&ImageDecodeParams::default()).is_err());
+    }
+
+    /// An xref stream subsection must be backed by its data: one of a few bytes with all-zero
+    /// `/W` widths and an `/Index` count of two billion inserted that many entries (vendored
+    /// hayro-syntax, ported from PdfCraft 0c748e34). It is refused, and the file is read by the
+    /// repair scan instead.
+    #[test]
+    fn an_xref_stream_subsection_needs_its_bytes() {
+        let body = "%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\n";
+        let xref = body.len();
+        let pdf = format!(
+            "{body}3 0 obj << /Type /XRef /Size 2000000000 /Index [0 2000000000] /W [0 0 0] /Root 1 0 R /Length 0 >> stream\n\nendstream endobj\nstartxref\n{xref}\n%%EOF"
+        );
+        let opened = Pdf::new(Arc::new(pdf.into_bytes()));
+        assert!(opened.is_ok_and(|p| p.pages().is_empty()));
+    }
+
     #[test]
     fn jpx_streams_reject_out_of_range_bit_depths() {
         use hayro::hayro_syntax::object::stream::ImageDecodeParams;

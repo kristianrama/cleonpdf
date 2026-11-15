@@ -68,3 +68,14 @@ more than 2^28 pixels at full resolution is refused before `Image::decode`, whic
 infallibly (a 50000 x 50000 SIZ in a file of a few hundred bytes asked for 10 GB and aborted;
 hayro-jpeg2000 itself refuses only a side over 60000). Covered by
 `raster::tests::a_jpx_codestream_over_the_pixel_cap_is_refused`.
+
+Input bounds (ported from PdfCraft 0c748e34): hayro-syntax refuses an xref stream subsection its
+data cannot back (all-zero `/W`, or a count past the bytes; a few bytes asked for two billion
+entries), one running past object number u32::MAX, and a `/W[0]` over 8 bytes, and reads the type
+field at its full width; hayro-jbig2 caps a long-form referred-to count at 65535 before reserving
+room for it (2 GiB from 65 KiB compressed); hayro-interpret keeps at most 4096 saved graphics
+states holding at most 64 MiB together (a `q` past them is counted, not copied, and its `Q` still
+removes the clips added since), and a `/W2` run whose first CID is past `MAX_CID` stops there.
+The xref and JBIG2 parts are covered by `raster::tests::an_xref_stream_subsection_needs_its_bytes`
+and `raster::tests::a_jbig2_referred_to_count_is_capped_before_it_is_allocated`; the graphics-state
+and `/W2` parts only by upstream's tests in the vendored sources, which do not run here.
