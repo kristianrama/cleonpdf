@@ -79,3 +79,11 @@ removes the clips added since), and a `/W2` run whose first CID is past `MAX_CID
 The xref and JBIG2 parts are covered by `raster::tests::an_xref_stream_subsection_needs_its_bytes`
 and `raster::tests::a_jbig2_referred_to_count_is_capped_before_it_is_allocated`; the graphics-state
 and `/W2` parts only by upstream's tests in the vendored sources, which do not run here.
+
+Object counts in lopdf's fallback loader (ported from PdfCraft f51ce3cf): parsing builds at most
+4,194,304 objects per top-level object (`parser::MAX_OBJECT_NODES`, the cap `cleonpdf_cos` uses),
+an object stream reads at most 1,000,000 index entries, and one load builds at most 8,388,608
+objects from all its object streams together, shared across rayon workers (a decoded stream of
+`0 0 0 ...` inside the 256 MiB decompression limit built about 120M objects, over 10 GB, and
+aborted). Covered by `inspect::tests::object_stream_members_over_the_node_cap_are_skipped`,
+`object_stream_index_entries_past_the_clamp_are_ignored` and the node-budget tests beside them.
