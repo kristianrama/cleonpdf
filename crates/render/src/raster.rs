@@ -3697,10 +3697,16 @@ trailer << /Root 1 0 R >>
     /// no decomposition, reversible wavelet, and one empty packet per component. Empty
     /// coefficients decode to the midpoint (128) after the unsigned DC level shift.
     fn jpx_midpoint_pdf(bpc: u8, components: u16) -> Vec<u8> {
+        jpx_sized_pdf(bpc, components, 1, 1)
+    }
+
+    /// [`jpx_midpoint_pdf`] whose codestream's SIZ declares `xsiz` x `ysiz` (one tile spanning
+    /// it), while the image dictionary still says 1 x 1.
+    fn jpx_sized_pdf(bpc: u8, components: u16, xsiz: u32, ysiz: u32) -> Vec<u8> {
         let mut codestream = vec![0xff, 0x4f, 0xff, 0x51]; // SOC, SIZ.
         codestream.extend_from_slice(&(38 + 3 * components).to_be_bytes());
         codestream.extend_from_slice(&0_u16.to_be_bytes()); // Rsiz.
-        for value in [1_u32, 1, 0, 0, 1, 1, 0, 0] {
+        for value in [xsiz, ysiz, 0, 0, xsiz, ysiz, 0, 0] {
             codestream.extend_from_slice(&value.to_be_bytes());
         }
         codestream.extend_from_slice(&components.to_be_bytes());
@@ -3748,6 +3754,70 @@ trailer << /Root 1 0 R >>
             assert_eq!(decoded.data.len(), usize::from(bpc).div_ceil(8));
             assert_eq!(BitReader::new(&decoded.data).read(bpc), Some(expected), "{bpc}-bit midpoint");
         }
+    }
+
+    /// A codestream whose SIZ declares more than 2^28 pixels (50000 x 50000 here, from a file of
+    /// a few hundred bytes whose image dictionary says 1 x 1) is refused before the decoder's
+    /// full-size, infallible allocation, which aborted the process (ported from PdfCraft
+    /// 1b86ace5, #5078). hayro-jpeg2000 refuses a side over 60000 itself, so a side under that
+    /// is the case the cap is for. The same image at 1 x 1 decodes, so the refusal is the cap.
+    #[test]
+    fn a_jpx_codestream_over_the_pixel_cap_is_refused() {
+        use hayro::hayro_syntax::object::stream::ImageDecodeParams;
+
+        for (size, decodes) in [(1, true), (50_000, false)] {
+            let pdf = Pdf::new(Arc::new(jpx_sized_pdf(8, 1, size, size))).unwrap();
+            let stream = pdf.objects().into_iter().filter_map(|object| object.into_stream()).find(|stream| !stream.filters().is_empty()).unwrap();
+            assert_eq!(stream.decoded_image(&ImageDecodeParams::default()).is_ok(), decodes, "{size} x {size}");
+            let small_target = ImageDecodeParams { target_dimension: Some((1, 1)), ..Default::default() };
+            assert_eq!(stream.decoded_image(&small_target).is_ok(), decodes, "{size} x {size} at a 1 x 1 target");
+        }
+    }
+
+    /// A JBIG2 segment header in long form claims a 29-bit referred-to count (536,870,911),
+    /// which the decoder reserved room for before reading one: about 2 GiB from a few bytes, and
+    /// the failed allocation aborted the process. Counts past 65535 are refused (vendored
+    /// hayro-jbig2, ported from PdfCraft 0c748e34).
+    #[test]
+    fn a_jbig2_referred_to_count_is_capped_before_it_is_allocated() {
+        use hayro::hayro_syntax::object::stream::ImageDecodeParams;
+
+        // Segment 65536, type 6 (immediate text region), one-byte page association, the
+        // long-form count, and the 64 MiB of retention bytes it claims, which the decoder skips
+        // before it reserves room for the referred-to numbers. Compressed, they are 65 KiB.
+        let count = 0x1FFF_FFFF_u32;
+        let mut data = vec![0x00, 0x01, 0x00, 0x00, 0x86];
+        data.extend_from_slice(&(0xE000_0000_u32 | count).to_be_bytes());
+        data.resize(data.len() + (count as usize + 1).div_ceil(8), 0);
+        let mut deflate = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::best());
+        std::io::Write::write_all(&mut deflate, &data).unwrap();
+        let data = deflate.finish().unwrap();
+        let mut pdf = format!(
+            "%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\n\
+5 0 obj << /Type /XObject /Subtype /Image /Width 8 /Height 8 /BitsPerComponent 1 /ImageMask true /Filter [/FlateDecode /JBIG2Decode] /Length {} >> stream\n",
+            data.len()
+        )
+        .into_bytes();
+        pdf.extend_from_slice(&data);
+        pdf.extend_from_slice(b"\nendstream endobj\ntrailer << /Root 1 0 R >>\n%%EOF");
+        let pdf = Pdf::new(Arc::new(pdf)).unwrap();
+        let stream = pdf.objects().into_iter().filter_map(|object| object.into_stream()).find(|stream| !stream.filters().is_empty()).unwrap();
+        assert!(stream.decoded_image(&ImageDecodeParams::default()).is_err());
+    }
+
+    /// An xref stream subsection must be backed by its data: one of a few bytes with all-zero
+    /// `/W` widths and an `/Index` count of two billion inserted that many entries (vendored
+    /// hayro-syntax, ported from PdfCraft 0c748e34). It is refused, and the file is read by the
+    /// repair scan instead.
+    #[test]
+    fn an_xref_stream_subsection_needs_its_bytes() {
+        let body = "%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\n";
+        let xref = body.len();
+        let pdf = format!(
+            "{body}3 0 obj << /Type /XRef /Size 2000000000 /Index [0 2000000000] /W [0 0 0] /Root 1 0 R /Length 0 >> stream\n\nendstream endobj\nstartxref\n{xref}\n%%EOF"
+        );
+        let opened = Pdf::new(Arc::new(pdf.into_bytes()));
+        assert!(opened.is_ok_and(|p| p.pages().is_empty()));
     }
 
     #[test]

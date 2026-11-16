@@ -2062,8 +2062,9 @@ pub(crate) fn rewrite_block_with_limit(
     // A paragraph keeps its width (or takes the one asked for); a single line grows to the right
     // (to the left when right-to-left), up to the page's margin.
     let width = match style.width {
-        // Capped at the largest page PDF allows (14 400 pt).
-        Some(w) if w.is_finite() => w.clamp(size * k, 14_400.0),
+        // Capped at the largest page PDF allows (14 400 pt), even for text set larger than that
+        // (`clamp` panics when its minimum is the larger, or NaN).
+        Some(w) if w.is_finite() => w.clamp((size * k).min(14_400.0), 14_400.0),
         Some(_) => return Err(EditError::Invalid("the paragraph's width must be a number".into())),
         None if anchored_right => (b.rect[2] - b.rect[0]).max(size * k).max(b.rect[2] + dx - (p.crop(doc)[0] + 36.0)),
         None if members.len() == 1 => (b.rect[2] - b.rect[0]).max(size * k).max(p.crop(doc)[2] - 36.0 - (b.rect[0] + dx)),

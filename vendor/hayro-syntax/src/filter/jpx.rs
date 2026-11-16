@@ -17,6 +17,13 @@ impl ImageColorSpace {
     }
 }
 
+/// CleonPDF patch (ported from PdfCraft 1b86ace5, #5078): the most pixels a codestream may decode
+/// to (2^28, as hayro-interpret's `image_size_ok`). Its size comes from the SIZ marker, not the
+/// image dictionary, and the decoder allocates it infallibly: a file of a few hundred bytes could
+/// ask for tens of gigabytes and abort the process. hayro-jpeg2000 itself only refuses a side
+/// over 60000.
+const MAX_PIXELS: u64 = 1 << 28;
+
 pub(crate) fn decode(data: &[u8], params: &ImageDecodeParams) -> Option<FilterResult<'static>> {
     use crate::object::stream::ImageColorSpace;
 
@@ -26,7 +33,25 @@ pub(crate) fn decode(data: &[u8], params: &ImageDecodeParams) -> Option<FilterRe
         target_resolution: params.target_dimension,
     };
 
-    let image = hayro_jpeg2000::Image::new(data, &settings).ok()?;
+    // CleonPDF patch: the size is checked at full resolution, because a target resolution
+    // shrinks `width()` and `height()` but each tile's coefficients are still allocated at full
+    // size. See `MAX_PIXELS`.
+    let full = hayro_jpeg2000::Image::new(
+        data,
+        &DecodeSettings {
+            resolve_palette_indices: false,
+            strict: false,
+            target_resolution: None,
+        },
+    )
+    .ok()?;
+    if u64::from(full.width()) * u64::from(full.height()) > MAX_PIXELS {
+        return None;
+    }
+    let image = match params.target_dimension {
+        Some(_) => hayro_jpeg2000::Image::new(data, &settings).ok()?,
+        None => full,
+    };
 
     let width = image.width();
     let height = image.height();

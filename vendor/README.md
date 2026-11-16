@@ -54,3 +54,28 @@ black-point normalization is unchanged. `lab_bradford_tests` checks independent
 D50/equal-energy neutral and chromatic oracles, D65 identity, and direct/Indexed
 consistency (including an asymmetric chromatic Range), and zero/overflowing
 cone-response fallback.
+
+Signs in numbers (hayro-syntax, ported from PdfCraft 766ff9d0, 386c92c0 and b06bedef): a doubled
+sign (`--280`, `+-280`, `-+280`, `++280`) is one number, read and skipped alike; before, `--280`
+read as 0 and left `-280` as a second number, so a `cm` carrying it hid the page. A lone sign
+that no number is read from (`+`, `++`) is an unreadable value: a dictionary leaves the entry out
+and an array reads it as null in its slot, where `Dict::entries`, `Array::raw_iter` and `Dict`'s
+`Debug` unwrapped the failed read and panicked. Covered by `crates/cos/tests/hayro_sign_tokens.rs`
+(the vendored crate's own tests do not run: it is not a workspace member).
+
+JPEG 2000 size (hayro-syntax, ported from PdfCraft 1b86ace5): a codestream whose SIZ declares
+more than 2^28 pixels at full resolution is refused before `Image::decode`, which allocates it
+infallibly (a 50000 x 50000 SIZ in a file of a few hundred bytes asked for 10 GB and aborted;
+hayro-jpeg2000 itself refuses only a side over 60000). Covered by
+`raster::tests::a_jpx_codestream_over_the_pixel_cap_is_refused`.
+
+Input bounds (ported from PdfCraft 0c748e34): hayro-syntax refuses an xref stream subsection its
+data cannot back (all-zero `/W`, or a count past the bytes; a few bytes asked for two billion
+entries), one running past object number u32::MAX, and a `/W[0]` over 8 bytes, and reads the type
+field at its full width; hayro-jbig2 caps a long-form referred-to count at 65535 before reserving
+room for it (2 GiB from 65 KiB compressed); hayro-interpret keeps at most 4096 saved graphics
+states holding at most 64 MiB together (a `q` past them is counted, not copied, and its `Q` still
+removes the clips added since), and a `/W2` run whose first CID is past `MAX_CID` stops there.
+The xref and JBIG2 parts are covered by `raster::tests::an_xref_stream_subsection_needs_its_bytes`
+and `raster::tests::a_jbig2_referred_to_count_is_capped_before_it_is_allocated`; the graphics-state
+and `/W2` parts only by upstream's tests in the vendored sources, which do not run here.
