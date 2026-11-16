@@ -1446,6 +1446,39 @@ fn combine_source_check_says_why_a_file_cannot_be_combined() {
     assert!(matches!(crate::combine_source_check(&Arc::new(b"not a pdf".to_vec()), None), Err(crate::SourceProblem::Unreadable(_))));
 }
 
+/// "Any except extracting pages" must refuse extraction. It sets the modify flag (bit 4), which
+/// `assemble()` used to accept in place of bit 11 at every revision, so Extract, Split and
+/// Combine handed out unprotected copies of the pages. Extraction also needs the copy flag: the
+/// pages carry their text and graphics into a file without the source's protection (ported from
+/// PdfCraft ee39c7e2 and 4efcfa6e).
+#[test]
+fn any_except_extracting_pages_refuses_extraction() {
+    use cleonpdf_cos::Algorithm::{Aes128, Aes256, Rc4_128};
+    for algorithm in [Rc4_128, Aes128, Aes256] {
+        for copy in [false, true] {
+            let (mut s, id) = session_with(2);
+            let p = Protection { changes: Changes::AnyExceptExtract, copy, algorithm, ..protection(None, Some("boss")) };
+            s.apply(id, Edit::Protect(p)).unwrap();
+            let locked = s.save_bytes(id).unwrap();
+            let what = format!("{algorithm:?}, copy {copy}");
+            assert_eq!(crate::combine_source_check(&locked, None), Err(crate::SourceProblem::NotPermitted), "{what}");
+            assert_eq!(crate::combine_source_check(&locked, Some("boss")), Ok(()), "{what}: the owner may");
+            let mut s = Session::new();
+            let id = s.open("locked", None, locked.clone(), None).unwrap();
+            assert!(matches!(s.extract(id, &[0]), Err(EditError::NotPermitted(_))), "{what}: extract");
+            assert!(matches!(s.split(id, &cleonpdf_organize::SplitBy::PageCount(1)), Err(EditError::NotPermitted(_))), "{what}: split");
+            assert!(matches!(s.split_by_size(id, 1 << 20), Err(EditError::NotPermitted(_))), "{what}: split by size");
+        }
+    }
+    // Changing pages allowed (bit 11) but copying withheld: still no extraction; with copying, yes.
+    for (copy, allowed) in [(false, false), (true, true)] {
+        let (mut s, id) = session_with(2);
+        s.apply(id, Edit::Protect(Protection { changes: Changes::Pages, copy, ..protection(None, Some("boss")) })).unwrap();
+        let locked = s.save_bytes(id).unwrap();
+        assert_eq!(crate::combine_source_check(&locked, None).is_ok(), allowed, "pages, copy {copy}");
+    }
+}
+
 #[test]
 fn protection_is_validated_undoable_and_never_logged() {
     let (mut s, id) = session_with(1);
@@ -3090,7 +3123,7 @@ fn measurement_edits_are_transactional_and_honour_annotation_permissions() {
     assert!(session.get(id).unwrap().measurements().unwrap().measurements.is_empty());
     session.redo(id).unwrap();
     assert_eq!(session.get(id).unwrap().bytes, before);
-    let p = cleonpdf_cos::Permissions { bits: 0, owner: false };
+    let p = cleonpdf_cos::Permissions { bits: 0, owner: false, revision: 3 };
     assert_eq!(check_permission(&Edit::AddMeasurement(m), &p), Err(EditError::NotPermitted("comments")));
     assert_eq!(
         check_permission(

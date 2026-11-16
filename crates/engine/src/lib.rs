@@ -767,7 +767,7 @@ impl Document {
             _ => "Attachments only",
         };
         let pending = editor.cos.encryption_changed();
-        let permissions = if pending { cleonpdf_cos::Permissions { bits: h.permissions().bits, owner: false } } else { h.permissions() };
+        let permissions = if pending { cleonpdf_cos::Permissions { owner: false, ..h.permissions() } } else { h.permissions() };
         Some(SecuritySummary { method: method.into(), owner: h.auth() == cleonpdf_cos::Auth::Owner && !pending, permissions, pending })
     }
 
@@ -2716,7 +2716,7 @@ pub enum SourceProblem {
 
 fn source_document(bytes: &Arc<Vec<u8>>, password: Option<&str>) -> Result<cleonpdf_cos::Document, SourceProblem> {
     match std::panic::catch_unwind(|| cleonpdf_cos::Document::open_with_password(bytes.clone(), password)) {
-        Ok(Ok(d)) if d.permissions().is_some_and(|p| !p.assemble()) => Err(SourceProblem::NotPermitted),
+        Ok(Ok(d)) if d.permissions().is_some_and(|p| !p.extract_pages()) => Err(SourceProblem::NotPermitted),
         Ok(Ok(d)) => Ok(d),
         Ok(Err(cleonpdf_cos::CosError::NeedsPassword)) => Err(SourceProblem::Password),
         Ok(Err(cleonpdf_cos::CosError::WrongPassword)) => Err(SourceProblem::WrongPassword),
@@ -4275,7 +4275,7 @@ impl Session {
     /// New PDF bytes containing copies of `pages` of the document (Extract Pages).
     pub fn extract(&self, id: DocId, pages: &[usize]) -> Result<Arc<Vec<u8>>, EditError> {
         let src = self.cos(id)?;
-        if src.permissions().is_some_and(|p| !p.assemble()) {
+        if src.permissions().is_some_and(|p| !p.extract_pages()) {
             return Err(EditError::NotPermitted("extracting pages"));
         }
         let out = cleonpdf_organize::extract_pages(src, pages)?;
@@ -4285,7 +4285,7 @@ impl Session {
     /// Split the document into several new PDFs.
     pub fn split(&self, id: DocId, by: &cleonpdf_organize::SplitBy) -> Result<Vec<SplitPart>, EditError> {
         let src = self.cos(id)?;
-        if src.permissions().is_some_and(|p| !p.assemble()) {
+        if src.permissions().is_some_and(|p| !p.extract_pages()) {
             return Err(EditError::NotPermitted("splitting the document"));
         }
         let n = cleonpdf_organize::page_count(src)?;
@@ -4303,7 +4303,7 @@ impl Session {
     /// images count once per part) fits; a page larger than the limit is a part of its own.
     pub fn split_by_size(&self, id: DocId, max_bytes: usize) -> Result<Vec<SplitPart>, EditError> {
         let src = self.cos(id)?;
-        if src.permissions().is_some_and(|p| !p.assemble()) {
+        if src.permissions().is_some_and(|p| !p.extract_pages()) {
             return Err(EditError::NotPermitted("splitting the document"));
         }
         let n = cleonpdf_organize::page_count(src)?;

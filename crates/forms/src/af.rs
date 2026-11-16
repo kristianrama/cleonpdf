@@ -492,7 +492,10 @@ fn group(int: &str, sep: char) -> String {
 fn number_text(v: f64, decimals: u8, sep: u8) -> String {
     // Round half away from zero, as JavaScript's toFixed does for these values.
     let p = 10f64.powi(i32::from(decimals));
-    let s = format!("{:.*}", decimals as usize, (v.abs() * p).round() / p);
+    let scaled = v.abs() * p;
+    // Past 2^53 every value is already whole, and scaling could overflow to infinity.
+    let r = if scaled.is_finite() { scaled.round() / p } else { v.abs() };
+    let s = format!("{:.*}", decimals as usize, r);
     let (int, frac) = s.split_once('.').map_or((s.as_str(), ""), |(a, b)| (a, b));
     let (g, d) = match sep {
         1 => (None, '.'),
@@ -1242,5 +1245,13 @@ mod never_crash_tests {
         }
         let dt = DateTime { y: i32::MAX, m: 1, d: u32::MAX, hh: 0, mm: 0, ss: 0 };
         let _ = format_date(dt, "dddd ddd");
+    }
+
+    #[test]
+    fn huge_finite_numbers_do_not_print_inf() {
+        let n = format_value(&Format::Number { decimals: 2, sep: 1, neg: 0, currency: String::new(), prepend: true }, "1e307");
+        assert!(n.len() > 300 && n.ends_with(".00") && !n.contains("inf"), "got {n}");
+        let p = format_value(&Format::Percent { decimals: 2, sep: 1 }, "1e306");
+        assert!(!p.contains("inf"), "got {p}");
     }
 }

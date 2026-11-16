@@ -173,7 +173,6 @@ impl Automation {
         let only = a.opt_int("page")?.map(|p| (p.max(1) - 1) as usize);
         let all = self.comments(a)?;
         let view = |c: &Annotation| -> Value {
-            let p = &doc.info.pages[c.page.min(doc.info.pages.len().saturating_sub(1))];
             json!({
                 "id": c.name,
                 "page": c.page + 1,
@@ -182,7 +181,8 @@ impl Automation {
                 "author": c.author,
                 "contents": c.contents,
                 "modified": c.modified,
-                "rect": rect_to_view(p, c.rect),
+                // Unchanged on a page the viewer could not read (#2660), as `doc_info` reports it.
+                "rect": crate::view_rect(&doc.info, c.page, c.rect),
                 "color": c.color.map(hex),
             })
         };
@@ -375,7 +375,7 @@ impl Automation {
                 "attachment" => {
                     let [x, y] = a.need::<2>("at", "an attachment (its icon's top-left)")?;
                     let path = self.resolve(a.str("path")?, false)?;
-                    let data = std::fs::read(&path).map_err(|e| failed(format!("{}: {e}", path.display())))?;
+                    let data = crate::read_input(&path)?;
                     let file = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
                     let icon = match a.opt_str("icon")? {
                         Some(n) => cleonpdf_engine::AttachIcon::from_name(n)
@@ -645,7 +645,7 @@ impl Automation {
         let page = self.page(a)?;
         let info = self.doc(a)?.info.pages[page].clone();
         let path = self.resolve(a.str("path")?, false)?;
-        let bytes = std::fs::read(&path).map_err(|e| failed(format!("{}: {e}", path.display())))?;
+        let bytes = crate::read_input(&path)?;
         let file = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
         let name = a.opt_str("name")?.map(str::to_owned).unwrap_or_else(|| file.rsplit_once('.').map_or(file.clone(), |(s, _)| s.to_owned()));
         let [x, y] = a.need::<2>("at", "a stamp (its centre)")?;

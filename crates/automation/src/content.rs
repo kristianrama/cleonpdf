@@ -73,9 +73,9 @@ impl Automation {
             .iter()
             .map(|it| {
                 let index = per_page.entry(it.page).or_default();
-                let ph = doc.info.pages[it.page].height as f64;
-                let mut v =
-                    json!({ "page": it.page + 1, "index": *index + 1, "rect": to_view(it.content.rect(), ph).map(|x| (x * 100.0).round() / 100.0) });
+                // Unchanged on a page the viewer could not read (#2660), like `crate::view_rect`.
+                let rect = doc.info.pages.get(it.page).map_or(it.content.rect(), |p| to_view(it.content.rect(), p.height as f64));
+                let mut v = json!({ "page": it.page + 1, "index": *index + 1, "rect": rect.map(|x| (x * 100.0).round() / 100.0) });
                 *index += 1;
                 match &it.content {
                     AddedContent::Text(t) => {
@@ -118,7 +118,7 @@ impl Automation {
         let page = self.page(a)?;
         let ph = self.doc(a)?.info.pages[page].height as f64;
         let path = self.resolve(a.str("path")?, false)?;
-        let bytes = std::fs::read(&path).map_err(|e| failed(format!("{}: {e}", path.display())))?;
+        let bytes = crate::read_input(&path)?;
         let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
         let rect = rect_arg(a, "rect")?.map(|r| to_display(r, ph));
         let mut out = self.apply(a, Edit::AddImage { page, rect, name, bytes: std::sync::Arc::new(bytes) })?;
@@ -187,7 +187,7 @@ impl Automation {
                 }
                 if let Some(p) = a.opt_str("image")? {
                     let path = self.resolve(p, false)?;
-                    let bytes = std::fs::read(&path).map_err(|e| failed(format!("{}: {e}", path.display())))?;
+                    let bytes = crate::read_input(&path)?;
                     let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
                     // Box and transforms first, then the new picture.
                     self.apply(a, Edit::UpdateContent { page, index, content: content.clone() })?;
