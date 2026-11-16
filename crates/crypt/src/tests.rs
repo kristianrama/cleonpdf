@@ -204,11 +204,11 @@ fn unsupported_handlers_are_reported() {
 
 #[test]
 fn permission_bits_follow_table_22() {
-    let p = Permissions { bits: -3904, owner: false }; // 0xFFFFF0C0: only reserved bits set
+    let p = Permissions { bits: -3904, owner: false, revision: 3 }; // 0xFFFFF0C0: only reserved bits set
     assert!(!p.print() && !p.modify() && !p.copy() && !p.annotate() && !p.assemble());
-    let p = Permissions { bits: -1, owner: false };
+    let p = Permissions { bits: -1, owner: false, revision: 3 };
     assert!(p.print() && p.modify() && p.copy() && p.annotate() && p.assemble() && p.fill_forms());
-    let p = Permissions { bits: 0, owner: true };
+    let p = Permissions { bits: 0, owner: true, revision: 3 };
     assert!(p.modify(), "owners ignore /P");
 }
 
@@ -326,4 +326,24 @@ fn pdfdoc_encoding_round_trips() {
     }
     assert_eq!(legacy_candidates("Çok"), [vec![0xC7, b'o', b'k']]);
     assert_eq!(legacy_candidates("şifre"), [b"ifre".to_vec(), "şifre".as_bytes().to_vec()]);
+}
+
+/// Table 22 reads the flags by revision: bits 9 to 12 exist from revision 3, where bit 11 alone
+/// grants page assembly; at revision 2 the modify, copy and print flags cover them. Copying
+/// pages out needs assembly and copying on every revision.
+#[test]
+fn permission_flags_follow_the_revision() {
+    let bit = |n: u32| 1i32 << (n - 1);
+    let at = |revision, bits| Permissions { bits, owner: false, revision };
+    // "Any except extracting pages": modify, annotate, fill.
+    let any_except_extract = bit(4) | bit(6) | bit(9);
+    assert!(!at(3, any_except_extract).assemble() && !at(6, any_except_extract | bit(5)).extract_pages());
+    assert!(at(3, bit(11)).assemble() && !at(3, bit(11)).extract_pages() && at(3, bit(11) | bit(5)).extract_pages());
+    // Revision 2: bit 11 means nothing, bit 4 covers assembly.
+    assert!(!at(2, bit(11)).assemble() && at(2, bit(4)).assemble());
+    assert!(!at(2, bit(4)).extract_pages() && at(2, bit(4) | bit(5)).extract_pages());
+    assert!(at(2, bit(3)).print_high_quality() && !at(3, bit(12)).print_high_quality() && at(3, bit(3) | bit(12)).print_high_quality());
+    assert!(at(2, bit(5)).extract_for_accessibility() && !at(3, bit(5)).extract_for_accessibility() && at(3, bit(10)).extract_for_accessibility());
+    assert!(!at(2, bit(9)).fill_forms() && at(3, bit(9)).fill_forms() && at(2, bit(6)).fill_forms());
+    assert!(Permissions { bits: 0, owner: true, revision: 3 }.extract_pages(), "owners ignore /P");
 }
