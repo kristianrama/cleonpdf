@@ -1201,14 +1201,29 @@ fn protected_files_that_can_be_combined_are_flagged() {
         app.set_option("combine-view", "list").unwrap();
         app.use_files(
             cleonpdf_ui_egui::FilePurpose::Combine,
-            vec![("one.pdf".into(), fixture(1)), ("no-copy.pdf".into(), protected("", "owner", -1 ^ 16))],
+            vec![("one.pdf".into(), fixture(1)), ("no-print.pdf".into(), protected("", "owner", -1 ^ 4))],
         );
     });
     h.run_steps(3);
     let app = h.state();
-    assert!(app.combine_draft[1].problem.is_none(), "copying text is withheld, assembling pages isn't");
+    assert!(app.combine_draft[1].problem.is_none(), "printing is withheld, extracting pages isn't");
     h.get_by_label("Protected: the combined file won't keep its security settings");
     assert!(!h.get_by_label("Combine").accesskit_node().is_disabled(), "a warning, not a blocker");
+}
+
+/// A file that withholds copying can't give its pages: they would leave in a file without its
+/// protection.
+#[test]
+fn a_protected_file_that_withholds_copying_cannot_be_combined() {
+    let mut h = harness(1, |app| {
+        app.set_option("combine-view", "list").unwrap();
+        app.use_files(
+            cleonpdf_ui_egui::FilePurpose::Combine,
+            vec![("one.pdf".into(), fixture(1)), ("no-copy.pdf".into(), protected("", "owner", -1 ^ 16))],
+        );
+    });
+    h.run_steps(3);
+    assert!(h.state().combine_draft[1].problem.is_some());
 }
 
 #[test]
