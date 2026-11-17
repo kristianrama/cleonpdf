@@ -2434,3 +2434,7 @@ window	Zoom	Méretezés
 	Couldn't read the certificate: {e}	A tanúsítványt nem sikerült beolvasni: {e}
 	That certificate is already in the list	Ez a tanúsítvány már szerepel a listán
 	Certificate	Tanúsítvány
+	Locked fields	Zárolt mezők
+	All form fields	Az űrlap összes mezője
+	All except {fields}	Mind, kivéve: {fields}
+	Signer reached through {n} earlier lists of lists:	Az aláíró {n} korábbi listák listáján keresztül érhető el:

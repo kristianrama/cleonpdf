@@ -2440,3 +2440,7 @@ window	Zoom	Spremeni velikost
 	Couldn't read the certificate: {e}	Potrdila ni bilo mogoče prebrati: {e}
 	That certificate is already in the list	To potrdilo je že na seznamu
 	Certificate	Potrdilo
+	Locked fields	Zaklenjena polja
+	All form fields	Vsa polja obrazca
+	All except {fields}	Vsa razen {fields}
+	Signer reached through {n} earlier lists of lists:	Podpisnik dosežen prek {n} prejšnjih seznamov seznamov:

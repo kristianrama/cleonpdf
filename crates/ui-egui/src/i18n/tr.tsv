@@ -2431,3 +2431,7 @@ window	Zoom	Boyutlandır
 	Couldn't read the certificate: {e}	Sertifika okunamadı: {e}
 	That certificate is already in the list	Bu sertifika zaten listede
 	Certificate	Sertifika
+	Locked fields	Kilitli alanlar
+	All form fields	Tüm form alanları
+	All except {fields}	{fields} dışındakilerin tümü
+	Signer reached through {n} earlier lists of lists:	İmzacıya {n} önceki liste listesi üzerinden ulaşıldı:

@@ -2407,3 +2407,7 @@ window	Zoom	Zmień rozmiar
 	Couldn't read the certificate: {e}	Nie udało się odczytać certyfikatu: {e}
 	That certificate is already in the list	Ten certyfikat jest już na liście
 	Certificate	Certyfikat
+	Locked fields	Zablokowane pola
+	All form fields	Wszystkie pola formularza
+	All except {fields}	Wszystkie oprócz {fields}
+	Signer reached through {n} earlier lists of lists:	Podpisujący osiągnięty przez {n} wcześniejsze listy list:

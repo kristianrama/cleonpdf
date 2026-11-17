@@ -2568,3 +2568,7 @@ window	Zoom	Zoom
 	Couldn't read the certificate: {e}	No se pudo leer el certificado: {e}
 	That certificate is already in the list	Este certificado ya está en la lista
 	Certificate	Certificado
+	Locked fields	Campos bloqueados
+	All form fields	Todos los campos del formulario
+	All except {fields}	Todos excepto {fields}
+	Signer reached through {n} earlier lists of lists:	Firmante alcanzado a través de {n} listas de listas anteriores:

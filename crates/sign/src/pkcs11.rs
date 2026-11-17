@@ -429,6 +429,11 @@ pub fn known_modules() -> Vec<PathBuf> {
         "/usr/local/lib/softhsm/libsofthsm2.so",
         // Windows OpenSC installs here.
         "C:\\Program Files\\OpenSC Project\\OpenSC\\pkcs11\\opensc-pkcs11.dll",
+        // The Italian electronic identity card (CIE 3.0), with the IPZS middleware: the paths its
+        // manual gives for setting up Firefox (docs.italia.it, CIE middleware).
+        "/Library/ipzs/libcie-pkcs11.dylib",
+        "/usr/local/lib/libcie-pkcs11.so",
+        "C:\\Windows\\System32\\CIEPKI.dll",
     ];
     CANDIDATES.iter().map(PathBuf::from).filter(|p| p.is_file()).collect()
 }

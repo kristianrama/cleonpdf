@@ -1724,6 +1724,9 @@ pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, sigs: &[SignatureInfo], expan
             if let Some(a) = &s.algorithm {
                 row(ui, "Algorithm", a);
             }
+            if let Some(locked) = locked_fields_text(&s.field_locks) {
+                row(ui, "Locked fields", &locked);
+            }
             if let Some(c) = &s.certificate {
                 row(ui, "Signer", &c.subject.display());
                 row(ui, "Issued by", &c.issuer.display());
@@ -1779,6 +1782,22 @@ pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, sigs: &[SignatureInfo], expan
         });
     }
     action
+}
+
+/// What a signature's field locks (FieldMDP) cover, in the panel's language: `None` when it
+/// locks nothing. Several locks (one per /Reference) are listed one after another.
+fn locked_fields_text(locks: &[sign::FieldLock]) -> Option<String> {
+    use sign::FieldLock;
+    let parts: Vec<String> = locks
+        .iter()
+        .map(|l| match l {
+            FieldLock::All => tl!("All form fields").to_string(),
+            FieldLock::Include(names) => names.join(", "),
+            FieldLock::Exclude(names) => crate::i18n::fmt(tl!("All except {fields}"), &[("fields", &names.join(", "))]),
+        })
+        .filter(|p| !p.is_empty())
+        .collect();
+    (!parts.is_empty()).then(|| parts.join("; "))
 }
 
 /// Certificate Viewer: a chain (the end certificate first) and the tab shown.
@@ -1927,6 +1946,17 @@ pub fn certificate_pem(c: &Certificate) -> String {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn locked_fields_say_what_each_lock_covers() {
+        use sign::FieldLock;
+        assert_eq!(super::locked_fields_text(&[]), None);
+        assert_eq!(super::locked_fields_text(&[FieldLock::All]).as_deref(), Some("All form fields"));
+        assert_eq!(super::locked_fields_text(&[FieldLock::Include(vec!["a".into(), "b.c".into()])]).as_deref(), Some("a, b.c"));
+        assert_eq!(super::locked_fields_text(&[FieldLock::Exclude(vec!["a".into()])]).as_deref(), Some("All except a"));
+        assert_eq!(super::locked_fields_text(&[FieldLock::All, FieldLock::Include(vec!["x".into()])]).as_deref(), Some("All form fields; x"));
+        assert_eq!(super::locked_fields_text(&[FieldLock::Include(Vec::new())]), None, "an empty list locks nothing to name");
+    }
     use super::*;
 
     /// A fresh folder per call: tests run in parallel.

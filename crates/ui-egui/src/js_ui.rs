@@ -683,6 +683,15 @@ fn eutl_lists(ui: &mut egui::Ui, app: &mut CleonPdfApp, t: &Tokens) {
             &[("a", &s.authorities.to_string()), ("c", &s.countries.len().to_string())],
         );
         ui.label(egui::RichText::new(authorities).small());
+        if !s.pivots.is_empty() {
+            // The imported certificates no longer sign the list: these earlier lists, each
+            // signed by the one before, led to the certificate that does.
+            let pivots = crate::i18n::fmt(tl!("Signer reached through {n} earlier lists of lists:"), &[("n", &s.pivots.len().to_string())]);
+            ui.label(egui::RichText::new(pivots).small());
+            for url in &s.pivots {
+                ui.label(egui::RichText::new(format!("  {url}")).small().color(t.text_muted));
+            }
+        }
         for r in &s.countries {
             let line = match &r.outcome {
                 Outcome::Updated => crate::i18n::fmt(tl!("{country}: updated"), &[("country", &r.territory)]),
@@ -834,6 +843,33 @@ mod eutl_lists_tests {
         );
         h.run();
         h
+    }
+
+    /// When the imported certificates no longer sign the list of lists, the summary says through
+    /// which earlier lists (pivots) the signer was reached; when they do, it says nothing of it.
+    #[test]
+    fn the_summary_names_the_pivots_followed() {
+        let summary = |pivots: Vec<String>| crate::eutl_ui::EutlSummary {
+            sequence: 398,
+            next_update: None,
+            authorities: 999,
+            countries: Vec::new(),
+            fetched: true,
+            pivots,
+        };
+        let mut app = CleonPdfApp::new();
+        app.set_option("language", "en").unwrap();
+        app.eutl.summary =
+            Some(summary(vec!["https://ec.europa.eu/tools/lotl/pivot-300.xml".into(), "https://ec.europa.eu/tools/lotl/pivot-320.xml".into()]));
+        let h = harness(app);
+        h.get_by_label("Signer reached through 2 earlier lists of lists:");
+        h.get_by_label_contains("pivot-300.xml");
+        h.get_by_label_contains("pivot-320.xml");
+        let mut app = CleonPdfApp::new();
+        app.set_option("language", "en").unwrap();
+        app.eutl.summary = Some(summary(Vec::new()));
+        let h = harness(app);
+        assert!(h.query_by_label_contains("earlier lists of lists").is_none());
     }
 
     /// The switch needs a certificate first, shows each certificate's fingerprint, and only once

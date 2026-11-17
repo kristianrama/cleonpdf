@@ -2509,3 +2509,7 @@ window	Zoom	Změnit velikost
 	Couldn't read the certificate: {e}	Certifikát se nepodařilo přečíst: {e}
 	That certificate is already in the list	Tento certifikát už v seznamu je
 	Certificate	Certifikát
+	Locked fields	Uzamčená pole
+	All form fields	Všechna pole formuláře
+	All except {fields}	Všechna kromě {fields}
+	Signer reached through {n} earlier lists of lists:	Podepisující dosažen přes {n} dřívějších seznamů seznamů:
