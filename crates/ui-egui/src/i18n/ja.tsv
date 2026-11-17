@@ -2435,3 +2435,6 @@ window	Zoom	拡大／縮小
 	Couldn't read the certificate: {e}	証明書を読み込めませんでした: {e}
 	That certificate is already in the list	この証明書はすでにリストにあります
 	Certificate	証明書
+	Locked fields	ロックされたフィールド
+	All form fields	すべてのフォームフィールド
+	All except {fields}	{fields} 以外のすべて

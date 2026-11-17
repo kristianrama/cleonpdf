@@ -2435,3 +2435,6 @@ window	Zoom	Αλλαγή μεγέθους
 	Couldn't read the certificate: {e}	Δεν ήταν δυνατή η ανάγνωση του πιστοποιητικού: {e}
 	That certificate is already in the list	Αυτό το πιστοποιητικό υπάρχει ήδη στη λίστα
 	Certificate	Πιστοποιητικό
+	Locked fields	Κλειδωμένα πεδία
+	All form fields	Όλα τα πεδία της φόρμας
+	All except {fields}	Όλα εκτός από {fields}

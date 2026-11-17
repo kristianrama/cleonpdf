@@ -2338,3 +2338,6 @@ window	Zoom	పరిమాణం మార్చు
 	Couldn't read the certificate: {e}	ధృవపత్రాన్ని చదవలేకపోయాము: {e}
 	That certificate is already in the list	ఈ ధృవపత్రం ఇప్పటికే జాబితాలో ఉంది
 	Certificate	ధృవపత్రం
+	Locked fields	లాక్ చేసిన ఫీల్డ్‌లు
+	All form fields	అన్ని ఫారమ్ ఫీల్డ్‌లు
+	All except {fields}	{fields} మినహా అన్నీ

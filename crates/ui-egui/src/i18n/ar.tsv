@@ -2458,3 +2458,6 @@ window	Zoom	تغيير الحجم
 	Couldn't read the certificate: {e}	تعذّرت قراءة الشهادة: {e}
 	That certificate is already in the list	هذه الشهادة موجودة في القائمة بالفعل
 	Certificate	شهادة
+	Locked fields	الحقول المقفلة
+	All form fields	جميع حقول النموذج
+	All except {fields}	الكل باستثناء {fields}

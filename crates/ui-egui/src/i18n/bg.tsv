@@ -2398,3 +2398,6 @@ window	Zoom	Мащабиране
 	Couldn't read the certificate: {e}	Сертификатът не можа да бъде прочетен: {e}
 	That certificate is already in the list	Този сертификат вече е в списъка
 	Certificate	Сертификат
+	Locked fields	Заключени полета
+	All form fields	Всички полета на формуляра
+	All except {fields}	Всички освен {fields}

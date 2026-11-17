@@ -2309,3 +2309,6 @@ window	Zoom	縮放
 	Couldn't read the certificate: {e}	無法讀取憑證：{e}
 	That certificate is already in the list	此憑證已在清單中
 	Certificate	憑證
+	Locked fields	鎖定的欄位
+	All form fields	所有表單欄位
+	All except {fields}	除 {fields} 外的全部

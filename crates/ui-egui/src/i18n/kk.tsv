@@ -2433,3 +2433,6 @@ window	Zoom	Өлшемін өзгерту
 	Couldn't read the certificate: {e}	Сертификатты оқу мүмкін болмады: {e}
 	That certificate is already in the list	Бұл сертификат тізімде бұрыннан бар
 	Certificate	Сертификат
+	Locked fields	Құлыпталған өрістер
+	All form fields	Пішіннің барлық өрістері
+	All except {fields}	{fields} басқа барлығы

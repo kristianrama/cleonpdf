@@ -2449,3 +2449,6 @@ window	Zoom	Zoom
 	Couldn't read the certificate: {e}	Não foi possível ler o certificado: {e}
 	That certificate is already in the list	Este certificado já está na lista
 	Certificate	Certificado
+	Locked fields	Campos bloqueados
+	All form fields	Todos os campos do formulário
+	All except {fields}	Todos exceto {fields}

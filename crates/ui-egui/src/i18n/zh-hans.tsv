@@ -2399,3 +2399,6 @@ window	Zoom	缩放
 	Couldn't read the certificate: {e}	无法读取证书：{e}
 	That certificate is already in the list	该证书已在列表中
 	Certificate	证书
+	Locked fields	锁定的字段
+	All form fields	所有表单字段
+	All except {fields}	除 {fields} 外的全部

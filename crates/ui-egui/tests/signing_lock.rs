@@ -85,6 +85,12 @@ fn the_fields_chosen_in_the_dialog_are_locked_by_the_signature() {
     let doc = s.session.get(s.views[0].id).unwrap();
     let sig = doc.signatures.iter().find(|x| x.signed).unwrap();
     assert_eq!(sig.field_locks, vec![FieldLock::Include(vec!["name".to_string()])]);
+    let field = sig.field.clone();
+    // The Signatures panel says which fields the signature locked.
+    h.state_mut().set_option("panel", "signatures").unwrap();
+    h.state_mut().sig_expanded = vec![field];
+    h.run_steps(4);
+    h.get_by_label("Locked fields: name");
 }
 
 #[test]

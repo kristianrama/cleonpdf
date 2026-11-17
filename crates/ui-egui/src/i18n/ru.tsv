@@ -2348,3 +2348,6 @@ window	Zoom	Изменить масштаб
 	Couldn't read the certificate: {e}	Не удалось прочитать сертификат: {e}
 	That certificate is already in the list	Этот сертификат уже есть в списке
 	Certificate	Сертификат
+	Locked fields	Заблокированные поля
+	All form fields	Все поля формы
+	All except {fields}	Все, кроме {fields}
