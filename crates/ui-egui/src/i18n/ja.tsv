@@ -2438,3 +2438,4 @@ window	Zoom	拡大／縮小
 	Locked fields	ロックされたフィールド
 	All form fields	すべてのフォームフィールド
 	All except {fields}	{fields} 以外のすべて
+	Signer reached through {n} earlier lists of lists:	{n} 件の以前のリストのリストを経由して署名者に到達:

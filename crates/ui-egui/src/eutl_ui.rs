@@ -31,6 +31,10 @@ pub struct EutlSummary {
     pub countries: Vec<ListReport>,
     /// The lists were fetched just now (false: read from the copy kept on disk).
     pub fetched: bool,
+    /// The addresses of the earlier lists of lists (pivots) followed from the imported
+    /// certificates to the one that signs the list in force, oldest first. Empty when the list
+    /// is signed by an imported certificate.
+    pub pivots: Vec<String>,
 }
 
 /// A finished update, on its way from the worker thread.
@@ -126,6 +130,7 @@ fn summarize(snapshot: &Snapshot, fetched: bool) -> EutlSummary {
         authorities: snapshot.anchors().len(),
         countries: snapshot.reports.clone(),
         fetched,
+        pivots: snapshot.documents.pivots.iter().map(|(url, _)| url.clone()).collect(),
     }
 }
 

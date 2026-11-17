@@ -2437,3 +2437,4 @@ window	Zoom	Méretezés
 	Locked fields	Zárolt mezők
 	All form fields	Az űrlap összes mezője
 	All except {fields}	Mind, kivéve: {fields}
+	Signer reached through {n} earlier lists of lists:	Az aláíró {n} korábbi listák listáján keresztül érhető el:

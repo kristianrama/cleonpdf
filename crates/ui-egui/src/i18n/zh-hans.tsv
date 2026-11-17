@@ -2402,3 +2402,4 @@ window	Zoom	缩放
 	Locked fields	锁定的字段
 	All form fields	所有表单字段
 	All except {fields}	除 {fields} 外的全部
+	Signer reached through {n} earlier lists of lists:	通过 {n} 个较早的列表之列表找到签名者：

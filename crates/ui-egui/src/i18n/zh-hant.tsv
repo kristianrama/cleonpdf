@@ -2312,3 +2312,4 @@ window	Zoom	縮放
 	Locked fields	鎖定的欄位
 	All form fields	所有表單欄位
 	All except {fields}	除 {fields} 外的全部
+	Signer reached through {n} earlier lists of lists:	透過 {n} 個較早的清單之清單找到簽署者：
