@@ -87,3 +87,10 @@ objects from all its object streams together, shared across rayon workers (a dec
 `0 0 0 ...` inside the 256 MiB decompression limit built about 120M objects, over 10 GB, and
 aborted). Covered by `inspect::tests::object_stream_members_over_the_node_cap_are_skipped`,
 `object_stream_index_entries_past_the_clamp_are_ignored` and the node-budget tests beside them.
+
+JBIG2 bounds (hayro-jbig2, ported from PdfCraft 85c10051 and 82439525, its patches 5 to 10, and
+hayro-syntax's /JBIG2Globals guard): what a page's segments hold for later ones (regions, symbols,
+patterns, retained contexts, Huffman tables, halftone grids) is bounded per page, how many
+segments, references and symbols a segment may name is capped, /JBIG2Globals that are JBIG2
+themselves are not decoded, and a stream's decoding work is bounded in total (2^30 units: a pixel
+decoded costs one, a row four). Covered by the `jbig2_*` tests in `raster::tests`.
