@@ -56,12 +56,12 @@ ignore = [
     { id = "RUSTSEC-2026-0370", reason = "zvariant via zbus 5, required by egui's accesskit_unix (no zbus 6 release)" },
     { id = "RUSTSEC-2026-0371", reason = "zbus_names via zbus 5, required by egui's accesskit_unix (no zbus 6 release)" },
     { id = "RUSTSEC-2026-0372", reason = "zvariant_derive via zbus 5, required by egui's accesskit_unix (no zbus 6 release)" },
-    # chrono is unmaintained (no vulnerability; announced 2026-11, chronotope/chrono#1768). It is
-    # used for the local UTC offset in cleonpdf-engine ("today" in dates and stamps) and by the
-    # vendored lopdf's default date conversions. The advisory suggests jiff or time; time cannot
-    # read the local offset in a multi-threaded process on Unix, so the move is to jiff, which
-    # needs its own browser time-zone setup for the web build. Revisit with that move.
-    { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained, no vulnerability; local UTC offset only, move to jiff planned" },
+    # chrono is unmaintained (no vulnerability; chronotope/chrono#1768). CleonPDF no longer uses
+    # it (the engine reads the local UTC offset with jiff, and lopdf is built without its chrono
+    # dates); it remains only in winprint's build-dependencies (sigstore, for its PDFium
+    # download, which craft-print turns off), compiled into a Windows build script, never into
+    # CleonPDF. Remove with the reqwest exception below, when winprint makes those optional.
+    { id = "RUSTSEC-2026-0543", reason = "chrono only in winprint's build-dependencies (sigstore); not in CleonPDF" },
 ]
 
 # egui's default UI fonts (Ubuntu-Light, Hack, emoji-icon-font): font licences on the AGENTS.md

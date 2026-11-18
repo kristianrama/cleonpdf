@@ -53,7 +53,8 @@ cleonpdf-automation = { path = "crates/automation", version = "0.2.5", default-f
 # pdf
 hayro = "0.7.1"
 hayro-syntax = "0.7.2"
-lopdf = "0.45"
+# Without its default chrono dates: nothing here reads or writes lopdf dates (RUSTSEC-2026-0543).
+lopdf = { version = "0.45", default-features = false, features = ["rayon"] }
 flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
 weezl = "0.2"
 

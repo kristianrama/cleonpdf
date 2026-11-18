@@ -2648,7 +2648,7 @@ fn comment_list(doc: &cleonpdf_cos::Document) -> Vec<cleonpdf_render::Annotation
 /// Seconds to add to UTC for local time (0 where unknown).
 fn local_utc_offset() -> i64 {
     #[cfg(not(target_arch = "wasm32"))]
-    return i64::from(chrono::Local::now().offset().local_minus_utc());
+    return i64::from(jiff::Zoned::now().offset().seconds());
     #[cfg(target_arch = "wasm32")]
     return 0;
 }
