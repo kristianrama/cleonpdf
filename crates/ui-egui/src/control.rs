@@ -1146,9 +1146,17 @@ mod transport_tests {
             }
         });
         let mut r = BufReader::new(s);
-        let reply = next_line(&mut r).expect("the server says why before closing");
-        assert_eq!(reply["error"]["code"], -32004, "{reply}");
+        // Read by hand so a failure says how the reply went missing (once on CI the farewell
+        // did not arrive; it has not happened locally in 180 runs, serial or eight at a time).
+        let mut line = String::new();
+        let read = std::io::BufRead::read_line(&mut r, &mut line);
         let took = started.elapsed();
+        let reply: serde_json::Value = match read {
+            Ok(n) if n > 0 => serde_json::from_str(&line).unwrap(),
+            Ok(_) => panic!("the server closed without saying why, after {took:?}"),
+            Err(e) => panic!("no farewell: {:?} ({e}) after {took:?}", e.kind()),
+        };
+        assert_eq!(reply["error"]["code"], -32004, "{reply}");
         assert!(took < std::time::Duration::from_secs(2), "the deadline is absolute: {took:?}");
         drop(r);
         drip.join().unwrap();
