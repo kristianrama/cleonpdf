@@ -192,12 +192,13 @@ update the numbers.
     glyph (an accent never used in the file) still falls back to Helvetica.
 
 - **Missing:** robust in-place editing of text CleonPDF didn't write: subset fonts without the
-  needed glyphs, CJK and right-to-left text, rotated text, lists, superscript/subscript, keeping
+  needed glyphs, CJK and right-to-left text, rotated text edited turned in place, lists, superscript/subscript, keeping
   structure tags, find and replace in edit mode; vector and object editing; arrange and align.
 - **Evidence:** `edit.text-edit` is partial (font reused or Helvetica substituted); `edit.keep-tags-on-edit` is partial
   (marked content survives every kind of text edit on a synthetic tagged page, not yet checked on real files);
-  `edit.rtl-cjk-editing`, `edit.rotated-text-editing`,
-  `edit.vector-edit`, `edit.edit-object-tool` are planned. Users:
+  `edit.rotated-text-editing` is partial (turned text joins, groups and rewraps along its
+  baseline and keeps its angle; the inline editor is an upright stand-in);
+  `edit.rtl-cjk-editing`, `edit.vector-edit`, `edit.edit-object-tool` are planned. Users:
   [#766](https://github.com/storytold/pdfcraft/issues/766) (editing Arabic text),
   [#844](https://github.com/storytold/pdfcraft/issues/844) (several elements now move together on
   one page, not across pages),
