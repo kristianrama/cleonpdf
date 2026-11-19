@@ -65,6 +65,16 @@ pub struct TextLine {
     pub(crate) gap_after: bool,
 }
 
+impl Shown {
+    /// Counterclockwise baseline angle in page user space, in degrees; exactly 0 for upright text
+    /// and for a matrix that is not finite.
+    fn angle(&self) -> f64 {
+        let m = self.tm.then(&self.state.ctm).0;
+        let a = m[1].atan2(m[0]).to_degrees();
+        if a.is_finite() && a.abs() >= 0.01 { a } else { 0.0 }
+    }
+}
+
 impl TextLine {
     /// Origin of the source baseline in PDF user space, independent of font ascent/descent.
     pub fn baseline(&self) -> [f64; 2] {
@@ -376,6 +386,57 @@ impl TextLine {
     }
 }
 
+/// For a paragraph turned away from upright (more than half a degree), its extent along its
+/// baseline and the room a single line has to grow along it, up to 36 pt inside the crop box:
+/// `None` for an upright paragraph, whose box already measures along the baseline.
+///
+/// The extent is the box's corners projected onto the baseline direction. The box is the
+/// axis-aligned one around the turned lines, so this overstates a line's length by at most its
+/// height (2·h·|sin θ cos θ|), which is exact at 90°, 180° and 270°.
+fn rotated_extent(b: &TextBlock, first: &TextLine, offset: [f64; 2], crop: [f64; 4]) -> Option<(f64, f64)> {
+    let theta = b.rotation;
+    if !theta.is_finite() || theta.abs() < 0.5 || (theta.abs() - 360.0).abs() < 0.5 {
+        return None;
+    }
+    let (sin, cos) = theta.to_radians().sin_cos();
+    let [x0, y0, x1, y1] = b.rect;
+    let projections = [x0 * cos + y0 * sin, x1 * cos + y0 * sin, x0 * cos + y1 * sin, x1 * cos + y1 * sin];
+    let extent = projections.iter().copied().fold(f64::NEG_INFINITY, f64::max) - projections.iter().copied().fold(f64::INFINITY, f64::min);
+    // Where the first line starts (moved by the requested offset), and how far a ray from there
+    // along the baseline runs before it leaves the crop box less a 36 pt margin.
+    let [bx, by] = first.baseline();
+    let (sx, sy) = (bx + offset[0], by + offset[1]);
+    let [cx0, cy0, cx1, cy1] = crop;
+    let (lo_x, hi_x, lo_y, hi_y) = (cx0.min(cx1) + 36.0, cx0.max(cx1) - 36.0, cy0.min(cy1) + 36.0, cy0.max(cy1) - 36.0);
+    let reach = |start: f64, step: f64, lo: f64, hi: f64| -> f64 {
+        if step > 1e-9 {
+            (hi - start) / step
+        } else if step < -1e-9 {
+            (lo - start) / step
+        } else {
+            f64::INFINITY
+        }
+    };
+    let room = reach(sx, cos, lo_x, hi_x).min(reach(sy, sin, lo_y, hi_y)).max(0.0);
+    (extent.is_finite() && room.is_finite()).then_some((extent.max(0.0), room))
+}
+
+/// A point's position along a baseline turned `angle` degrees counterclockwise, and across it
+/// (upward from it): for upright text, its x and y.
+fn along_across(angle: f64, x: f64, y: f64) -> (f64, f64) {
+    if angle == 0.0 {
+        return (x, y);
+    }
+    let (sin, cos) = angle.to_radians().sin_cos();
+    (x * cos + y * sin, y * cos - x * sin)
+}
+
+/// Two runs' baselines point the same way (within half a degree, either side of ±180°).
+fn same_angle(a: f64, b: f64) -> bool {
+    let d = (a - b).rem_euclid(360.0);
+    !(0.5..=359.5).contains(&d)
+}
+
 /// What replacing a line did.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LineEdit {
@@ -525,6 +586,8 @@ struct Shown {
     baseline: f64,
     start_x: f64,
     end_x: f64,
+    /// Where the run ends, vertically: with `end_x`, the end of its baseline in user space.
+    end_y: f64,
     bt: usize,
     font: Vec<u8>,
     base_font: String,
@@ -633,6 +696,7 @@ fn interpret(
                         first.text = logical;
                         first.start_x = first.rect[0];
                         first.end_x = first.rect[2];
+                        first.end_y = first.baseline;
                         first.advance = (first.end_x - first.start_x) / first.tm.then(&first.state.ctm).0[0].abs().max(1e-6);
                         out.push(first);
                     }
@@ -835,6 +899,7 @@ fn interpret(
                     baseline: start.1,
                     start_x: start.0,
                     end_x: end.0,
+                    end_y: end.1,
                     bt,
                     font: name,
                     base_font: m.base_font.clone(),
@@ -874,7 +939,8 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
     let pieces = Pieces::join(&content_streams(doc, &p.dict).into_iter().map(|(_, d)| d).collect::<Vec<_>>());
     let ops = pieces.parse().ops;
     let shown = interpret(doc, &ops, &fonts_res, &mut cache, &mut carry, None, true);
-    let mut last: Option<(usize, usize, f64, f64, f64)> = None; // (piece, bt, baseline, end_x, size)
+    // (piece, bt, where the run ended along and across its baseline, size, angle)
+    let mut last: Option<(usize, usize, f64, f64, f64, f64)> = None;
     for mut s in shown {
         // A single RTL glyph's ActualText (e.g. lam-alef) is an inline ligature, not a
         // separate logical line. Put its letters into visual order before joining the
@@ -887,8 +953,13 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
         // A line belongs to one stream piece. Within it, PDF producers often put every word
         // in its own BT/ET: geometry and text state, not object boundaries, define a line.
         let si = ops.get(s.op).map_or(0, |op| pieces.pieces_of(op).0);
-        let joins = last.is_some_and(|(piece, bt, base, end, size)| {
+        // Runs are compared along and across their baseline, so a turned line joins as an upright
+        // one does: for upright text these are x and y.
+        let angle = s.angle();
+        let (start, base_s) = along_across(angle, s.start_x, s.baseline);
+        let joins = last.is_some_and(|(piece, bt, base, end, size, prev_angle)| {
             piece == si
+                && same_angle(angle, prev_angle)
                 && lines.last().is_some_and(|l| l.scope == s.scope && l.logical_order == s.logical_order)
                 && (bt == s.bt || lines.last().is_some_and(|l| compatible_word(l, &s)))
                 && (s.text.trim().is_empty() || lines.last().is_some_and(|l| same_font(l, &s.font, s.face.as_deref())))
@@ -896,15 +967,15 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
                     || lines.last().is_some_and(|l| {
                         (s.size - l.size).abs() < 0.01 && s.bold == l.bold && s.italic == l.italic && fill_color(&s.state.fill) == l.color
                     }))
-                && (s.baseline - base).abs() < size * 0.3
-                && s.start_x > end - size
-                && s.start_x - end < size * if bt == s.bt { 3.0 } else { 1.5 }
+                && (base_s - base).abs() < size * 0.3
+                && start > end - size
+                && start - end < size * if bt == s.bt { 3.0 } else { 1.5 }
                 // An OCR layer is one text object over the whole scan: its words continue a line
                 // only across a word space, not across a table cell or a tab stop.
-                && (s.state.render_mode != 3 || s.start_x - end < size * 0.6)
+                && (s.state.render_mode != 3 || start - end < size * 0.6)
         });
         if joins && let Some(l) = lines.last_mut() {
-            let gap = s.start_x - last.map_or(s.start_x, |x| x.3);
+            let gap = start - last.map_or(start, |x| x.3);
             append_text(&mut l.text, word_gap(gap, l.size, l.gap_after), l.size, &s.text);
             l.gap_after = s.gap_after;
             l.rect = [l.rect[0].min(s.rect[0]), l.rect[1].min(s.rect[1]), l.rect[2].max(s.rect[2]), l.rect[3].max(s.rect[3])];
@@ -947,7 +1018,8 @@ pub fn text_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditErro
                 },
             });
         }
-        last = Some((si, s.bt, s.baseline, s.end_x, s.size.max(1.0)));
+        let (end, _) = along_across(angle, s.end_x, s.end_y);
+        last = Some((si, s.bt, base_s, end, s.size.max(1.0), angle));
     }
     // Content streams draw right-to-left lines in visual order; the editor works in typing order.
     for l in lines.iter_mut().filter(|l| !l.logical_order) {
@@ -2061,11 +2133,21 @@ pub(crate) fn rewrite_block_with_limit(
     let anchored_right = rtl && style.width.is_none() && members.len() == 1;
     // A paragraph keeps its width (or takes the one asked for); a single line grows to the right
     // (to the left when right-to-left), up to the page's margin.
+    // A rotated paragraph's width runs along its baseline, not across the page: its box is the
+    // axis-aligned box around the turned text, whose width is the turned text's height at 90°.
+    let along = rotated_extent(&b, first, [dx, dy], p.crop(doc));
     let width = match style.width {
         // Capped at the largest page PDF allows (14 400 pt), even for text set larger than that
         // (`clamp` panics when its minimum is the larger, or NaN).
         Some(w) if w.is_finite() => w.clamp((size * k).min(14_400.0), 14_400.0),
         Some(_) => return Err(EditError::Invalid("the paragraph's width must be a number".into())),
+        None if let Some((extent, room)) = along => {
+            if members.len() == 1 {
+                extent.max(size * k).max(room)
+            } else {
+                extent.max(size * k)
+            }
+        }
         None if anchored_right => (b.rect[2] - b.rect[0]).max(size * k).max(b.rect[2] + dx - (p.crop(doc)[0] + 36.0)),
         None if members.len() == 1 => (b.rect[2] - b.rect[0]).max(size * k).max(p.crop(doc)[2] - 36.0 - (b.rect[0] + dx)),
         None => (b.rect[2] - b.rect[0]).max(size * k),
