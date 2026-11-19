@@ -4145,3 +4145,31 @@ fn the_last_word_of_a_justified_line_joins_the_rest_of_its_line() {
     let stretched = text_page("BT 12 0 0 12 100 700 Tm /F1 1 Tf (Hel) Tj ET BT 0.4 Tc 12 0 0 12 118 700 Tm /F1 1 Tf (lo) Tj ET");
     assert_eq!(text::text_lines(&stretched, 0).unwrap().len(), 2);
 }
+
+/// A turned paragraph is rewrapped to its length along its baseline. Its box is the axis-aligned
+/// box around the turned text, so at 90° the box's width is the text's height: a replacement
+/// shorter than the original line was wrapped one word a row. (Near the page's right edge, so
+/// the room an upright line has to grow is small too.)
+#[test]
+fn a_turned_paragraph_wraps_along_its_baseline() {
+    for (matrix, angle) in
+        [("0 1 -1 0 560 100", 90.0), ("-1 0 0 -1 400 500", 180.0), ("0 -1 1 0 545 600", 270.0), ("0.8660 0.5 -0.5 0.8660 450 200", 30.0)]
+    {
+        let mut doc = text_page(&format!("BT /F1 14 Tf {matrix} Tm (Turned line of sample text) Tj ET"));
+        let before = text::text_blocks(&doc, 0).unwrap();
+        assert!((before[0].rotation.rem_euclid(360.0) - angle).abs() < 0.5, "{angle}: {}", before[0].rotation);
+        text::replace_block(&mut doc, 0, 0, "Turned and edited").unwrap();
+        let doc = reopen(&doc);
+        let lines = text::text_lines(&doc, 0).unwrap();
+        assert_eq!(lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["Turned and edited"], "{angle}: one row, as the original");
+        let after = text::text_blocks(&doc, 0).unwrap();
+        assert!((after[0].rotation - before[0].rotation).abs() < 0.5, "{angle}: the angle is kept");
+    }
+    // Two rows of a turned paragraph keep their length: a longer text wraps at it, not at the
+    // box's width.
+    let mut doc = text_page("BT /F1 12 Tf 0 1 -1 0 300 100 Tm (First row of a turned) Tj 0 -14 Td (paragraph of text) Tj ET");
+    text::replace_block(&mut doc, 0, 0, "First row of a turned paragraph of text, now a little longer").unwrap();
+    let lines = text::text_lines(&reopen(&doc), 0).unwrap();
+    assert!((2..=3).contains(&lines.len()), "{:?}", lines.iter().map(|l| &l.text).collect::<Vec<_>>());
+    assert!(lines.iter().all(|l| l.text.split(' ').count() > 1), "rows of several words: {:?}", lines.iter().map(|l| &l.text).collect::<Vec<_>>());
+}

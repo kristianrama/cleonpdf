@@ -25,6 +25,35 @@ fn row_rect(row: &[usize], lines: &[TextLine]) -> Option<[f64; 4]> {
     row.iter().filter_map(|i| lines.get(*i)).map(|l| l.rect).reduce(union)
 }
 
+/// A line's extent along a baseline turned `angle` degrees (its box's corners projected onto
+/// it), and where its own baseline is across that direction. For upright text these are the
+/// box's left and right edges and the baseline's y, as before; for turned text the box is the
+/// axis-aligned one around it, so the extent may run up to one line height long.
+fn along(line: &TextLine, angle: f64) -> (f64, f64, f64) {
+    if angle == 0.0 {
+        return (line.rect[0], line.rect[2], line.origin.baseline);
+    }
+    let (sin, cos) = angle.to_radians().sin_cos();
+    let [x0, y0, x1, y1] = line.rect;
+    let p = [x0 * cos + y0 * sin, x1 * cos + y0 * sin, x0 * cos + y1 * sin, x1 * cos + y1 * sin];
+    let lo = p.iter().copied().fold(f64::INFINITY, f64::min);
+    let hi = p.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let base = line.origin.baseline * cos - line.origin.x * sin;
+    (lo, hi, base)
+}
+
+/// A row's extent along `angle` (see [`along`]).
+fn row_along(row: &[usize], lines: &[TextLine], angle: f64) -> Option<(f64, f64)> {
+    row.iter().filter_map(|i| lines.get(*i)).map(|l| along(l, angle)).map(|(lo, hi, _)| (lo, hi)).reduce(|a, b| (a.0.min(b.0), a.1.max(b.1)))
+}
+
+/// The angle rows and paragraphs are measured along: 0 for upright text (within half a degree),
+/// so upright layouts are compared exactly as before.
+fn layout_angle(line: &TextLine) -> f64 {
+    let a = line.rotation();
+    if a.is_finite() && a.abs() >= 0.5 { a } else { 0.0 }
+}
+
 /// The right edge a paragraph was justified to: most of its rows, all but the last, end there
 /// (a ragged paragraph, or one with a single row to go by, has none).
 pub(super) fn justified_edge(block: &TextBlock, lines: &[TextLine]) -> Option<f64> {
@@ -72,14 +101,18 @@ fn group_layout(lines: &[TextLine], mixed: bool) -> Vec<TextBlock> {
     let mut rows: Vec<Vec<usize>> = Vec::new();
     for (i, line) in lines.iter().enumerate() {
         let joins = rows.last().and_then(|r| r.last()).and_then(|i| lines.get(*i)).is_some_and(|prev| {
-            let gap = line.rect[0] - prev.rect[2];
+            // Measured along the run's baseline, so a turned row joins as an upright one does.
+            let angle = layout_angle(prev);
+            let (_, prev_hi, prev_base) = along(prev, angle);
+            let (lo, _, base) = along(line, angle);
+            let gap = lo - prev_hi;
             // OCR words (invisible text over a scan) join only across a word space: a wider gap
             // is a table cell or a tab stop, which a rewrite would close up.
             let scanned = !mixed || (invisible(prev) == invisible(line) && (!invisible(line) || gap < prev.size.max(line.size) * 0.6));
             scanned
                 && (mixed || same_style(prev, line))
                 && same_plane(prev, line)
-                && (prev.origin.baseline - line.origin.baseline).abs() < prev.size.min(line.size) * 0.2
+                && (prev_base - base).abs() < prev.size.min(line.size) * 0.2
                 && gap >= -prev.size.min(line.size) * 0.2
                 && gap < prev.size.max(line.size) * 1.5
                 // Separate same-style text objects that merely touch or overlap, with no space
@@ -104,10 +137,13 @@ fn group_layout(lines: &[TextLine], mixed: bool) -> Vec<TextBlock> {
         let joins = blocks.last().is_some_and(|block| {
             let Some(prev_row) = block.rows.last() else { return false };
             let Some(prev) = prev_row.first().and_then(|i| lines.get(*i)) else { return false };
-            let Some(pr) = row_rect(prev_row, lines) else { return false };
-            let gap = prev.origin.baseline - first.origin.baseline;
+            // Rows are compared along and across the paragraph's baseline (x and y when upright).
+            let angle = layout_angle(prev);
+            let Some((p0, p2)) = row_along(prev_row, lines, angle) else { return false };
+            let Some((r0, r2)) = row_along(&row, lines, angle) else { return false };
+            let gap = along(prev, angle).2 - along(first, angle).2;
             let tol = prev.size.max(first.size).max(1.0);
-            let aligned = (pr[0] - rect[0]).abs() < tol || ((pr[0] + pr[2] - rect[0] - rect[2]) / 2.0).abs() < tol || (pr[2] - rect[2]).abs() < tol;
+            let aligned = (p0 - r0).abs() < tol || ((p0 + p2 - r0 - r2) / 2.0).abs() < tol || (p2 - r2).abs() < tol;
             // OCR lines stay apart: the scan fixes where each one is, so they never rewrap together.
             (!mixed || !(invisible(prev) || invisible(first)))
                 && (mixed || same_style(prev, first))

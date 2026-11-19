@@ -188,6 +188,12 @@ impl LineEditor {
         (self.max_width > self.rect.width()).then_some(self.max_width)
     }
 
+    /// Where the editor is on screen. A paragraph that reads turned is edited upright, so this is
+    /// not its box.
+    pub fn screen_rect(&self) -> Rect {
+        self.rect
+    }
+
     /// Whether the edited text differs from the original (unsaved changes).
     pub fn has_unsaved_text(&self) -> bool {
         self.text != self.original
@@ -852,7 +858,13 @@ fn editor_job(ui: &egui::Ui, ed: &LineEditor, text: &str, scale: f32, width: f32
             }
             let native_width = ui.fonts_mut(|f| f.layout_no_wrap(line.text.clone(), font.clone(), Color32::BLACK).size().x);
             let target_width = ((line.rect[2] - line.rect[0]) * look.size / line.size.max(0.01)) as f32 * scale;
-            let spacing = if original_face { (target_width - native_width) / line.text.chars().count().saturating_sub(1).max(1) as f32 } else { 0.0 };
+            // A line turned in user space has a box that is not its length along the baseline (at
+            // 90° its width is the text's height): no fit, natural advances.
+            let spacing = if original_face && !turned(block, 0) {
+                (target_width - native_width) / line.text.chars().count().saturating_sub(1).max(1) as f32
+            } else {
+                0.0
+            };
             job.append(
                 text.get(range).unwrap_or_default(),
                 0.0,
@@ -888,6 +900,11 @@ fn editor_galley(ui: &egui::Ui, ed: &LineEditor, text: &str, scale: f32, width: 
     job.halign = egui::Align::LEFT;
     let mut galley = ui.fonts_mut(|fonts| fonts.layout_job(job));
     let Some((block, lines)) = &ed.source else { return galley };
+    // Rows of text turned in user space are not rows down user space's y (also on a landscape
+    // page whose /Rotate makes them read upright), so the galley keeps its own leading.
+    if turned(block, 0) {
+        return galley;
+    }
     let sources: Vec<_> = block
         .rows
         .iter()
@@ -951,6 +968,36 @@ fn editor_galley(ui: &egui::Ui, ed: &LineEditor, text: &str, scale: f32, width: 
     galley
 }
 
+/// The paragraph reads turned on a page turned `turn` degrees clockwise on screen (by more than
+/// half a degree). Text drawn at 90° on a page with `/Rotate 90`, as a landscape page often is,
+/// reads upright.
+fn turned(block: &cleonpdf_engine::TextBlock, turn: u16) -> bool {
+    let shown = (block.rotation - f64::from(turn)).rem_euclid(360.0);
+    shown.is_finite() && (0.5..=359.5).contains(&shown)
+}
+
+/// Where the inline editor opens for a paragraph that reads turned, in user space, and the
+/// paragraph's length along its baseline. It is edited upright on screen, in a box as long as the
+/// paragraph runs along its baseline and as deep as it runs across it, centred on its box (the
+/// axis-aligned one around the turned text, whose width at 90° is the text's height); the
+/// rewrite draws it turned again. With the page turned a quarter on screen, user space's x runs
+/// down the screen, so the box's sides swap.
+fn editing_rect(block: &cleonpdf_engine::TextBlock, turn: u16) -> Option<([f32; 4], f32)> {
+    let [x0, y0, x1, y1] = block.rect;
+    let (sin, cos) = block.rotation.to_radians().sin_cos();
+    let corners = [(x0, y0), (x1, y0), (x0, y1), (x1, y1)];
+    let extent = |f: &dyn Fn(f64, f64) -> f64| {
+        let (lo, hi) = corners.iter().map(|(x, y)| f(*x, *y)).fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), v| (lo.min(v), hi.max(v)));
+        hi - lo
+    };
+    let along = extent(&|x, y| x * cos + y * sin).max(1.0);
+    let across = extent(&|x, y| y * cos - x * sin).max(1.0);
+    let (w, h) = if turn % 180 == 90 { (across, along) } else { (along, across) };
+    let (cx, cy) = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+    let rect = [cx - w / 2.0, cy - h / 2.0, cx + w / 2.0, cy + h / 2.0].map(|v| v as f32);
+    (rect.iter().all(|v| v.is_finite()) && along.is_finite()).then_some((rect, along as f32))
+}
+
 /// The inline editor; returns the edit once the text is applied.
 pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -> Option<Edit> {
     // Clicks outside the document (the Format text panel) keep the paragraph open.
@@ -978,9 +1025,29 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
         ctx.request_repaint();
         return None;
     }
-    ed.rect = xf.user_rect(info, ed.page, ed.source_rect);
+    // How far the page is turned clockwise on screen: its /Rotate and the view's rotation.
+    let turn = (info.pages.get(page).map_or(0, |p| p.rotation) + xf.rot) % 360;
+    let upright = ed.source.as_ref().filter(|(b, _)| turned(b, turn)).and_then(|(b, _)| editing_rect(b, turn));
+    // Text turned in user space but upright on screen (a landscape page's) is edited over its own
+    // box, which is as wide on screen as the text is long.
+    let user_turned = ed.source.as_ref().filter(|(b, _)| turned(b, 0)).and_then(|(b, _)| editing_rect(b, 0)).map(|(_, along)| along);
+    let source_width = match upright {
+        Some((rect, along)) => {
+            // The upright stand-in can run past the page (a line up the right margin is as long
+            // as the page is tall): slide it back onto the page, its left and top edges first.
+            let r = xf.user_rect(info, ed.page, rect);
+            let dx = (xf.rect.right() - r.right()).min(0.0).max(xf.rect.left() - r.left());
+            let dy = (xf.rect.bottom() - r.bottom()).min(0.0).max(xf.rect.top() - r.top());
+            ed.rect = r.translate(egui::vec2(if dx.is_finite() { dx } else { 0.0 }, if dy.is_finite() { dy } else { 0.0 }));
+            along
+        }
+        None => {
+            ed.rect = xf.user_rect(info, ed.page, ed.source_rect);
+            user_turned.unwrap_or(ed.source_rect[2] - ed.source_rect[0])
+        }
+    };
     ed.max_width = ed.rect.width();
-    let scale = (ed.rect.width() / (ed.source_rect[2] - ed.source_rect[0]).abs().max(0.01)).max(0.01);
+    let scale = (ed.rect.width() / source_width.abs().max(0.01)).max(0.01);
     ed.size = (ed.look.size as f32 * scale).clamp(1.0, 300.0);
     let font = editor_font(&ed.look, ed.size);
     let text_color = color32(ed.look.color);

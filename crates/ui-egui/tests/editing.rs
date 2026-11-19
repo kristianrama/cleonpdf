@@ -2459,6 +2459,109 @@ fn double_drawn() -> Vec<u8> {
     out
 }
 
+/// One 200 × 300 page whose only line, "Turned line", runs up the page (turned 90°) from
+/// (150, 160), 18 pt, with the page's `/Rotate` given.
+fn turned_line(rotate: u16) -> Vec<u8> {
+    let content = "BT /F1 18 Tf 0 1 -1 0 150 160 Tm (Turned line) Tj ET";
+    let objs: Vec<String> = vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [4 0 R] /Count 1 /MediaBox [0 0 200 300] >>".into(),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+        format!("<< /Type /Page /Parent 2 0 R /Rotate {rotate} /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>"),
+        format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len()),
+    ];
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, o) in objs.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend_from_slice(format!("{} 0 obj\n{o}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+    for o in offsets {
+        out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
+    out
+}
+
+/// Open `turned_line(rotate)`, click the line with Edit text, retype it as `text` and apply it.
+/// Returns the editor's place on screen while it was open (and screenshots both states when
+/// `CLEONPDF_TURNED_SHOTS` names a folder).
+fn edit_turned_line(rotate: u16, text: &str) -> (Harness<'static, CleonPdfApp>, egui::Rect, egui::Rect) {
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
+        let mut app = CleonPdfApp::new();
+        app.set_option("language", "en").unwrap();
+        app.open_bytes("turned.pdf", None, turned_line(rotate)).expect("opens");
+        app
+    });
+    h.run_steps(4);
+    assert!(h.state_mut().execute("edit.edit_text"));
+    h.run_steps(2);
+    // The line's box is about 21 wide and 90 tall: (134..155, 160..250). Click inside it, at
+    // (144, 200), which /Rotate 90 shows a third of the way from the right and 72% down.
+    let r = h.state().views[0].page_screen_rect(0).expect("on screen");
+    let (u, v) = if rotate == 90 { (1.0 - 100.0 / 300.0, 144.0 / 200.0) } else { (144.0 / 200.0, 100.0 / 300.0) };
+    let at = egui::pos2(r.left() + u * r.width(), r.top() + v * r.height());
+    h.hover_at(at);
+    h.run_steps(1);
+    h.drag_at(at);
+    h.run_steps(1);
+    h.drop_at(at);
+    h.run_steps(3);
+    let ed = h.state().views[0].line_editor.clone().expect("the turned line opens for editing");
+    assert_eq!(ed.text, "Turned line");
+    h.state_mut().views[0].line_editor.as_mut().unwrap().text = text.into();
+    h.run_steps(1);
+    let shown = h.state().views[0].line_editor.as_ref().expect("still open").screen_rect();
+    let field = h.get_by_role(Role::MultilineTextInput).rect();
+    let shots = std::env::var("CLEONPDF_TURNED_SHOTS").ok();
+    let shot = |h: &mut Harness<'static, CleonPdfApp>, name: &str| {
+        if let Some(dir) = &shots {
+            for _ in 0..20 {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+                h.run_steps(1);
+            }
+            h.render().unwrap().save(std::path::Path::new(dir).join(format!("{name}-{rotate}.png"))).unwrap();
+        }
+    };
+    shot(&mut h, "turned-editing");
+    h.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::Enter);
+    h.run_steps(4);
+    shot(&mut h, "turned-applied");
+    (h, shown, field)
+}
+
+#[test]
+fn a_turned_line_is_edited_upright_and_stays_turned() {
+    let (h, shown, _) = edit_turned_line(0, "Edited line");
+    // The editor is as long as the text and as deep as one line, not the tall narrow box.
+    assert!(shown.width() > shown.height() * 2.5, "upright editor, got {shown:?}");
+    let r = h.state().views[0].page_screen_rect(0).expect("on screen");
+    assert!(r.contains_rect(shown), "the editor stays on the page: {shown:?} in {r:?}");
+    let s = h.state();
+    let lines = s.session.get(s.views[0].id).unwrap().text_lines(0);
+    assert_eq!(lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["Edited line"], "one line, rewritten");
+    let l = &lines[0];
+    assert!(l.rect[3] - l.rect[1] > l.rect[2] - l.rect[0], "still runs up the page: {:?}", l.rect);
+}
+
+#[test]
+fn text_turned_with_its_landscape_page_is_edited_in_place() {
+    // Turned 90° on a page with /Rotate 90, the line reads upright: the editor is its own box.
+    let (h, shown, field) = edit_turned_line(90, "Edited line");
+    let s = h.state();
+    let doc = s.session.get(s.views[0].id).unwrap();
+    assert!(shown.width() > shown.height() * 2.5, "the editor lies along the line on screen, got {shown:?}");
+    // Its one row is laid out as one row, not at baselines read down user space's y (which put
+    // the draft below the page).
+    assert!(field.height() < shown.height() * 2.0, "one row of text, got {field:?} for {shown:?}");
+    // Its glyphs keep their advances, not squeezed into the box's width in user space (the
+    // text's height).
+    assert!(field.width() > shown.width() * 0.6, "the row is as long as the line, got {field:?} for {shown:?}");
+    assert_eq!(doc.text_lines(0).iter().map(|l| l.text.as_str()).collect::<Vec<_>>(), ["Edited line"]);
+}
+
 #[test]
 fn editing_a_double_drawn_line_replaces_every_copy() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
