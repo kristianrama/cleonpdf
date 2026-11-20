@@ -2441,3 +2441,13 @@ window	Zoom	拡大／縮小
 	Signer reached through {n} earlier lists of lists:	{n} 件の以前のリストのリストを経由して署名者に到達:
 	Check for updates once a day	1日に1回アップデートを確認
 	Skip this version	このバージョンをスキップ
+	Downloading CleonPDF {v}…	CleonPDF {v} をダウンロードしています…
+	{done} MB of {total} MB	{done} MB / {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} の準備ができました。CleonPDF を終了するとインストールされます。
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} の準備ができました。CleonPDF を終了するとインストーラーが起動します。
+	Restart now	今すぐ再起動
+	Install now	今すぐインストール
+	Couldn't update: {e}	アップデートできませんでした: {e}
+	You can still download it from its release page.	リリースページからダウンロードすることもできます。
+	You have version {c}.	現在のバージョンは {c} です。
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	GitHub で最新リリースを確認します。CleonPDF のリリースキーで署名されたアップデートだけがインストールされます。

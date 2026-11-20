@@ -73,6 +73,7 @@ pub const TABLE: &[(&str, Class)] = &[
     ("ai", Class::Layer(4)),
     // L5 interaction
     ("net", Class::Layer(5)),
+    ("update", Class::Layer(5)),
     ("viewport", Class::Layer(5)),
     ("tools", Class::Layer(5)),
     // L6 façade

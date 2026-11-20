@@ -13,6 +13,7 @@ mod macos_integration;
 mod parity;
 mod render_oracle;
 mod screenshots;
+mod update_key;
 mod version;
 
 type Command = fn(&[String]) -> anyhow::Result<()>;
@@ -48,6 +49,7 @@ const COMMANDS: &[(&str, &str, Command)] = &[
     ("screenshots", "Regenerate the README screenshots in docs/images/ and their ATTRIBUTION entries", screenshots::run),
     ("models", "Fetch the OCR models (ATTRIBUTION.toml kind = \"model\") into assets/models/, verified by SHA-256", assets::models),
     ("demo-pdf", "Build dist/demo/cleonpdf-showcase.pdf (needs Google Chrome or Chromium)", demo_pdf::run),
+    ("update-key", "The release key in-app updates are checked against: `new` makes it, `sign`/`verify` a release's SHA256SUMS.txt", update_key::run),
 ];
 
 fn version_cmd(args: &[String]) -> anyhow::Result<()> {

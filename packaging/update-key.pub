@@ -1,0 +1,4 @@
+# CleonPDF's release key (public half): releases whose SHA256SUMS.txt is signed with it can be
+# installed from inside the app (Help ▸ Check for updates ▸ Update). One line of base64 below;
+# without it, in-app updates are off and the app offers the release page. Made with
+# `cargo xtask update-key new`; see docs/releasing.md §In-app updates.

@@ -2464,3 +2464,13 @@ window	Zoom	تغيير الحجم
 	Signer reached through {n} earlier lists of lists:	تم الوصول إلى الموقّع عبر {n} من قوائم القوائم السابقة:
 	Check for updates once a day	التحقق من التحديثات مرة يوميًا
 	Skip this version	تخطي هذا الإصدار
+	Downloading CleonPDF {v}…	جارٍ تنزيل CleonPDF {v}…
+	{done} MB of {total} MB	{done} م.ب من {total} م.ب
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} جاهز. يُثبَّت عند إنهاء CleonPDF.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} جاهز. يعمل مثبّته عند إنهاء CleonPDF.
+	Restart now	إعادة التشغيل الآن
+	Install now	التثبيت الآن
+	Couldn't update: {e}	تعذّر التحديث: {e}
+	You can still download it from its release page.	لا يزال بإمكانك تنزيله من صفحة إصداره.
+	You have version {c}.	لديك الإصدار {c}.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	يسأل GitHub عن أحدث إصدار. لا يُثبَّت التحديث إلا إذا كان موقّعًا بمفتاح إصدار CleonPDF.

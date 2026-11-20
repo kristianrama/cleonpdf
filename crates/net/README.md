@@ -8,6 +8,9 @@ Layer L5: outbound network requests, in one crate. It is the only crate that ope
   `ring`, plus the ECDSA combinations it lacks (P-256/P-384 with SHA-512, P-521 with SHA-2), which
   `src/tls.rs` verifies with the product's own ECDSA code and accepts only in canonical DER; some
   Trusted List hosts (Hungary's) are served with such chains.
+- `agent_without_redirects(timeout)`: the same client, leaving a 3xx to the caller, so it can check
+  where it points before going there. The in-app update's download (apps/cleonpdf `updates.rs`)
+  follows GitHub's redirects itself, only to `github.com` and `*.githubusercontent.com`.
 - `HttpTimestampAuthority::new(url)`: an RFC 3161 timestamp client for
   `cleonpdf_sign::TimestampAuthority`. The query is POSTed as `application/timestamp-query`; the
   answer is only bytes here, and the signer checks the token (imprint, the TSA's signature)
@@ -32,8 +35,9 @@ Rules:
   something that needs one (check for updates, sign with a timestamp server, add validation
   information). The exception (owner, 2026-11-20): the desktop app asks GitHub for the latest
   release by itself at most once a day when it starts, unless Preferences ▸ Check for updates once
-  a day is off, and never when a script drives it through `--control`. No other background polling,
-  no telemetry; opening or validating a document never makes a request.
+  a day is off, and never when a script drives it through `--control`. A new version is downloaded
+  only when the user chooses Update (`crates/update` checks it against the release key). No other
+  background polling, no telemetry; opening or validating a document never makes a request.
 - **No built-in server.** A timestamp server is whatever the user types; the address must be
   `http://` or `https://`, with a host, no user name or password, no spaces or control characters,
   at most 2,048 bytes (`check_url`).

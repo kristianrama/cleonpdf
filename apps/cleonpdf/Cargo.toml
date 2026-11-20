@@ -13,6 +13,11 @@ workspace = true
 # Preferences): one HTTPS request to GitHub, through the product's one
 # HTTPS client (cleonpdf-net: rustls with the OS's trusted roots).
 cleonpdf-net = { workspace = true }
+# Installs an update in place (Help ▸ Check for updates ▸ Update): the release key, signed
+# checksums, and staging and swapping in the new version. No network of its own.
+cleonpdf-update = { workspace = true }
+# The download's response type (already in the tree through cleonpdf-net, same version).
+ureq = { version = "3.4", default-features = false }
 cleonpdf-ui-egui = { workspace = true }
 # `build_info`: the version and compile-time build label for `--version` and the log.
 cleonpdf-engine = { workspace = true }
@@ -52,6 +57,8 @@ wayland-client = "0.31"
 wayland-protocols = { version = "0.32", features = ["client"] }
 
 [dev-dependencies]
+# Checksums for the update tests' stand-in release (already in the tree, same version).
+sha2 = "0.11"
 # Waits for wgpu's adapter, device and error-scope futures in tests (already in the tree through wgpu).
 pollster = "1.0"
 

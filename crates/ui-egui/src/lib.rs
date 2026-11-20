@@ -546,6 +546,9 @@ pub struct CleonPdfApp {
     pub dialog: Option<Dialog>,
     /// How to ask for the latest release (the desktop app sets it; see `updates`).
     pub update_source: Option<updates::UpdateSource>,
+    /// How to download, verify and stage a release, where this copy can update itself (the
+    /// desktop app sets it; see `updates`). Without it, the Updates dialog offers the release page.
+    pub update_installer: Option<updates::UpdateInstaller>,
     /// Preferences: ask for a newer release by itself, at most once a day, when CleonPDF starts.
     pub check_updates_automatically: bool,
     /// The host lets the automatic check run (the desktop app does, unless it is driven through
@@ -956,6 +959,7 @@ impl CleonPdfApp {
             fill_text_size: fill_sign::TEXT_SIZE,
             dialog: None,
             update_source: None,
+            update_installer: None,
             check_updates_automatically: true,
             automatic_update_checks: false,
             updates: updates::Updates::default(),

@@ -2439,3 +2439,13 @@ window	Zoom	Өлшемін өзгерту
 	Signer reached through {n} earlier lists of lists:	Қол қоюшыға {n} бұрынғы тізімдер тізімі арқылы жетті:
 	Check for updates once a day	Жаңартуларды күніне бір рет тексеру
 	Skip this version	Бұл нұсқаны өткізіп жіберу
+	Downloading CleonPDF {v}…	CleonPDF {v} жүктелуде…
+	{done} MB of {total} MB	{done} МБ / {total} МБ
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} дайын. CleonPDF-тен шыққанда орнатылады.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} дайын. Оның орнатушысы CleonPDF-тен шыққанда іске қосылады.
+	Restart now	Қазір қайта іске қосу
+	Install now	Қазір орнату
+	Couldn't update: {e}	Жаңарту мүмкін болмады: {e}
+	You can still download it from its release page.	Оны бәрібір шығарылым бетінен жүктеп алуға болады.
+	You have version {c}.	Сізде {c} нұсқасы бар.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	GitHub-тан соңғы шығарылымды сұрайды. Жаңарту тек CleonPDF шығарылым кілтімен қол қойылған болса ғана орнатылады.

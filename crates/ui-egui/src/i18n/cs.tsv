@@ -2515,3 +2515,13 @@ window	Zoom	Změnit velikost
 	Signer reached through {n} earlier lists of lists:	Podepisující dosažen přes {n} dřívějších seznamů seznamů:
 	Check for updates once a day	Kontrolovat aktualizace jednou denně
 	Skip this version	Přeskočit tuto verzi
+	Downloading CleonPDF {v}…	Stahování CleonPDF {v}…
+	{done} MB of {total} MB	{done} MB z {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} je připraven. Nainstaluje se, až CleonPDF ukončíte.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} je připraven. Jeho instalátor se spustí, až CleonPDF ukončíte.
+	Restart now	Restartovat nyní
+	Install now	Nainstalovat nyní
+	Couldn't update: {e}	Aktualizace se nezdařila: {e}
+	You can still download it from its release page.	Stále si ji můžete stáhnout z její stránky s vydáním.
+	You have version {c}.	Máte verzi {c}.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Zjistí na GitHubu nejnovější vydání. Aktualizace se nainstaluje, jen pokud je podepsaná klíčem pro vydání CleonPDF.

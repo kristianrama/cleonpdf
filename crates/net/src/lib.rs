@@ -89,6 +89,13 @@ pub fn agent(timeout: Duration) -> Result<ureq::Agent, String> {
     client(timeout, MAX_REDIRECTS, true)
 }
 
+/// [`agent`] without following redirects: the caller reads a 3xx's `Location` itself, so it can
+/// check where it points before going there (the in-app update's download).
+#[cfg(not(target_arch = "wasm32"))]
+pub fn agent_without_redirects(timeout: Duration) -> Result<ureq::Agent, String> {
+    client(timeout, 0, false)
+}
+
 /// The same client with `redirects` followed by it (0: the caller reads a 3xx itself, so it can
 /// check where it points before going there).
 #[cfg(not(target_arch = "wasm32"))]

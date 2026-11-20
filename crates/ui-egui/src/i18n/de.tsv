@@ -2442,3 +2442,13 @@ window	Zoom	Zoomen
 	Signer reached through {n} earlier lists of lists:	Unterzeichner über {n} frühere Listen der Listen erreicht:
 	Check for updates once a day	Einmal täglich nach Updates suchen
 	Skip this version	Diese Version überspringen
+	Downloading CleonPDF {v}…	CleonPDF {v} wird heruntergeladen…
+	{done} MB of {total} MB	{done} MB von {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} ist bereit. Es wird installiert, wenn du CleonPDF beendest.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} ist bereit. Sein Installationsprogramm läuft, wenn du CleonPDF beendest.
+	Restart now	Jetzt neu starten
+	Install now	Jetzt installieren
+	Couldn't update: {e}	Update fehlgeschlagen: {e}
+	You can still download it from its release page.	Du kannst es weiterhin von seiner Release-Seite herunterladen.
+	You have version {c}.	Du hast Version {c}.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Fragt GitHub nach dem neuesten Release. Ein Update wird nur installiert, wenn es mit dem Release-Schlüssel von CleonPDF signiert ist.

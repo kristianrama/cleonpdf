@@ -2437,3 +2437,13 @@ window	Zoom	Boyutlandır
 	Signer reached through {n} earlier lists of lists:	İmzacıya {n} önceki liste listesi üzerinden ulaşıldı:
 	Check for updates once a day	Güncellemeleri günde bir kez denetle
 	Skip this version	Bu sürümü atla
+	Downloading CleonPDF {v}…	CleonPDF {v} indiriliyor…
+	{done} MB of {total} MB	{done} MB / {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} hazır. CleonPDF'ten çıktığınızda kurulur.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} hazır. Yükleyicisi CleonPDF'ten çıktığınızda çalışır.
+	Restart now	Şimdi yeniden başlat
+	Install now	Şimdi kur
+	Couldn't update: {e}	Güncellenemedi: {e}
+	You can still download it from its release page.	Yine de sürüm sayfasından indirebilirsiniz.
+	You have version {c}.	{c} sürümüne sahipsiniz.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	En son sürüm için GitHub'ı sorgular. Bir güncelleme yalnızca CleonPDF'in sürüm anahtarıyla imzalanmışsa kurulur.

@@ -2465,3 +2465,13 @@ window	Zoom	Змінити масштаб
 	Signer reached through {n} earlier lists of lists:	Підписувача знайдено через {n} попередніх списків списків:
 	Check for updates once a day	Перевіряти оновлення раз на день
 	Skip this version	Пропустити цю версію
+	Downloading CleonPDF {v}…	Завантаження CleonPDF {v}…
+	{done} MB of {total} MB	{done} МБ з {total} МБ
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} готова. Її буде встановлено, коли ви закриєте CleonPDF.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} готова. Її інсталятор запуститься, коли ви закриєте CleonPDF.
+	Restart now	Перезапустити зараз
+	Install now	Встановити зараз
+	Couldn't update: {e}	Не вдалося оновити: {e}
+	You can still download it from its release page.	Її все ще можна завантажити зі сторінки випуску.
+	You have version {c}.	У вас версія {c}.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Запитує в GitHub найновіший випуск. Оновлення встановлюється, лише якщо воно підписане ключем випусків CleonPDF.

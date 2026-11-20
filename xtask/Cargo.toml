@@ -8,6 +8,8 @@ license.workspace = true
 [dependencies]
 anyhow = "1"
 lopdf = { workspace = true }
+# `update-key`: makes the release key and signs a release's checksums with it.
+cleonpdf-update = { workspace = true }
 png = "0.18"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
