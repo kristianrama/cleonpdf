@@ -2404,3 +2404,13 @@ window	Zoom	Мащабиране
 	Signer reached through {n} earlier lists of lists:	Подписващият е достигнат чрез {n} по-ранни списъка от списъци:
 	Check for updates once a day	Проверка за актуализации веднъж дневно
 	Skip this version	Пропускане на тази версия
+	Downloading CleonPDF {v}…	Изтегляне на CleonPDF {v}…
+	{done} MB of {total} MB	{done} MB от {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} е готова. Инсталира се, когато затворите CleonPDF.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} е готова. Инсталаторът се стартира, когато затворите CleonPDF.
+	Restart now	Рестартиране сега
+	Install now	Инсталиране сега
+	Couldn't update: {e}	Неуспешна актуализация: {e}
+	You can still download it from its release page.	Все още можете да я изтеглите от страницата на изданието.
+	You have version {c}.	Имате версия {c}.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Запитва GitHub за най-новото издание. Актуализацията се инсталира само ако е подписана с ключа за издания на CleonPDF.

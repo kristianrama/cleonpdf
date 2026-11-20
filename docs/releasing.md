@@ -19,9 +19,9 @@ User-facing names say **CleonPDF**; files, binaries and ids stay lowercase
 This is the official scheme, set by the owner on 2026-10-26.
 
 - **0.x until CleonPDF is stable.** The stage (alpha, then beta) is stated in the docs and in the
-  release title, never by a pre-release suffix. The update check (*Help ▸ Check for updates*) and the
-  AppImage updater follow only the newest release that isn't a pre-release, so a `0.2.0-beta.1`
-  would never reach installed copies.
+  release title, never by a pre-release suffix. The update check (*Help ▸ Check for updates*), the
+  in-app update and the AppImage updater follow only the newest release that isn't a pre-release, so
+  a `0.2.0-beta.1` would never reach installed copies.
 - **Minor (0.2.0, 0.3.0, …):** a release that brings one of the beta requirements
   ([target-app-parity.md](target-app-parity.md#stage), "To reach beta") or another capability users
   notice.
@@ -233,6 +233,39 @@ the `release` branch and add `environment: <name>` to the macOS and Windows jobs
 | `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` | service principal for Azure Trusted Signing (instead of a `.pfx`) |
 | `AZURE_SIGNING_ENDPOINT`, `AZURE_SIGNING_ACCOUNT`, `AZURE_CERT_PROFILE` | Trusted Signing endpoint, account and certificate profile |
 | `SIGNPATH_API_TOKEN` | SignPath API token of a user who may submit signing requests (below) |
+| `CLEONPDF_RELEASE_KEY` | the release key's private half, which signs `SHA256SUMS.txt` for in-app updates (below) |
+
+### In-app updates
+
+*Help ▸ Check for updates ▸ Update* (and the daily check's dialog) downloads the new version and
+installs it when CleonPDF quits: the macOS app bundle is swapped for the one in the new disk image
+and opened again, the Windows MSI install runs the new MSI (`msiexec /passive`), and a Linux
+AppImage is replaced and started again. Packages (.deb, .rpm, Flatpak), the archives, the portable
+Windows copy, an app macOS runs translocated and a folder CleonPDF can't write get the release page
+instead (`crates/update`).
+
+The app installs a download only if the release's `SHA256SUMS.txt` is signed with the **release
+key** whose public half it was built with (`packaging/update-key.pub`), and the file hashes to its
+listed checksum. The release workflow signs the checksums (`SHA256SUMS.txt.sig`) with the
+`CLEONPDF_RELEASE_KEY` secret; without the secret it warns, and that release can only be downloaded
+from its page. Until `packaging/update-key.pub` holds a key, builds offer the release page too.
+
+Making the key, once (the owner, on their own computer: the private half must never pass through
+anyone else):
+
+1. `cargo xtask update-key new` writes the private half to `~/.cleonpdf-release-key` (readable only
+   by you; it refuses to overwrite one) and the public half into `packaging/update-key.pub`.
+2. *Settings ▸ Secrets and variables ▸ Actions ▸ New repository secret*: name `CLEONPDF_RELEASE_KEY`,
+   value the one line in `~/.cleonpdf-release-key`.
+3. Commit `packaging/update-key.pub` through a pull request.
+4. Keep a copy of `~/.cleonpdf-release-key` somewhere safe, such as a password manager. Losing it
+   means the copies that know this key can't install later releases by themselves (users then
+   download one release by hand, which carries a new key); leaking it means anyone who can also
+   change what GitHub serves could make those copies install their file, so a leaked key is
+   replaced the same way and the old one removed from the secret.
+
+The first copy that can update itself is the first release built with the key; it can install the
+release after it. `cargo xtask update-key verify dist/SHA256SUMS.txt` checks a signature by hand.
 
 ### Windows signing through SignPath
 

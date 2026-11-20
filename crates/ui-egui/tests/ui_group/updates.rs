@@ -3,9 +3,11 @@
 use std::sync::Arc;
 
 use cleonpdf_ui_egui::CleonPdfApp;
-use cleonpdf_ui_egui::updates::{Release, UpdateSource, is_newer};
+use cleonpdf_ui_egui::updates::{Release, StagedUpdate, UpdateInstaller, UpdateSource, is_newer};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 fn source(answer: Result<&str, &str>) -> UpdateSource {
     let answer = answer.map(str::to_string).map_err(str::to_string);
@@ -207,4 +209,152 @@ fn the_automatic_check_can_be_turned_off() {
     assert_eq!(calls(&c), 0);
     assert!(h.query_by_label_contains("is available").is_none());
     assert_eq!(serde_json::from_str::<serde_json::Value>(&h.state().persist()).unwrap()["check_updates_automatically"], false);
+}
+
+/// A stand-in installer: reports 40 of 100 MB, waits for `go` (or Cancel), then answers `ok`
+/// (staged, recording what `schedule` was asked) or fails.
+struct Stand {
+    go: Arc<AtomicBool>,
+    scheduled: Arc<Mutex<Vec<bool>>>,
+    calls: Arc<std::sync::atomic::AtomicUsize>,
+}
+
+fn stand_in(ok: bool, relaunches: bool) -> (UpdateInstaller, Stand) {
+    let stand = Stand { go: Arc::default(), scheduled: Arc::default(), calls: Arc::default() };
+    let (go, scheduled, calls) = (stand.go.clone(), stand.scheduled.clone(), stand.calls.clone());
+    let installer: UpdateInstaller = Arc::new(move |release: &Release, progress| {
+        calls.fetch_add(1, Ordering::SeqCst);
+        progress.total.store(100 << 20, Ordering::Relaxed);
+        progress.received.store(40 << 20, Ordering::Relaxed);
+        while !go.load(Ordering::SeqCst) {
+            if progress.cancel.load(Ordering::Relaxed) {
+                return Err("cancelled".into());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(2));
+        }
+        if !ok {
+            return Err("the release isn't signed with CleonPDF's release key".into());
+        }
+        let scheduled = scheduled.clone();
+        Ok(StagedUpdate {
+            version: release.version.clone(),
+            relaunches,
+            schedule: Box::new(move |relaunch| scheduled.lock().unwrap().push(relaunch)),
+        })
+    });
+    (installer, stand)
+}
+
+fn installing(ok: bool, relaunches: bool) -> (Harness<'static, CleonPdfApp>, Stand) {
+    let (installer, stand) = stand_in(ok, relaunches);
+    let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(move |_cc| {
+        let mut app = CleonPdfApp::new();
+        app.set_option("language", "en").unwrap();
+        app.update_source = Some(source(Ok("v99.0.0")));
+        app.update_installer = Some(installer.clone());
+        app
+    });
+    h.state_mut().execute("help.check_updates");
+    settle(&mut h);
+    (h, stand)
+}
+
+/// Run frames until `label` shows (or give up).
+fn until(h: &mut Harness<'static, CleonPdfApp>, label: &str) {
+    for _ in 0..500 {
+        h.run_steps(1);
+        if h.query_by_label_contains(label).is_some() {
+            // A widget can be clicked from the frame after it first shows.
+            h.run_steps(1);
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(2));
+    }
+    let labels: Vec<String> = h.query_all_by_label_contains("").map(|n| format!("{n:?}").chars().take(120).collect::<String>()).collect();
+    panic!("{label:?} never showed; showing: {labels:?}");
+}
+
+fn closes(h: &Harness<'static, CleonPdfApp>) -> bool {
+    h.output().viewport_output.values().any(|v| v.commands.iter().any(|c| matches!(c, egui::ViewportCommand::Close)))
+}
+
+#[test]
+fn update_downloads_in_the_dialog_then_restarts_into_the_new_version() {
+    let (mut h, stand) = installing(true, true);
+    h.get_by_label_contains("CleonPDF 99.0.0 is available");
+    h.get_by_label_contains("signed with CleonPDF's release key");
+    assert!(h.query_by_label("Download").is_none(), "an installable update is installed, not downloaded by hand");
+    h.get_by_label("Update").click();
+    until(&mut h, "Downloading CleonPDF 99.0.0");
+    until(&mut h, "40 MB of 100 MB");
+    stand.go.store(true, Ordering::SeqCst);
+    until(&mut h, "CleonPDF 99.0.0 is ready. It is installed when you quit CleonPDF.");
+    assert_eq!(*stand.scheduled.lock().unwrap(), [false], "once ready, it goes in whenever CleonPDF quits");
+    assert!(!closes(&h));
+    h.get_by_label("Restart now").click();
+    h.step();
+    assert_eq!(*stand.scheduled.lock().unwrap(), [false, true], "Restart now also starts the new version");
+    assert!(closes(&h), "and quits");
+}
+
+#[test]
+fn later_installs_at_quit_and_the_msi_says_its_installer_runs() {
+    let (mut h, stand) = installing(true, false);
+    h.get_by_label("Update").click();
+    stand.go.store(true, Ordering::SeqCst);
+    until(&mut h, "Its installer runs when you quit CleonPDF.");
+    h.get_by_label("Install now");
+    h.get_by_label("Later").click();
+    h.run_steps(3);
+    assert!(h.query_by_label_contains("is ready").is_none(), "Later closes the dialog");
+    assert_eq!(*stand.scheduled.lock().unwrap(), [false]);
+    assert!(!closes(&h));
+}
+
+#[test]
+fn a_download_can_be_hidden_or_cancelled() {
+    let (mut h, stand) = installing(true, true);
+    h.get_by_label("Update").click();
+    until(&mut h, "40 MB of 100 MB");
+    // Later hides it; it comes back when the download is done.
+    h.get_by_label("Later").click();
+    h.run_steps(3);
+    assert!(h.query_by_label_contains("Downloading").is_none());
+    stand.go.store(true, Ordering::SeqCst);
+    until(&mut h, "is ready");
+
+    let (mut h, stand) = installing(true, true);
+    h.get_by_label("Update").click();
+    until(&mut h, "40 MB of 100 MB");
+    h.get_by_label("Cancel").click();
+    until(&mut h, "CleonPDF 99.0.0 is available");
+    assert!(stand.scheduled.lock().unwrap().is_empty(), "nothing goes in");
+    assert!(h.query_by_label_contains("Couldn't update").is_none(), "a cancel isn't a failure");
+    // Update again starts a new download.
+    h.get_by_label("Update").click();
+    until(&mut h, "40 MB of 100 MB");
+    for _ in 0..500 {
+        if stand.calls.load(Ordering::SeqCst) == 2 {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(2));
+    }
+    assert_eq!(stand.calls.load(Ordering::SeqCst), 2);
+}
+
+#[test]
+fn a_failed_update_offers_the_release_page() {
+    let (mut h, stand) = installing(false, true);
+    h.get_by_label("Update").click();
+    stand.go.store(true, Ordering::SeqCst);
+    until(&mut h, "Couldn't update: the release isn't signed with CleonPDF's release key");
+    h.get_by_label_contains("download it from its release page");
+    h.get_by_label("Download");
+    h.get_by_label("Close").click();
+    h.run_steps(3);
+    assert!(stand.scheduled.lock().unwrap().is_empty());
+    // The next check offers Update again.
+    h.state_mut().execute("help.check_updates");
+    settle(&mut h);
+    h.get_by_label("Update");
 }

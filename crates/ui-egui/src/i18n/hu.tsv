@@ -2440,3 +2440,13 @@ window	Zoom	Méretezés
 	Signer reached through {n} earlier lists of lists:	Az aláíró {n} korábbi listák listáján keresztül érhető el:
 	Check for updates once a day	Frissítések keresése naponta egyszer
 	Skip this version	Ennek a verziónak a kihagyása
+	Downloading CleonPDF {v}…	A CleonPDF {v} letöltése…
+	{done} MB of {total} MB	{done} MB / {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	A CleonPDF {v} készen áll. Akkor települ, amikor kilépsz a CleonPDF-ből.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	A CleonPDF {v} készen áll. A telepítője akkor indul el, amikor kilépsz a CleonPDF-ből.
+	Restart now	Újraindítás most
+	Install now	Telepítés most
+	Couldn't update: {e}	A frissítés nem sikerült: {e}
+	You can still download it from its release page.	A kiadási oldaláról továbbra is letöltheted.
+	You have version {c}.	A jelenlegi verzió: {c}.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	A GitHubtól kéri le a legújabb kiadást. Frissítés csak akkor települ, ha a CleonPDF kiadási kulcsával van aláírva.

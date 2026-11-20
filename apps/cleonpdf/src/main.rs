@@ -267,7 +267,7 @@ fn main() -> eframe::Result {
             &apple_events,
         ),
     );
-    match result {
+    let outcome = match result {
         // Only a renderer that couldn't start: without a window or display at all, OpenGL can't
         // help either, and winit's own error says more.
         Err(e @ eframe::Error::Wgpu(_)) if retry_with_gl(choice, started.get()) => {
@@ -287,7 +287,10 @@ fn main() -> eframe::Result {
             )
         }
         other => other,
-    }
+    };
+    // An update staged with Restart now or Later goes in now that the window has closed.
+    updates::apply_pending();
+    outcome
 }
 
 /// Which renderer to start with, from `CLEONPDF_RENDERER`.
@@ -426,6 +429,7 @@ fn app_creator<'a>(
             app.motion.source = Some(motion::source());
         }
         app.update_source = Some(std::sync::Arc::new(updates::latest_release));
+        app.update_installer = updates::installer();
         // Not when a script drives the app through its control channel (tests, CI).
         app.automatic_update_checks = control_file.is_none();
         app.printer_source = Some(cleonpdf_ui_egui::system_printers());

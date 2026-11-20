@@ -2441,3 +2441,13 @@ window	Zoom	Αλλαγή μεγέθους
 	Signer reached through {n} earlier lists of lists:	Ο υπογράφων εντοπίστηκε μέσω {n} προηγούμενων καταλόγων καταλόγων:
 	Check for updates once a day	Έλεγχος για ενημερώσεις μία φορά την ημέρα
 	Skip this version	Παράλειψη αυτής της έκδοσης
+	Downloading CleonPDF {v}…	Λήψη του CleonPDF {v}…
+	{done} MB of {total} MB	{done} MB από {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	Το CleonPDF {v} είναι έτοιμο. Εγκαθίσταται όταν κλείσετε το CleonPDF.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	Το CleonPDF {v} είναι έτοιμο. Το πρόγραμμα εγκατάστασής του εκτελείται όταν κλείσετε το CleonPDF.
+	Restart now	Επανεκκίνηση τώρα
+	Install now	Εγκατάσταση τώρα
+	Couldn't update: {e}	Δεν ήταν δυνατή η ενημέρωση: {e}
+	You can still download it from its release page.	Μπορείτε ακόμη να το κατεβάσετε από τη σελίδα της έκδοσης.
+	You have version {c}.	Έχετε την έκδοση {c}.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Αναζητά την τελευταία έκδοση στο GitHub. Μια ενημέρωση εγκαθίσταται μόνο αν είναι υπογεγραμμένη με το κλειδί εκδόσεων του CleonPDF.

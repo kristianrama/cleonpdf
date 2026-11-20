@@ -2315,3 +2315,13 @@ window	Zoom	縮放
 	Signer reached through {n} earlier lists of lists:	透過 {n} 個較早的清單之清單找到簽署者：
 	Check for updates once a day	每天檢查一次更新
 	Skip this version	略過此版本
+	Downloading CleonPDF {v}…	正在下載 CleonPDF {v}…
+	{done} MB of {total} MB	{done} MB / {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} 已就緒。結束 CleonPDF 時安裝。
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} 已就緒。結束 CleonPDF 時執行其安裝程式。
+	Restart now	立即重新啟動
+	Install now	立即安裝
+	Couldn't update: {e}	無法更新：{e}
+	You can still download it from its release page.	你仍可從其發佈頁面下載。
+	You have version {c}.	當前版本為 {c}。
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	向 GitHub 搜尋最新版本。只有以 CleonPDF 發佈金鑰簽署的更新才會被安裝。

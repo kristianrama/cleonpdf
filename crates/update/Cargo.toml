@@ -1,0 +1,21 @@
+[package]
+name = "cleonpdf-update"
+description = "Updating CleonPDF in place: the release signing key, signed checksums, which release file fits this install, and staging and swapping it in. No network and no UI"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# All already in the tree through cleonpdf-sign, at the same versions.
+ed25519-dalek = "3.0.0"
+sha2 = "0.11"
+base64 = "0.22"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# A new release key's 32 random bytes (`cargo xtask update-key new`).
+getrandom = "0.4"

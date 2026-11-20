@@ -1,14 +1,20 @@
-//! Help ▸ Check for updates (issue #28): ask for the latest release and offer its download page.
+//! Help ▸ Check for updates (issue #28): ask for the latest release and offer it.
 //!
-//! The desktop app supplies how to ask ([`CleonPdfApp::update_source`]), so this crate has no
+//! The desktop app supplies how to ask ([`CleonPdfApp::update_source`]) and, where this copy
+//! can update itself, how to install ([`CleonPdfApp::update_installer`]), so this crate has no
 //! network code; without a source (the web build, tests) the command opens the releases page.
-//! CleonPDF never downloads or installs anything itself: the user downloads the new version.
+//! Without an installer the dialog offers the release page; with one, Update downloads the new
+//! version in the background (checked against the release key by the installer), and it goes in
+//! when CleonPDF quits: right away with Restart now, or whenever the user quits.
 //! It asks when the user does, and by itself at most once a day when CleonPDF starts
 //! ([`CleonPdfApp::check_updates_automatically`], on unless turned off in Preferences, and only
 //! where the host allows it). An automatic check that finds nothing new, or fails, says nothing;
 //! one that finds a version the user hasn't skipped opens the Updates dialog.
 
 use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 
 use egui::{Align, Layout};
 
@@ -28,6 +34,46 @@ pub struct Release {
 
 /// Asks for the latest release (blocking; it runs on its own thread).
 pub type UpdateSource = Arc<dyn Fn() -> Result<Release, String> + Send + Sync>;
+
+/// A download's progress, shared between the installer's thread and the dialog.
+#[derive(Debug, Default)]
+pub struct UpdateProgress {
+    /// Bytes received so far.
+    pub received: AtomicU64,
+    /// The download's size, once known (0 until then).
+    pub total: AtomicU64,
+    /// Set by Cancel: the installer stops at its next chunk.
+    pub cancel: AtomicBool,
+}
+
+/// A downloaded and verified update, ready to go in when CleonPDF closes.
+pub struct StagedUpdate {
+    /// Its version tag, such as `v0.2.7`.
+    pub version: String,
+    /// Whether it starts again after going in (the Windows installer doesn't).
+    pub relaunches: bool,
+    /// Arrange for it to go in once CleonPDF has closed; `true` also starts the new version.
+    pub schedule: Box<dyn Fn(bool) + Send + Sync>,
+}
+
+/// Downloads, verifies and stages a release (blocking; it runs on its own thread).
+pub type UpdateInstaller = Arc<dyn Fn(&Release, &UpdateProgress) -> Result<StagedUpdate, String> + Send + Sync>;
+
+/// Where an Update is.
+#[derive(Default)]
+pub(crate) enum Install {
+    #[default]
+    Idle,
+    #[cfg(not(target_arch = "wasm32"))]
+    Running {
+        rx: std::sync::mpsc::Receiver<Result<StagedUpdate, String>>,
+        progress: Arc<UpdateProgress>,
+        version: String,
+    },
+    Ready(StagedUpdate),
+    /// It failed: why, and the release page to download it from instead.
+    Failed(String, String),
+}
 
 /// Whether release `latest` (a tag such as `v0.2.0`) is newer than version `current` (`0.1.1`).
 /// Pre-release and build suffixes are ignored; a version that doesn't parse is never newer.
@@ -74,6 +120,8 @@ pub(crate) struct Updates {
     pub(crate) last_check: u64,
     /// The release the user chose to skip (its tag): automatic checks don't offer it again.
     pub(crate) skipped: Option<String>,
+    /// Downloading and installing the new version.
+    pub(crate) install: Install,
 }
 
 impl CleonPdfApp {
@@ -158,8 +206,97 @@ impl CleonPdfApp {
                 }
                 self.updates.check = Check::Done(result);
             }
+            if let Install::Running { rx, .. } = &self.updates.install {
+                let result = match rx.try_recv() {
+                    Ok(r) => r,
+                    Err(std::sync::mpsc::TryRecvError::Empty) => return,
+                    Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("the update stopped unexpectedly".into()),
+                };
+                let url = match &self.updates.check {
+                    Check::Done(Ok(r)) => r.url.clone(),
+                    _ => RELEASES_PAGE.to_string(),
+                };
+                let cancelled = matches!(&self.updates.install, Install::Running { progress, .. } if progress.cancel.load(Ordering::Relaxed));
+                self.updates.install = match result {
+                    // Cancel goes back to the offer.
+                    Err(_) if cancelled => Install::Idle,
+                    Ok(staged) => {
+                        // It goes in whenever CleonPDF quits from now on.
+                        (staged.schedule)(false);
+                        Install::Ready(staged)
+                    }
+                    Err(e) => Install::Failed(e, url),
+                };
+                self.updates.open = true;
+            }
         }
     }
+
+    /// Update: download, verify and stage `release` in the background.
+    fn start_install(&mut self, release: Release) {
+        let Some(installer) = self.update_installer.clone() else { return };
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            if matches!(self.updates.install, Install::Running { .. } | Install::Ready(_)) {
+                return;
+            }
+            let progress = Arc::new(UpdateProgress::default());
+            let (tx, rx) = std::sync::mpsc::channel();
+            let ctx = self.ctx.clone();
+            let shared = progress.clone();
+            let version = release.version.clone();
+            std::thread::spawn(move || {
+                // Repaint as the download moves, at most ten times a second.
+                let done = Arc::new(AtomicBool::new(false));
+                if let Some(ctx) = ctx.clone() {
+                    let done = done.clone();
+                    std::thread::spawn(move || {
+                        while !done.load(Ordering::Relaxed) {
+                            ctx.request_repaint();
+                            std::thread::sleep(std::time::Duration::from_millis(100));
+                        }
+                    });
+                }
+                // The receiver may be gone (the app quit): nothing to report to then.
+                let _ = tx.send(installer(&release, &shared));
+                done.store(true, Ordering::Relaxed);
+                if let Some(ctx) = ctx {
+                    ctx.request_repaint();
+                }
+            });
+            self.updates.install = Install::Running { rx, progress, version };
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            let _ = (installer, release);
+        }
+    }
+}
+
+/// What the Updates dialog's user chose this frame.
+// The web build has no downloads, so it never cancels one.
+#[cfg_attr(target_arch = "wasm32", allow(dead_code))]
+enum Act {
+    None,
+    /// Close the dialog (a download in progress goes on).
+    Close,
+    /// Open this release page.
+    Download(String),
+    /// Don't offer this version (a tag) again by itself.
+    Skip(String),
+    /// Download and stage this release.
+    Install(Release),
+    /// Stop the download.
+    Cancel,
+    /// Quit now so the staged update goes in (and starts, where it can).
+    Restart,
+}
+
+/// Megabytes, one decimal under ten.
+#[cfg(not(target_arch = "wasm32"))]
+fn megabytes(bytes: u64) -> String {
+    let mb = bytes as f64 / (1024.0 * 1024.0);
+    if mb < 10.0 { format!("{mb:.1}") } else { format!("{mb:.0}") }
 }
 
 /// The Updates dialog.
@@ -169,9 +306,8 @@ pub(crate) fn dialog(app: &mut CleonPdfApp, ctx: &egui::Context) {
     }
     let t = theme::Tokens::get(ctx);
     let current = env!("CARGO_PKG_VERSION");
-    let mut close = false;
-    let mut download: Option<String> = None;
-    let mut skip: Option<String> = None;
+    let can_install = app.update_installer.is_some();
+    let mut act = Act::None;
     let modal = crate::widgets::show_modal(ctx, "updates", |ui| {
         ui.set_width(420.0);
         ui.horizontal(|ui| {
@@ -179,76 +315,145 @@ pub(crate) fn dialog(app: &mut CleonPdfApp, ctx: &egui::Context) {
             ui.label(egui::RichText::new(tl!("Check for updates")).font(theme::semibold(16.0)));
         });
         ui.add_space(8.0);
-        match &app.updates.check {
-            Check::Idle => {
-                ui.label(tl!("No check has run yet."));
-            }
+        let mut buttons: Vec<(&str, bool, Act)> = Vec::new();
+        match &app.updates.install {
             #[cfg(not(target_arch = "wasm32"))]
-            Check::Running(_) => {
-                ui.horizontal(|ui| {
-                    ui.spinner();
-                    ui.label(tl!("Checking for a newer version…"));
-                });
+            Install::Running { progress, version, .. } => {
+                let version = version.trim_start_matches(['v', 'V']);
+                ui.label(egui::RichText::new(crate::i18n::fmt(tl!("Downloading CleonPDF {v}…"), &[("v", version)])).strong());
+                ui.add_space(6.0);
+                let received = progress.received.load(Ordering::Relaxed);
+                let total = progress.total.load(Ordering::Relaxed);
+                let fraction = if total > 0 { (received as f64 / total as f64).clamp(0.0, 1.0) as f32 } else { 0.0 };
+                // The theme's own bar: egui's default fill is lost against the dialog's colours.
+                let (rect, _) = ui.allocate_exact_size(egui::vec2(420.0, 8.0), egui::Sense::hover());
+                ui.painter().rect_filled(rect, 4.0, t.accent_soft);
+                let done = egui::Rect::from_min_size(rect.min, egui::vec2(rect.width() * fraction, rect.height()));
+                ui.painter().rect_filled(done, 4.0, t.accent);
+                ui.add_space(4.0);
+                if total > 0 {
+                    let text = crate::i18n::fmt(tl!("{done} MB of {total} MB"), &[("done", &megabytes(received)), ("total", &megabytes(total))]);
+                    ui.label(egui::RichText::new(text).color(t.text_muted));
+                }
+                buttons.push((tl!("Later"), true, Act::Close));
+                buttons.push((tl!("Cancel"), false, Act::Cancel));
             }
-            Check::Done(Ok(r)) if is_newer(&r.version, current) => {
-                let version = r.version.trim_start_matches(['v', 'V']);
-                ui.label(egui::RichText::new(crate::i18n::fmt(tl!("CleonPDF {v} is available."), &[("v", version)])).strong());
-                ui.label(
-                    egui::RichText::new(crate::i18n::fmt(
-                        tl!("You have version {c}. Download the new version from its release page."),
-                        &[("c", current)],
-                    ))
-                    .color(t.text_muted),
-                );
-                download = Some(r.url.clone());
-                skip = Some(r.version.clone());
+            Install::Ready(staged) => {
+                let version = staged.version.trim_start_matches(['v', 'V']);
+                let text = if staged.relaunches {
+                    tl!("CleonPDF {v} is ready. It is installed when you quit CleonPDF.")
+                } else {
+                    tl!("CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.")
+                };
+                ui.label(egui::RichText::new(crate::i18n::fmt(text, &[("v", version)])).strong());
+                let now = if staged.relaunches { tl!("Restart now") } else { tl!("Install now") };
+                buttons.push((now, true, Act::Restart));
+                buttons.push((tl!("Later"), false, Act::Close));
             }
-            Check::Done(Ok(_)) => {
-                ui.label(crate::i18n::fmt(tl!("CleonPDF {c} is up to date."), &[("c", current)]));
+            Install::Failed(e, url) => {
+                ui.label(crate::i18n::fmt(tl!("Couldn't update: {e}"), &[("e", e)]));
+                ui.label(egui::RichText::new(tl!("You can still download it from its release page.")).color(t.text_muted));
+                buttons.push((tl!("Download"), true, Act::Download(url.clone())));
+                buttons.push((tl!("Close"), false, Act::Close));
             }
-            Check::Done(Err(e)) => {
-                ui.label(crate::i18n::fmt(tl!("Couldn't check for updates: {e}"), &[("e", &e.to_string())]));
-                ui.label(
-                    egui::RichText::new(crate::i18n::fmt(
-                        tl!("You have version {c}. All releases are listed at {page}."),
-                        &[("c", current), ("page", RELEASES_PAGE)],
-                    ))
-                    .color(t.text_muted),
-                );
-            }
+            Install::Idle => match &app.updates.check {
+                Check::Idle => {
+                    ui.label(tl!("No check has run yet."));
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                Check::Running(_) => {
+                    ui.horizontal(|ui| {
+                        ui.spinner();
+                        ui.label(tl!("Checking for a newer version…"));
+                    });
+                }
+                Check::Done(Ok(r)) if is_newer(&r.version, current) => {
+                    let version = r.version.trim_start_matches(['v', 'V']);
+                    ui.label(egui::RichText::new(crate::i18n::fmt(tl!("CleonPDF {v} is available."), &[("v", version)])).strong());
+                    let you_have = if can_install {
+                        tl!("You have version {c}.")
+                    } else {
+                        tl!("You have version {c}. Download the new version from its release page.")
+                    };
+                    ui.label(egui::RichText::new(crate::i18n::fmt(you_have, &[("c", current)])).color(t.text_muted));
+                    if can_install {
+                        buttons.push((tl!("Update"), true, Act::Install(r.clone())));
+                    } else {
+                        buttons.push((tl!("Download"), true, Act::Download(r.url.clone())));
+                    }
+                    buttons.push((tl!("Later"), false, Act::Close));
+                    buttons.push((tl!("Skip this version"), false, Act::Skip(r.version.clone())));
+                }
+                Check::Done(Ok(_)) => {
+                    ui.label(crate::i18n::fmt(tl!("CleonPDF {c} is up to date."), &[("c", current)]));
+                }
+                Check::Done(Err(e)) => {
+                    ui.label(crate::i18n::fmt(tl!("Couldn't check for updates: {e}"), &[("e", &e.to_string())]));
+                    ui.label(
+                        egui::RichText::new(crate::i18n::fmt(
+                            tl!("You have version {c}. All releases are listed at {page}."),
+                            &[("c", current), ("page", RELEASES_PAGE)],
+                        ))
+                        .color(t.text_muted),
+                    );
+                }
+            },
         }
         ui.add_space(10.0);
-        ui.label(
-            egui::RichText::new(tl!("Asks GitHub for the latest release. Nothing is downloaded or installed automatically."))
-                .color(t.text_muted)
-                .small(),
-        );
+        let footer = if can_install {
+            tl!("Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.")
+        } else {
+            tl!("Asks GitHub for the latest release. Nothing is downloaded or installed automatically.")
+        };
+        ui.label(egui::RichText::new(footer).color(t.text_muted).small());
         ui.add_space(12.0);
+        if buttons.is_empty() {
+            buttons.push((tl!("Close"), true, Act::Close));
+        }
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            if let Some(url) = download.take() {
-                let get = widgets::pill_button(ui, tl!("Download"), true).clicked();
-                let later = widgets::pill_button(ui, tl!("Later"), false).clicked();
-                let skipped = widgets::pill_button(ui, tl!("Skip this version"), false).clicked();
-                close = get || later || skipped;
-                download = get.then_some(url);
-                skip = skip.take().filter(|_| skipped);
-            } else if widgets::pill_button(ui, tl!("Close"), true).clicked() {
-                close = true;
+            // Ids from the labels: the lines above change as a download moves.
+            for (label, primary, choice) in buttons {
+                if ui.push_id(label, |ui| widgets::pill_button(ui, label, primary).clicked()).inner {
+                    act = choice;
+                }
             }
         });
     });
-    if modal.should_close() {
-        close = true;
-        download = None;
-        skip = None;
+    if modal.should_close() && matches!(act, Act::None) {
+        act = Act::Close;
     }
-    if close {
-        app.updates.open = false;
-        if skip.is_some() {
-            app.updates.skipped = skip;
+    match act {
+        Act::None => {}
+        Act::Close => {
+            app.updates.open = false;
+            // A failure is forgotten, so the next Update tries again.
+            if matches!(app.updates.install, Install::Failed(..)) {
+                app.updates.install = Install::Idle;
+            }
         }
-        if let Some(url) = download {
+        Act::Download(url) => {
+            app.updates.open = false;
+            app.updates.install = Install::Idle;
             app.open_url(&url);
+        }
+        Act::Skip(version) => {
+            app.updates.open = false;
+            app.updates.skipped = Some(version);
+        }
+        Act::Install(release) => app.start_install(release),
+        Act::Cancel =>
+        {
+            #[cfg(not(target_arch = "wasm32"))]
+            if let Install::Running { progress, .. } = &app.updates.install {
+                progress.cancel.store(true, Ordering::Relaxed);
+            }
+        }
+        Act::Restart => {
+            if let Install::Ready(staged) = &app.updates.install {
+                (staged.schedule)(true);
+            }
+            app.updates.open = false;
+            app.request_quit(ctx);
         }
     }
 }

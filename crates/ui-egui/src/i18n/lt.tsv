@@ -2686,3 +2686,13 @@ window	Zoom	Keisti dydį
 	Signer reached through {n} earlier lists of lists:	Pasirašantysis pasiektas per {n} ankstesnius sąrašų sąrašus:
 	Check for updates once a day	Tikrinti, ar yra naujinimų, kartą per dieną
 	Skip this version	Praleisti šią versiją
+	Downloading CleonPDF {v}…	Atsisiunčiama „CleonPDF“ {v}…
+	{done} MB of {total} MB	{done} MB iš {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	„CleonPDF“ {v} paruošta. Ji bus įdiegta, kai išeisite iš „CleonPDF“.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	„CleonPDF“ {v} paruošta. Jos diegimo programa bus paleista, kai išeisite iš „CleonPDF“.
+	Restart now	Paleisti iš naujo dabar
+	Install now	Įdiegti dabar
+	Couldn't update: {e}	Nepavyko atnaujinti: {e}
+	You can still download it from its release page.	Vis tiek galite ją atsisiųsti iš jos laidos puslapio.
+	You have version {c}.	Turite versiją {c}.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	„GitHub“ tikrinama, ar yra naujausia laida. Naujinimas įdiegiamas tik tada, jei jis pasirašytas „CleonPDF“ laidų raktu.

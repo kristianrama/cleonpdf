@@ -46,6 +46,7 @@ requested by the user or the person installing or operating it.
 
 The only network request CleonPDF makes itself is the update check, which asks GitHub for the
 latest release when you choose *Help ▸ Check for updates* and, unless you turn off *Preferences ▸
-Check for updates once a day*, by itself at most once a day when the app starts. Nothing is
-downloaded or installed automatically. Links
+Check for updates once a day*, by itself at most once a day when the app starts. A new version is downloaded only when you
+choose *Update* in that dialog, from the release's page on GitHub, and installed only if it is
+signed with CleonPDF's release key; it goes in when you quit CleonPDF. Links
 in documents open in your browser only when you click them and confirm.

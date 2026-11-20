@@ -33,6 +33,7 @@ cleonpdf-print = { path = "crates/print", version = "0.2.6" }
 cleonpdf-xfdf = { path = "crates/xfdf", version = "0.2.6" }
 cleonpdf-sign = { path = "crates/sign", version = "0.2.6" }
 cleonpdf-net = { path = "crates/net", version = "0.2.6" }
+cleonpdf-update = { path = "crates/update", version = "0.2.6" }
 cleonpdf-optimize = { path = "crates/optimize", version = "0.2.6" }
 cleonpdf-a11y = { path = "crates/a11y", version = "0.2.6" }
 cleonpdf-ocr = { path = "crates/ocr", version = "0.2.6" }

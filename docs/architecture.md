@@ -15,7 +15,7 @@ handwritten JS/TS, in the product or the build.
 
 | Binary | What it is |
 |---|---|
-| `apps/cleonpdf` | The desktop app (macOS, Windows, Linux, FreeBSD): eframe/egui on wgpu, single instance, Apple events, update check (on request, and once a day at start unless turned off) |
+| `apps/cleonpdf` | The desktop app (macOS, Windows, Linux, FreeBSD): eframe/egui on wgpu, single instance, Apple events, update check (on request, and once a day at start unless turned off) and in-app update |
 | `apps/cleonpdf-cli` | `inspect`, `edit`, `combine`, `extract`, `split`, `run` (any automation tool or a JSON script), `tools`, `ui` (drive the running app), and the opt-in `mcp` server |
 | `apps/cleonpdf-web` | The same egui shell compiled to WebAssembly |
 
@@ -32,6 +32,7 @@ standalone and publishable.
 | L2 core model | `content`, `model`, `fonts` | Content-stream operators with source spans and a serializer; typed page tree with inherited attributes and display geometry (`/UserUnit`, `/Rotate`); font metrics and encodings for generated appearances |
 | L3 core services | `render`, `annot`, `forms`, `js`, `xfa` | Rendering and inspection (bootstrap: vendored `hayro`, `lopdf`); annotation builders and appearance streams; AcroForm model, filling, appearances; sandboxed JavaScript (boa) and FormCalc; XFA template layout and data |
 | L4 features | `edit`, `organize`, `redact`, `xfdf`, `sign`, `ocr`, `create`, `export`, `optimize`, `preflight`, `a11y`, `compare`, `measure`, `print` | One crate per Acrobat tool family |
+| L5 interaction | `net`, `update` | Outbound requests in one crate (HTTPS over rustls with the OS's roots, RFC 3161 timestamps, OCSP/CRL, trusted lists); in-app updates without network or UI (release key, signed checksums, staging and swapping in the new version) |
 | L6 façade | `engine` | Session, open documents, edit history, the command registry and tool catalogue. Frontends never reach past it |
 | L7 platform and frontends | `platform`, `ui-egui`, `automation` | OS services; the egui shell (desktop and web); headless JSON-Schema tools, CLI and MCP |
 

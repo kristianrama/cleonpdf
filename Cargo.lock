@@ -958,6 +958,7 @@ dependencies = [
  "cleonpdf-engine",
  "cleonpdf-net",
  "cleonpdf-ui-egui",
+ "cleonpdf-update",
  "eframe",
  "egui",
  "fmv-macos-events",
@@ -968,7 +969,9 @@ dependencies = [
  "pollster 1.0.1",
  "ron",
  "serde_json",
+ "sha2 0.11.0",
  "uds_windows",
+ "ureq",
  "wayland-client",
  "wayland-protocols",
  "windows",
@@ -1410,6 +1413,16 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "winsafe",
+]
+
+[[package]]
+name = "cleonpdf-update"
+version = "0.2.6"
+dependencies = [
+ "base64 0.22.1",
+ "ed25519-dalek",
+ "getrandom 0.4.3",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -8100,6 +8113,7 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "cleonpdf-update",
  "lopdf",
  "png 0.18.1",
  "serde",

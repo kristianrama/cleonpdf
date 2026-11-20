@@ -2446,3 +2446,13 @@ window	Zoom	Spremeni velikost
 	Signer reached through {n} earlier lists of lists:	Podpisnik dosežen prek {n} prejšnjih seznamov seznamov:
 	Check for updates once a day	Preveri posodobitve enkrat na dan
 	Skip this version	Preskoči to različico
+	Downloading CleonPDF {v}…	Prenašanje CleonPDF {v} …
+	{done} MB of {total} MB	{done} MB od {total} MB
+	CleonPDF {v} is ready. It is installed when you quit CleonPDF.	CleonPDF {v} je pripravljen. Namesti se, ko zaprete CleonPDF.
+	CleonPDF {v} is ready. Its installer runs when you quit CleonPDF.	CleonPDF {v} je pripravljen. Njegov namestitveni program se zažene, ko zaprete CleonPDF.
+	Restart now	Znova zaženi zdaj
+	Install now	Namesti zdaj
+	Couldn't update: {e}	Posodobitev ni uspela: {e}
+	You can still download it from its release page.	Še vedno ga lahko prenesete z njegove strani izdaje.
+	You have version {c}.	Imate različico {c}.
+	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Vpraša GitHub za najnovejšo izdajo. Posodobitev se namesti le, če je podpisana s ključem izdaj CleonPDF.
