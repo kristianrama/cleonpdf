@@ -2435,3 +2435,5 @@ window	Zoom	Boyutlandır
 	All form fields	Tüm form alanları
 	All except {fields}	{fields} dışındakilerin tümü
 	Signer reached through {n} earlier lists of lists:	İmzacıya {n} önceki liste listesi üzerinden ulaşıldı:
+	Check for updates once a day	Güncellemeleri günde bir kez denetle
+	Skip this version	Bu sürümü atla

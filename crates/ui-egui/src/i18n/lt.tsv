@@ -2684,3 +2684,5 @@ window	Zoom	Keisti dydį
 	All form fields	Visi formos laukai
 	All except {fields}	Visi, išskyrus {fields}
 	Signer reached through {n} earlier lists of lists:	Pasirašantysis pasiektas per {n} ankstesnius sąrašų sąrašus:
+	Check for updates once a day	Tikrinti, ar yra naujinimų, kartą per dieną
+	Skip this version	Praleisti šią versiją

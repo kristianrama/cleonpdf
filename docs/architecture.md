@@ -15,7 +15,7 @@ handwritten JS/TS, in the product or the build.
 
 | Binary | What it is |
 |---|---|
-| `apps/cleonpdf` | The desktop app (macOS, Windows, Linux, FreeBSD): eframe/egui on wgpu, single instance, Apple events, update check on request |
+| `apps/cleonpdf` | The desktop app (macOS, Windows, Linux, FreeBSD): eframe/egui on wgpu, single instance, Apple events, update check (on request, and once a day at start unless turned off) |
 | `apps/cleonpdf-cli` | `inspect`, `edit`, `combine`, `extract`, `split`, `run` (any automation tool or a JSON script), `tools`, `ui` (drive the running app), and the opt-in `mcp` server |
 | `apps/cleonpdf-web` | The same egui shell compiled to WebAssembly |
 

@@ -2439,3 +2439,5 @@ window	Zoom	拡大／縮小
 	All form fields	すべてのフォームフィールド
 	All except {fields}	{fields} 以外のすべて
 	Signer reached through {n} earlier lists of lists:	{n} 件の以前のリストのリストを経由して署名者に到達:
+	Check for updates once a day	1日に1回アップデートを確認
+	Skip this version	このバージョンをスキップ

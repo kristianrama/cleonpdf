@@ -2403,3 +2403,5 @@ window	Zoom	缩放
 	All form fields	所有表单字段
 	All except {fields}	除 {fields} 外的全部
 	Signer reached through {n} earlier lists of lists:	通过 {n} 个较早的列表之列表找到签名者：
+	Check for updates once a day	每天检查一次更新
+	Skip this version	跳过此版本

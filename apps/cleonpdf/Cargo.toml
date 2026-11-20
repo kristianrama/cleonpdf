@@ -9,7 +9,8 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-# Help ▸ Check for updates (issue #28): one HTTPS request to GitHub, through the product's one
+# The update check (issue #28; on request, and once a day at start unless turned off in
+# Preferences): one HTTPS request to GitHub, through the product's one
 # HTTPS client (cleonpdf-net: rustls with the OS's trusted roots).
 cleonpdf-net = { workspace = true }
 cleonpdf-ui-egui = { workspace = true }

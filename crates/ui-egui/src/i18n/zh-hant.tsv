@@ -2313,3 +2313,5 @@ window	Zoom	縮放
 	All form fields	所有表單欄位
 	All except {fields}	除 {fields} 外的全部
 	Signer reached through {n} earlier lists of lists:	透過 {n} 個較早的清單之清單找到簽署者：
+	Check for updates once a day	每天檢查一次更新
+	Skip this version	略過此版本
