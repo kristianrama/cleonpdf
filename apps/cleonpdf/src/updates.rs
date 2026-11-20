@@ -33,7 +33,10 @@ pub fn installer() -> Option<UpdateInstaller> {
         }
     };
     let target = match install::detect_current() {
-        Ok(target) => target,
+        Ok(target) => {
+            install::clean_leftovers(&target);
+            target
+        }
         Err(e) => {
             log::info!("updates install from the release page: {e}");
             return None;

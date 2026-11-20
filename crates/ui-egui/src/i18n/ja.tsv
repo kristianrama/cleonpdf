@@ -2451,3 +2451,4 @@ window	Zoom	拡大／縮小
 	You can still download it from its release page.	リリースページからダウンロードすることもできます。
 	You have version {c}.	現在のバージョンは {c} です。
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	GitHub で最新リリースを確認します。CleonPDF のリリースキーで署名されたアップデートだけがインストールされます。
+	Custom zoom	カスタムズーム

@@ -481,6 +481,20 @@ pub struct DocView {
 
 /// The page grid's zoom range and the step of its buttons and keys.
 pub const GRID_ZOOM_RANGE: std::ops::RangeInclusive<f32> = 0.5..=3.0;
+
+/// The zoom steps of zoom in and out (⌘+ / ⌘−, the rail's buttons): 50, 75, 100, 125, 150, 200 %…
+pub const ZOOM_STEPS: [f32; 16] = [0.1, 0.25, 0.33, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0, 32.0];
+
+/// The zooms the zoom menu offers by name.
+pub const ZOOM_PRESETS: [f32; 9] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 8.0];
+
+/// A zoom typed as a percentage (`150`, `150%`, `87,5`, ` 87.5 % `), between 10 % and 6400 %.
+pub fn parse_zoom_percent(text: &str) -> Option<f32> {
+    let t = text.trim();
+    let t = t.strip_suffix('%').unwrap_or(t).trim().replace(',', ".");
+    let percent: f32 = t.parse().ok()?;
+    (percent.is_finite() && (10.0..=6400.0).contains(&percent)).then_some(percent / 100.0)
+}
 const GRID_ZOOM_STEP: f32 = 1.25;
 /// How far a sharp grid render may be from the size drawn before it is redone: a pinch changes
 /// the size on every frame, and a slightly soft or slightly large image is fine meanwhile.
@@ -1303,9 +1317,9 @@ impl DocView {
         }
     }
 
-    /// Standard zoom steps (as in Acrobat's zoom menu).
+    /// Zoom in or out to the next of [`ZOOM_STEPS`] (from a fit mode, from the zoom it shows).
     pub fn zoom_step(&mut self, up: bool) {
-        const STEPS: [f32; 17] = [0.1, 0.25, 0.33, 0.5, 0.66, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0, 32.0];
+        const STEPS: [f32; 16] = ZOOM_STEPS;
         let z = self.zoom;
         let next = if up { STEPS.iter().copied().find(|s| *s > z * 1.01) } else { STEPS.iter().rev().copied().find(|s| *s < z * 0.99) };
         if let Some(n) = next {

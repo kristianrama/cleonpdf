@@ -2465,3 +2465,4 @@ window	Zoom	Zoom
 	You can still download it from its release page.	Você ainda pode baixá-lo na página de lançamentos.
 	You have version {c}.	Você tem a versão {c}.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Consulta o GitHub para obter o lançamento mais recente. Uma atualização só é instalada se estiver assinada com a chave de lançamento do CleonPDF.
+	Custom zoom	Zoom personalizado

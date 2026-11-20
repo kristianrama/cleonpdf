@@ -2450,3 +2450,4 @@ window	Zoom	Méretezés
 	You can still download it from its release page.	A kiadási oldaláról továbbra is letöltheted.
 	You have version {c}.	A jelenlegi verzió: {c}.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	A GitHubtól kéri le a legújabb kiadást. Frissítés csak akkor települ, ha a CleonPDF kiadási kulcsával van aláírva.
+	Custom zoom	Egyéni nagyítás

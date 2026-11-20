@@ -2325,3 +2325,4 @@ window	Zoom	縮放
 	You can still download it from its release page.	你仍可從其發佈頁面下載。
 	You have version {c}.	當前版本為 {c}。
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	向 GitHub 搜尋最新版本。只有以 CleonPDF 發佈金鑰簽署的更新才會被安裝。
+	Custom zoom	自訂縮放

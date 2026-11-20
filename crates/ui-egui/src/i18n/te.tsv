@@ -2354,3 +2354,4 @@ window	Zoom	పరిమాణం మార్చు
 	You can still download it from its release page.	మీరు దీన్ని దాని విడుదల పేజీ నుండి ఇప్పటికీ డౌన్‌లోడ్ చేసుకోవచ్చు.
 	You have version {c}.	మీ వద్ద వెర్షన్ {c} ఉంది.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	తాజా విడుదల గురించి GitHubను అడుగుతుంది. CleonPDF విడుదల కీతో సంతకం చేసిన అప్‌డేట్ మాత్రమే ఇన్‌స్టాల్ అవుతుంది.
+	Custom zoom	అనుకూల జూమ్
