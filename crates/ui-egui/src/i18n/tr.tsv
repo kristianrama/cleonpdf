@@ -2447,3 +2447,4 @@ window	Zoom	Boyutlandır
 	You can still download it from its release page.	Yine de sürüm sayfasından indirebilirsiniz.
 	You have version {c}.	{c} sürümüne sahipsiniz.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	En son sürüm için GitHub'ı sorgular. Bir güncelleme yalnızca CleonPDF'in sürüm anahtarıyla imzalanmışsa kurulur.
+	Custom zoom	Özel yakınlaştırma

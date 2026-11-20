@@ -258,6 +258,28 @@ pub fn apply(staged: &Staged, relaunch: bool) -> Result<(), UpdateError> {
     Ok(())
 }
 
+/// Remove what an update interrupted before it went in left behind (CleonPDF closed in the middle
+/// of a download, or crashed with an update staged): a partial AppImage beside the running one, a
+/// staged or old app bundle beside the running one, and the temporary download folder. Only names
+/// this module makes are removed. Call it when CleonPDF starts, before any update is staged.
+pub fn clean_leftovers(target: &Target) {
+    let ours = |name: &str| match target.kind {
+        Kind::AppImage => name.starts_with(".cleonpdf-") && name.ends_with(".AppImage.part"),
+        Kind::MacApp => (name.starts_with(".CleonPDF-") && name.ends_with(".app")) || (name.starts_with('.') && name.contains(".app-old-")),
+        Kind::WindowsMsi => false,
+    };
+    if let Some(entries) = target.path.parent().and_then(|dir| std::fs::read_dir(dir).ok()) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path == target.path || !entry.file_name().to_str().is_some_and(ours) {
+                continue;
+            }
+            let _ = if path.is_dir() { std::fs::remove_dir_all(&path) } else { std::fs::remove_file(&path) };
+        }
+    }
+    let _ = std::fs::remove_dir_all(std::env::temp_dir().join("cleonpdf-update"));
+}
+
 /// Remove a staged update that won't be applied.
 pub fn discard(staged: &Staged) {
     let _ = if staged.from.is_dir() { std::fs::remove_dir_all(&staged.from) } else { std::fs::remove_file(&staged.from) };
@@ -422,6 +444,29 @@ mod tests {
         assert!(e.is_err());
         assert_eq!(std::fs::read_to_string(current.join("Contents/version")).unwrap(), "new");
         assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 1);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn leftovers_of_an_interrupted_update_are_cleaned_and_nothing_else() {
+        let dir = temp("leftovers");
+        let make_dir = |n: &str| std::fs::create_dir_all(dir.join(n).join("Contents")).unwrap();
+        let make_file = |n: &str| std::fs::write(dir.join(n), "x").unwrap();
+        make_dir("CleonPDF.app");
+        make_dir(".CleonPDF-0.2.7.app");
+        make_dir(".CleonPDF.app-old-4242");
+        make_dir("Other.app");
+        make_dir(".Other-0.2.7.app");
+        make_file(".cleonpdf-0.2.7-linux-x86_64.AppImage.part");
+        make_file("notes.txt");
+        clean_leftovers(&Target { kind: Kind::MacApp, path: dir.join("CleonPDF.app"), arch: "aarch64".into() });
+        let mut left: Vec<String> = std::fs::read_dir(&dir).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        left.sort();
+        assert_eq!(left, [".Other-0.2.7.app", ".cleonpdf-0.2.7-linux-x86_64.AppImage.part", "CleonPDF.app", "Other.app", "notes.txt"]);
+        make_file("CleonPDF.AppImage");
+        clean_leftovers(&Target { kind: Kind::AppImage, path: dir.join("CleonPDF.AppImage"), arch: "x86_64".into() });
+        assert!(!dir.join(".cleonpdf-0.2.7-linux-x86_64.AppImage.part").exists());
+        assert!(dir.join("CleonPDF.AppImage").exists() && dir.join("notes.txt").exists() && dir.join(".Other-0.2.7.app").exists());
         let _ = std::fs::remove_dir_all(dir);
     }
 

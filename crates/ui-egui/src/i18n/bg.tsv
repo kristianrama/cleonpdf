@@ -2414,3 +2414,4 @@ window	Zoom	Мащабиране
 	You can still download it from its release page.	Все още можете да я изтеглите от страницата на изданието.
 	You have version {c}.	Имате версия {c}.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Запитва GitHub за най-новото издание. Актуализацията се инсталира само ако е подписана с ключа за издания на CleonPDF.
+	Custom zoom	Друг мащаб

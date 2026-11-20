@@ -2475,3 +2475,4 @@ window	Zoom	Змінити масштаб
 	You can still download it from its release page.	Її все ще можна завантажити зі сторінки випуску.
 	You have version {c}.	У вас версія {c}.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Запитує в GitHub найновіший випуск. Оновлення встановлюється, лише якщо воно підписане ключем випусків CleonPDF.
+	Custom zoom	Власний масштаб

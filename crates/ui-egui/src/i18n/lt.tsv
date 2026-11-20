@@ -2696,3 +2696,4 @@ window	Zoom	Keisti dydį
 	You can still download it from its release page.	Vis tiek galite ją atsisiųsti iš jos laidos puslapio.
 	You have version {c}.	Turite versiją {c}.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	„GitHub“ tikrinama, ar yra naujausia laida. Naujinimas įdiegiamas tik tada, jei jis pasirašytas „CleonPDF“ laidų raktu.
+	Custom zoom	Pasirinktinis mastelis

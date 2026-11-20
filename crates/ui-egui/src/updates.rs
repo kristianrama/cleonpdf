@@ -410,7 +410,9 @@ pub(crate) fn dialog(app: &mut CleonPdfApp, ctx: &egui::Context) {
         if buttons.is_empty() {
             buttons.push((tl!("Close"), true, Act::Close));
         }
-        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+        // One row's height: a right-to-left layout would take all the height there is, and the
+        // dialog would never shrink back after a taller step (the download's progress).
+        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 32.0), Layout::right_to_left(Align::Center), |ui| {
             // Ids from the labels: the lines above change as a download moves.
             for (label, primary, choice) in buttons {
                 if ui.push_id(label, |ui| widgets::pill_button(ui, label, primary).clicked()).inner {

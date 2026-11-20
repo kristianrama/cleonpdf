@@ -863,3 +863,55 @@ fn a_document_without_a_table_of_contents_says_so() {
     assert_eq!(app.dialog, None);
     assert!(app.toast.as_ref().is_some_and(|(m, _)| m.starts_with("No table of contents was found")));
 }
+
+#[test]
+fn zoom_steps_through_the_usual_zooms_and_the_menu_sets_any_zoom() {
+    let mut h = harness();
+    // Steps: 50, 75, 100, 125, 150, 200 %.
+    h.state_mut().views[0].set_zoom(0.5);
+    let mut seen = vec![];
+    for _ in 0..5 {
+        h.state_mut().views[0].zoom_step(true);
+        seen.push((h.state().views[0].zoom * 100.0).round() as i32);
+    }
+    assert_eq!(seen, [75, 100, 125, 150, 200]);
+    h.state_mut().views[0].zoom_step(false);
+    h.state_mut().views[0].zoom_step(false);
+    assert_eq!((h.state().views[0].zoom * 100.0).round(), 125.0);
+    h.run_steps(2);
+    // The rail's percentage opens the zoom menu: a preset…
+    h.get_by_label("Zoom").click();
+    h.run_steps(2);
+    h.get_by_label("75%").click();
+    h.run_steps(2);
+    assert_eq!(h.state().views[0].zoom, 0.75);
+    // …a fit…
+    h.get_by_label("Zoom").click();
+    h.run_steps(2);
+    h.get_by_label("Fit to width scrolling").click();
+    h.run_steps(2);
+    assert_eq!(h.state().views[0].fit, cleonpdf_ui_egui::canvas::Fit::Width);
+    // …or any percentage, typed.
+    h.get_by_label("Zoom").click();
+    h.run_steps(2);
+    h.get_by_label("Custom zoom");
+    h.ctx.memory_mut(|m| m.request_focus(egui::Id::new("zoom-custom")));
+    h.run_steps(1);
+    h.event(egui::Event::Text("237%".into()));
+    h.run_steps(1);
+    h.key_press(Key::Enter);
+    h.run_steps(3);
+    assert!((h.state().views[0].zoom - 2.37).abs() < 1e-4, "{}", h.state().views[0].zoom);
+}
+
+#[test]
+fn typed_zooms_are_read_as_percentages_within_limits() {
+    use cleonpdf_ui_egui::canvas::parse_zoom_percent;
+    assert_eq!(parse_zoom_percent("150"), Some(1.5));
+    assert_eq!(parse_zoom_percent(" 87,5 % "), Some(0.875));
+    assert_eq!(parse_zoom_percent("10%"), Some(0.1));
+    assert_eq!(parse_zoom_percent("6400"), Some(64.0));
+    for bad in ["", "%", "abc", "9", "6401", "NaN", "inf", "-50", "1e9"] {
+        assert_eq!(parse_zoom_percent(bad), None, "{bad:?}");
+    }
+}

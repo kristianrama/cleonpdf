@@ -2525,3 +2525,4 @@ window	Zoom	Změnit velikost
 	You can still download it from its release page.	Stále si ji můžete stáhnout z její stránky s vydáním.
 	You have version {c}.	Máte verzi {c}.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Zjistí na GitHubu nejnovější vydání. Aktualizace se nainstaluje, jen pokud je podepsaná klíčem pro vydání CleonPDF.
+	Custom zoom	Vlastní lupa

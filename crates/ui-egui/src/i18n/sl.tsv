@@ -2456,3 +2456,4 @@ window	Zoom	Spremeni velikost
 	You can still download it from its release page.	Še vedno ga lahko prenesete z njegove strani izdaje.
 	You have version {c}.	Imate različico {c}.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	Vpraša GitHub za najnovejšo izdajo. Posodobitev se namesti le, če je podpisana s ključem izdaj CleonPDF.
+	Custom zoom	Povečava po meri

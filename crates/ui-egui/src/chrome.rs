@@ -595,10 +595,13 @@ pub fn right_rail(app: &mut CleonPdfApp, ui: &mut egui::Ui) {
                     view.fit = if view.fit == Fit::Width { Fit::Page } else { Fit::Width };
                     view.goto = Some((view.current, 0.0));
                 }
+                // The zoom, and the menu to set it: steps, fits, or any percentage.
                 let zoom = format!("{:.0}%", view.zoom * 100.0);
-                ui.allocate_ui_with_layout(vec2(40.0, 16.0), Layout::top_down(Align::Center), |ui| {
-                    ui.label(egui::RichText::new(zoom).font(theme::medium(11.0)).color(t.text_muted));
-                });
+                let percent = egui::Button::new(egui::RichText::new(zoom).font(theme::medium(11.0)).color(t.text_muted)).frame(false);
+                let resp = ui.add_sized([40.0, 18.0], percent);
+                resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tl!("Zoom")));
+                let resp = resp.on_hover_text(tl!("Zoom"));
+                egui::Popup::menu(&resp).show(|ui| zoom_menu(ui, view));
                 ui.add_space(6.0);
                 if icons::button(ui, "chevron-down", 30.0, false, tl!("Next page")).clicked() {
                     view.step_page(true);
@@ -659,6 +662,41 @@ fn page_display_menu(ui: &mut egui::Ui, view: &DocView) -> Option<&'static str> 
         ui.close();
     }
     picked
+}
+
+/// The zoom menu (the rail's percentage): the usual zooms, the fits, and a field for any zoom.
+fn zoom_menu(ui: &mut egui::Ui, view: &mut DocView) {
+    ui.set_min_width(170.0);
+    for preset in crate::canvas::ZOOM_PRESETS {
+        let label = format!("{:.0}%", preset * 100.0);
+        let current = view.fit == Fit::None && (view.zoom - preset).abs() < 0.001;
+        if ui.add(egui::Button::selectable(current, label)).clicked() {
+            view.set_zoom(preset);
+            ui.close();
+        }
+    }
+    ui.separator();
+    for (fit, label) in [(Fit::Page, "Fit one full page"), (Fit::Width, "Fit to width scrolling")] {
+        if ui.add(egui::Button::selectable(view.fit == fit, tl!(label))).clicked() {
+            view.set_fit(fit);
+            ui.close();
+        }
+    }
+    ui.separator();
+    ui.label(egui::RichText::new(tl!("Custom zoom")).small());
+    let id = egui::Id::new("zoom-custom");
+    let mut text = ui.data(|d| d.get_temp::<String>(id)).unwrap_or_default();
+    let field = ui.add(egui::TextEdit::singleline(&mut text).id(id).hint_text("%").desired_width(90.0));
+    let entered = field.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+    if let Some(zoom) = crate::canvas::parse_zoom_percent(&text).filter(|_| entered) {
+        view.set_zoom(zoom);
+        ui.data_mut(|d| {
+            d.remove::<String>(id);
+        });
+        ui.close();
+    } else {
+        ui.data_mut(|d| d.insert_temp(id, text));
+    }
 }
 
 /// The rail's Page display menu: Acrobat's view choices around the page display. Zoom changes

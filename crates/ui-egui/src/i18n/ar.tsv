@@ -2474,3 +2474,4 @@ window	Zoom	تغيير الحجم
 	You can still download it from its release page.	لا يزال بإمكانك تنزيله من صفحة إصداره.
 	You have version {c}.	لديك الإصدار {c}.
 	Asks GitHub for the latest release. An update is installed only if it is signed with CleonPDF's release key.	يسأل GitHub عن أحدث إصدار. لا يُثبَّت التحديث إلا إذا كان موقّعًا بمفتاح إصدار CleonPDF.
+	Custom zoom	تكبير مخصص
