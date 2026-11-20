@@ -180,10 +180,10 @@ fn hex_32(hex: &str) -> Option<[u8; 32]> {
     if digits.len() != 64 {
         return None;
     }
+    let value = |i: usize| digits.get(i).and_then(|&c| (c as char).to_digit(16));
     let mut out = [0u8; 32];
-    for (byte, pair) in out.iter_mut().zip(digits.chunks_exact(2)) {
-        let value = |c: u8| (c as char).to_digit(16);
-        *byte = u8::try_from(value(*pair.first()?)? * 16 + value(*pair.get(1)?)?).ok()?;
+    for (i, byte) in out.iter_mut().enumerate() {
+        *byte = u8::try_from(value(2 * i)? * 16 + value(2 * i + 1)?).ok()?;
     }
     Some(out)
 }
