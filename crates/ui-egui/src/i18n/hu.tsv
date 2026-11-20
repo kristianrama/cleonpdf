@@ -2438,3 +2438,5 @@ window	Zoom	Méretezés
 	All form fields	Az űrlap összes mezője
 	All except {fields}	Mind, kivéve: {fields}
 	Signer reached through {n} earlier lists of lists:	Az aláíró {n} korábbi listák listáján keresztül érhető el:
+	Check for updates once a day	Frissítések keresése naponta egyszer
+	Skip this version	Ennek a verziónak a kihagyása

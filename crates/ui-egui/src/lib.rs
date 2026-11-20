@@ -546,6 +546,11 @@ pub struct CleonPdfApp {
     pub dialog: Option<Dialog>,
     /// How to ask for the latest release (the desktop app sets it; see `updates`).
     pub update_source: Option<updates::UpdateSource>,
+    /// Preferences: ask for a newer release by itself, at most once a day, when CleonPDF starts.
+    pub check_updates_automatically: bool,
+    /// The host lets the automatic check run (the desktop app does, unless it is driven through
+    /// its control channel). Off by default, so tests and embedders never reach the network.
+    pub automatic_update_checks: bool,
     pub(crate) updates: updates::Updates,
     /// Lists the Print dialog's printers in the background (the desktop app sets it; see
     /// [`PrinterSource`]).
@@ -951,6 +956,8 @@ impl CleonPdfApp {
             fill_text_size: fill_sign::TEXT_SIZE,
             dialog: None,
             update_source: None,
+            check_updates_automatically: true,
+            automatic_update_checks: false,
             updates: updates::Updates::default(),
             printer_source: None,
             print_tasks: print_ui::PrintTasks::default(),
@@ -2264,6 +2271,9 @@ impl CleonPdfApp {
             settings["eutl_signers"] = serde_json::json!(self.eutl.signers.iter().map(cleonpdf_engine::sign::x509::to_pem).collect::<Vec<_>>());
         }
         settings["pkcs11_modules"] = serde_json::json!(self.pkcs11_modules);
+        settings["check_updates_automatically"] = serde_json::Value::Bool(self.check_updates_automatically);
+        settings["update_last_check"] = serde_json::json!(self.updates.last_check);
+        settings["update_skipped"] = serde_json::json!(self.updates.skipped);
         settings.to_string()
     }
 
@@ -2305,6 +2315,14 @@ impl CleonPdfApp {
         if let Some(on) = v["reload_changed_files"].as_bool() {
             self.reload_changed_files = on;
         }
+        if let Some(on) = v["check_updates_automatically"].as_bool() {
+            self.check_updates_automatically = on;
+        }
+        if let Some(at) = v["update_last_check"].as_u64() {
+            self.updates.last_check = at;
+        }
+        // A version tag, not free text: anything else is dropped.
+        self.updates.skipped = v["update_skipped"].as_str().filter(|t| t.len() <= 32 && updates::is_newer(t, "0.0.0")).map(str::to_string);
         self.pinned.restore(&v["pinned_folders"]);
         if let Ok(preference) = serde_json::from_value::<ThemePreference>(v["theme"].clone()) {
             self.set_theme_preference(preference);

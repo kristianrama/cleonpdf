@@ -44,6 +44,8 @@ Every team member uses multi-factor authentication for GitHub and SignPath.
 This program will not transfer any information to other networked systems unless specifically
 requested by the user or the person installing or operating it.
 
-The only network request CleonPDF makes itself is *Help ▸ Check for updates*, which asks GitHub
-for the latest release when you choose it. Nothing is downloaded or installed automatically. Links
+The only network request CleonPDF makes itself is the update check, which asks GitHub for the
+latest release when you choose *Help ▸ Check for updates* and, unless you turn off *Preferences ▸
+Check for updates once a day*, by itself at most once a day when the app starts. Nothing is
+downloaded or installed automatically. Links
 in documents open in your browser only when you click them and confirm.

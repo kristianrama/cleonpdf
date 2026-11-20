@@ -75,8 +75,9 @@ In order. Each item names its entry in [gaps.md](gaps.md).
 7. **1.0 polish (M14):** performance budgets and lazy loading (gap 13), right-to-left layout and the
    missing languages (gap 14), keyboard-only operation, a screen-reader audit.
 
-Decided against for now (owner, 2026-10-05): self-installing updates and an update check at start.
-Help ▸ Check for updates is manual only.
+Decided against for now (owner, 2026-10-05): self-installing updates. The update check at start,
+decided against then, was asked for by the owner on 2026-11-20: once a day at most, opt-out in
+Preferences, silent unless there is a version the user hasn't skipped.
 
 ## Milestones
 

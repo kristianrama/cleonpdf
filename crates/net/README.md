@@ -28,9 +28,12 @@ Layer L5: outbound network requests, in one crate. It is the only crate that ope
 
 Rules:
 
-- **Nothing runs on its own.** A request is made when the user asks for something that needs one
-  (check for updates, sign with a timestamp server, add validation information). No background
-  polling, no telemetry; opening or validating a document never makes a request.
+- **Nothing runs on its own**, with one exception. A request is made when the user asks for
+  something that needs one (check for updates, sign with a timestamp server, add validation
+  information). The exception (owner, 2026-11-20): the desktop app asks GitHub for the latest
+  release by itself at most once a day when it starts, unless Preferences ▸ Check for updates once
+  a day is off, and never when a script drives it through `--control`. No other background polling,
+  no telemetry; opening or validating a document never makes a request.
 - **No built-in server.** A timestamp server is whatever the user types; the address must be
   `http://` or `https://`, with a host, no user name or password, no spaces or control characters,
   at most 2,048 bytes (`check_url`).

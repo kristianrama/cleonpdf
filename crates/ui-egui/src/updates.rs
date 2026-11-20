@@ -3,7 +3,10 @@
 //! The desktop app supplies how to ask ([`CleonPdfApp::update_source`]), so this crate has no
 //! network code; without a source (the web build, tests) the command opens the releases page.
 //! CleonPDF never downloads or installs anything itself: the user downloads the new version.
-//! It asks only when the user does: there is no check at start (the owner's decision).
+//! It asks when the user does, and by itself at most once a day when CleonPDF starts
+//! ([`CleonPdfApp::check_updates_automatically`], on unless turned off in Preferences, and only
+//! where the host allows it). An automatic check that finds nothing new, or fails, says nothing;
+//! one that finds a version the user hasn't skipped opens the Updates dialog.
 
 use std::sync::Arc;
 
@@ -55,26 +58,63 @@ pub(crate) enum Check {
     Done(Result<Release, String>),
 }
 
+/// How long an automatic check waits after the last one that got an answer: a day.
+pub const CHECK_INTERVAL_SECS: u64 = 24 * 60 * 60;
+
 #[derive(Default)]
 pub(crate) struct Updates {
     pub(crate) check: Check,
     /// The Updates dialog is showing.
     pub(crate) open: bool,
+    /// The running check started by itself: it opens the dialog only for news.
+    automatic: bool,
+    /// This run has already considered an automatic check.
+    considered: bool,
+    /// When an automatic or manual check last got an answer (Unix seconds; 0: never).
+    pub(crate) last_check: u64,
+    /// The release the user chose to skip (its tag): automatic checks don't offer it again.
+    pub(crate) skipped: Option<String>,
 }
 
 impl CleonPdfApp {
     /// Help ▸ Check for updates: ask for the latest release and show the outcome.
     pub fn check_for_updates(&mut self) {
+        self.start_check(false);
+    }
+
+    /// Ask for the latest release by itself when a check is due: the preference is on, the host
+    /// allows it, this run hasn't considered one yet and the last answer is a day old (or from a
+    /// clock that has since gone back). Called each frame; `now` is Unix seconds.
+    pub fn automatic_update_check(&mut self, now: u64) {
+        if self.updates.considered || !self.check_updates_automatically || !self.automatic_update_checks || self.update_source.is_none() {
+            return;
+        }
+        self.updates.considered = true;
+        let last = self.updates.last_check;
+        if now >= last && now - last < CHECK_INTERVAL_SECS {
+            return;
+        }
+        self.start_check(true);
+    }
+
+    fn start_check(&mut self, automatic: bool) {
         let Some(source) = self.update_source.clone() else {
-            self.open_url(RELEASES_PAGE);
+            if !automatic {
+                self.open_url(RELEASES_PAGE);
+            }
             return;
         };
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.updates.open = true;
+            if !automatic {
+                // Asking while an automatic check runs makes that one the user's.
+                self.updates.open = true;
+                self.updates.automatic = false;
+            }
             if matches!(self.updates.check, Check::Running(_)) {
                 return;
             }
+            self.updates.automatic = automatic;
             let (tx, rx) = std::sync::mpsc::channel();
             let ctx = self.ctx.clone();
             std::thread::spawn(move || {
@@ -89,20 +129,35 @@ impl CleonPdfApp {
         #[cfg(target_arch = "wasm32")]
         {
             let _ = source;
-            self.open_url(RELEASES_PAGE);
+            if !automatic {
+                self.open_url(RELEASES_PAGE);
+            }
         }
     }
 
     /// Pick up a finished check (each frame).
     pub(crate) fn poll_updates(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
-        if let Check::Running(rx) = &self.updates.check {
-            let result = match rx.try_recv() {
-                Ok(r) => r,
-                Err(std::sync::mpsc::TryRecvError::Empty) => return,
-                Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("the update check stopped unexpectedly".into()),
-            };
-            self.updates.check = Check::Done(result);
+        {
+            let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs());
+            self.automatic_update_check(now);
+            if let Check::Running(rx) = &self.updates.check {
+                let result = match rx.try_recv() {
+                    Ok(r) => r,
+                    Err(std::sync::mpsc::TryRecvError::Empty) => return,
+                    Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("the update check stopped unexpectedly".into()),
+                };
+                if result.is_ok() {
+                    self.updates.last_check = now;
+                }
+                if std::mem::take(&mut self.updates.automatic) {
+                    let news = result.as_ref().is_ok_and(|r| {
+                        is_newer(&r.version, env!("CARGO_PKG_VERSION")) && self.updates.skipped.as_deref() != Some(r.version.as_str())
+                    });
+                    self.updates.open |= news;
+                }
+                self.updates.check = Check::Done(result);
+            }
         }
     }
 }
@@ -116,6 +171,7 @@ pub(crate) fn dialog(app: &mut CleonPdfApp, ctx: &egui::Context) {
     let current = env!("CARGO_PKG_VERSION");
     let mut close = false;
     let mut download: Option<String> = None;
+    let mut skip: Option<String> = None;
     let modal = crate::widgets::show_modal(ctx, "updates", |ui| {
         ui.set_width(420.0);
         ui.horizontal(|ui| {
@@ -145,6 +201,7 @@ pub(crate) fn dialog(app: &mut CleonPdfApp, ctx: &egui::Context) {
                     .color(t.text_muted),
                 );
                 download = Some(r.url.clone());
+                skip = Some(r.version.clone());
             }
             Check::Done(Ok(_)) => {
                 ui.label(crate::i18n::fmt(tl!("CleonPDF {c} is up to date."), &[("c", current)]));
@@ -171,8 +228,10 @@ pub(crate) fn dialog(app: &mut CleonPdfApp, ctx: &egui::Context) {
             if let Some(url) = download.take() {
                 let get = widgets::pill_button(ui, tl!("Download"), true).clicked();
                 let later = widgets::pill_button(ui, tl!("Later"), false).clicked();
-                close = get || later;
+                let skipped = widgets::pill_button(ui, tl!("Skip this version"), false).clicked();
+                close = get || later || skipped;
                 download = get.then_some(url);
+                skip = skip.take().filter(|_| skipped);
             } else if widgets::pill_button(ui, tl!("Close"), true).clicked() {
                 close = true;
             }
@@ -181,9 +240,13 @@ pub(crate) fn dialog(app: &mut CleonPdfApp, ctx: &egui::Context) {
     if modal.should_close() {
         close = true;
         download = None;
+        skip = None;
     }
     if close {
         app.updates.open = false;
+        if skip.is_some() {
+            app.updates.skipped = skip;
+        }
         if let Some(url) = download {
             app.open_url(&url);
         }
