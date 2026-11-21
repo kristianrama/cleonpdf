@@ -53,19 +53,38 @@ pub fn validate_document_input(bytes: &[u8]) -> Result<(), String> {
         return Err("this font family is excluded by the project's asset policy".into());
     }
     let f = FontRef::new(bytes).map_err(|e| e.to_string())?;
-    let attribution: String =
-        [StringId::COPYRIGHT_NOTICE, StringId::MANUFACTURER].into_iter().flat_map(|id| f.localized_strings(id)).map(|s| s.to_string()).collect();
-    if attribution.to_ascii_lowercase().contains("adobe") {
+    // An Adobe scan that could not finish fails closed, like a match.
+    if any_name_record(&f, &[StringId::COPYRIGHT_NOTICE, StringId::MANUFACTURER], |t| t.to_ascii_lowercase().contains("adobe")) != Some(false) {
         return Err("Adobe-authored font assets are excluded by the project's asset policy".into());
     }
-    let license: String = f.localized_strings(StringId::LICENSE_DESCRIPTION).map(|s| s.to_string()).collect();
-    if !["SIL OPEN FONT", "SIL Open Font", "Apache License", "Ubuntu Font Licence", "Bitstream Vera", "MIT License"]
-        .iter()
-        .any(|l| license.contains(l))
-    {
+    let licences = ["SIL OPEN FONT", "SIL Open Font", "Apache License", "Ubuntu Font Licence", "Bitstream Vera", "MIT License"];
+    if any_name_record(&f, &[StringId::LICENSE_DESCRIPTION], |t| licences.iter().any(|l| t.contains(l))) != Some(true) {
         return Err("select an openly licensed font whose name table declares its licence (OFL, Apache, Ubuntu, Bitstream Vera or MIT)".into());
     }
     Ok(())
+}
+
+/// Name-table text one policy check reads in all.
+const MAX_NAME_BYTES: usize = 1 << 20;
+
+/// Whether `found` holds for any record of the name-table strings `ids`, read one at a time
+/// within [`MAX_NAME_BYTES`] in all: `Some(true)` for a match, `Some(false)` when every record was
+/// read and none matched, `None` when the allowance ran out first (a record that does not fit what
+/// is left is not searched). The table can point many records at one large string, so the records
+/// are never joined.
+fn any_name_record(font: &FontRef, ids: &[skrifa::string::StringId], found: impl Fn(&str) -> bool) -> Option<bool> {
+    let mut left = MAX_NAME_BYTES;
+    for s in ids.iter().flat_map(|id| font.localized_strings(*id)) {
+        let text = s.to_string();
+        if text.len() > left {
+            return None;
+        }
+        left -= text.len().max(1).min(left);
+        if found(&text) {
+            return Some(true);
+        }
+    }
+    Some(false)
 }
 
 /// Validate before allocating any PDF objects, so an invalid font cannot partly mutate a doc.
@@ -243,6 +262,17 @@ pub fn embed_mapping(
 mod tests {
     use super::*;
     use crate::pdf::Metrics;
+
+    #[test]
+    fn licence_policy_reads_name_records_one_at_a_time() {
+        use skrifa::string::StringId;
+        let bytes = include_bytes!("../../../assets/fonts/Inter-Regular.ttf");
+        assert!(validate_document_input(bytes).is_ok(), "an OFL font passes");
+        let face = FontRef::new(bytes).unwrap();
+        assert_eq!(any_name_record(&face, &[StringId::LICENSE_DESCRIPTION], |t| t.contains("SIL Open Font")), Some(true));
+        assert_eq!(any_name_record(&face, &[StringId::LICENSE_DESCRIPTION], |_| false), Some(false));
+        assert_eq!(any_name_record(&face, &[], |_| true), Some(false), "no ids, no records");
+    }
 
     #[test]
     fn full_unicode_embedding_keeps_outlines_advances_and_roundtrip_codes() {
