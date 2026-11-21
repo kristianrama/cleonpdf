@@ -487,14 +487,21 @@ fn switching_to_the_list_lets_renders_under_way_finish() {
     let files: Vec<(String, Vec<u8>)> = (0..6).map(|i| (format!("f{i}.pdf"), heavy())).collect();
     let mut h = grid_after_one(files.iter().map(|(n, b)| (n.as_str(), b.clone())).collect(), vec2(1400.0, 900.0));
     assert!(h.state().combine_thumbnails_rendering() > 0, "renders are under way");
-    // Straight to the list, while the grid's first thumbnails are still rendering.
+    // What the grid has asked for so far: thumbnails done, and renders under way. On a fast
+    // machine the first renders may already be done and the next ones started.
+    let asked = h.state().combine_thumbnails().iter().filter(|t| ready(t)).count() + h.state().combine_thumbnails_rendering();
+    // Straight to the list, while the grid's thumbnails are still rendering.
     h.state_mut().set_option("combine-view", "list").unwrap();
     assert!(settle(&mut h, |app| app.combine_thumbnails_rendering() == 0), "renders finish and let go of their threads");
     for _ in 0..20 {
         h.run_steps(1);
         assert_eq!(h.state().combine_thumbnails_rendering(), 0, "nothing new starts in the list");
     }
-    assert!(h.state().combine_thumbnails().contains(&CombineThumb::None), "the rest wait for the grid");
+    let done = h.state().combine_thumbnails().iter().filter(|t| ready(t)).count();
+    assert!(done <= asked, "only the renders under way finished: {done} done, {asked} asked for");
+    if asked < files.len() {
+        assert!(h.state().combine_thumbnails().contains(&CombineThumb::None), "the rest wait for the grid");
+    }
     assert!(settle(&mut h, |app| app.combine_thumbnail_threads_exited()), "and their threads exit");
     // Back in the grid, the rest follow.
     h.get_by_label("Grid view").click();
