@@ -28,6 +28,10 @@ pub fn create_staging(
     form: StagingName,
     suffixes: impl IntoIterator<Item = u64>,
 ) -> std::io::Result<(PathBuf, std::fs::File)> {
+    // One name, in `dir`: a separator in it would put the staging file somewhere else.
+    if name.is_empty() || name.chars().any(std::path::is_separator) {
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "the file name is not a single name"));
+    }
     // At most 128 bytes of the target's name, cut between characters, so the staging name fits
     // the 255-byte (Linux, macOS) and 255-unit (Windows) limits however long that name is.
     let mut stem = String::new();
@@ -67,6 +71,21 @@ pub fn staging_suffixes() -> impl Iterator<Item = u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A name with a path separator in it would stage the file outside `dir`: it is refused.
+    #[test]
+    fn a_name_with_path_components_is_refused() {
+        let dir = std::env::temp_dir().join(format!("cleonpdf-platform-staging-components-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let windows_only: &[&str] = if cfg!(windows) { &["sub\\out.pdf"] } else { &[] };
+        for &name in ["../out.pdf", "sub/out.pdf", "/out.pdf", ""].iter().chain(windows_only) {
+            let err = create_staging(&dir, name, StagingName::SuffixThenTag, [0xab]).unwrap_err();
+            assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput, "{name:?}");
+        }
+        assert!(std::fs::read_dir(&dir).unwrap().next().is_none(), "nothing was created");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     /// A fresh, empty folder for one test.
     fn test_dir(test: &str) -> PathBuf {

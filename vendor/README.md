@@ -94,3 +94,18 @@ patterns, retained contexts, Huffman tables, halftone grids) is bounded per page
 segments, references and symbols a segment may name is capped, /JBIG2Globals that are JBIG2
 themselves are not decoded, and a stream's decoding work is bounded in total (2^30 units: a pixel
 decoded costs one, a row four). Covered by the `jbig2_*` tests in `raster::tests`.
+
+JPX on rotated pages (hayro and hayro-interpret, ported from PdfCraft 42c0ba86): the decode-size
+hint hayro hands `hayro-jpeg2000` is the lengths of the image's axes on the device, from the
+transform's linear part, at least 1 each (mapping the corners as points took in the translation,
+so on a `/Rotate 90` page a side of 0 divided the image size: a crash on every rotated JPX page),
+and an image with a colour-key `/Mask` is decoded at full size, since the key is matched against
+samples a reduced decode averages. Covered by `raster::tests::jpx_image_on_a_rotated_page_draws_instead_of_crashing`
+and `raster::tests::jpx_with_a_colour_key_mask_is_decoded_at_full_size`.
+
+TrueType glyph selection (hayro-interpret, ported from PdfCraft 2251a75c): a non-symbolic TrueType
+font's code names its glyph through the Windows (3, 1) and (3, 10) cmaps, then the Unicode ones,
+then the Macintosh one (also by the Unicode name of the glyph), then post-table names and their
+`uniXXXX`/`uXXXX` and suffix-stripped aliases; an explicit `.notdef` draws nothing rather than
+the raw code; `/Flags` with bits PDF doesn't define keep the ones it does. Accented letters in
+fonts with only a Mac or a UCS-4 cmap rendered as blanks. Covered by `crates/render/tests/truetype_cmap.rs`.

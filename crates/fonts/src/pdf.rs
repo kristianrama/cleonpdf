@@ -61,6 +61,10 @@ pub struct Metrics {
     code_len: usize,
     /// Valid single-character explicit mappings, preindexed once for large full CJK fonts.
     explicit_reverse: HashMap<char, u32>,
+    /// A codespace range of the embedded CMap was dropped (not one to four bytes, or past the range
+    /// limit): how the font's codes split into characters is then a guess, and a caller that must
+    /// know which text a string holds (redaction) refuses to rely on it.
+    pub codespaces_dropped: bool,
 }
 
 fn nums(doc: &Document, o: Option<&Object>) -> Vec<f64> {
@@ -474,18 +478,23 @@ fn number(t: &Tok) -> Option<u32> {
 /// Codespace ranges and CID mappings from an embedded CMap stream, at most
 /// [`MAX_CMAP_RANGES`] of each (every glyph searches them).
 #[allow(clippy::type_complexity)]
-fn parse_cmap(data: &[u8]) -> (Vec<(usize, Vec<u8>, Vec<u8>)>, Vec<(u32, u32, u32)>) {
+fn parse_cmap(data: &[u8]) -> (Vec<(usize, Vec<u8>, Vec<u8>)>, Vec<(u32, u32, u32)>, bool) {
     let (mut spaces, mut cids) = (Vec::new(), Vec::new());
+    let mut dropped = false;
+    let mut seen = HashSet::new();
     let mut toks = Lexer::new(data);
     while let Some(t) = toks.next() {
         match t {
             Tok::Word(b"begincodespacerange") => {
                 while let Some([lo, hi]) = entry(&mut toks, b"endcodespacerange") {
-                    if let (Tok::Hex(Some(lo)), Tok::Hex(Some(hi))) = (lo, hi)
-                        && lo.len() == hi.len()
-                        && spaces.len() < MAX_CMAP_RANGES
-                    {
-                        spaces.push((lo.len(), lo, hi));
+                    if let (Tok::Hex(Some(lo)), Tok::Hex(Some(hi))) = (lo, hi) {
+                        // A code is at most four bytes; a repeated range can never match first,
+                        // so it only costs every glyph a comparison.
+                        if lo.len() != hi.len() || !(1..=4).contains(&lo.len()) || spaces.len() >= MAX_CMAP_RANGES {
+                            dropped = true;
+                        } else if seen.insert((lo.clone(), hi.clone())) {
+                            spaces.push((lo.len(), lo, hi));
+                        }
                     }
                 }
             }
@@ -511,7 +520,7 @@ fn parse_cmap(data: &[u8]) -> (Vec<(usize, Vec<u8>, Vec<u8>)>, Vec<(u32, u32, u3
         }
     }
     spaces.sort_by_key(|s| s.0);
-    (spaces, cids)
+    (spaces, cids, dropped)
 }
 
 impl Metrics {
@@ -538,6 +547,7 @@ impl Metrics {
             visual_order: false,
             code_len: 1,
             explicit_reverse: (32..127u8).map(|c| (char::from(c), u32::from(c))).collect(),
+            codespaces_dropped: false,
         }
     }
 
@@ -561,7 +571,7 @@ impl Metrics {
         m.code_len = match &m.codes {
             Codes::One => 1,
             Codes::Two => 2,
-            Codes::Ranges(r) => r.last().map_or(2, |x| x.0),
+            Codes::Ranges(r) => r.last().map_or(2, |x| x.0.clamp(1, 4)),
         };
         m.unicode = unicode_map(doc, font, m.composite);
         let mut reverse = HashMap::new();
@@ -597,7 +607,8 @@ impl Metrics {
                 && let Object::Stream(s) = &*e
                 && let Ok(data) = s.decoded()
             {
-                let (spaces, cids) = parse_cmap(&data);
+                let (spaces, cids, dropped) = parse_cmap(&data);
+                m.codespaces_dropped = dropped;
                 if !spaces.is_empty() {
                     m.codes = Codes::Ranges(spaces);
                 }
@@ -1424,9 +1435,28 @@ mod tests {
         let mut got: Vec<_> = map.iter().map(|(c, u)| (*c, u.as_str())).collect();
         got.sort_unstable();
         assert_eq!(got, [(3, " "), (0x10, "é"), (0x24, "A"), (0x25, "B"), (0x26, "C"), (0x30, "H"), (0x31, "i")]);
-        let (spaces, cids) = parse_cmap(b"1 begincodespacerange<00><FF>endcodespacerange 1 begincidrange<20><7E>1 endcidrange");
+        let (spaces, cids, _) = parse_cmap(b"1 begincodespacerange<00><FF>endcodespacerange 1 begincidrange<20><7E>1 endcidrange");
         assert_eq!(spaces, [(1, vec![0], vec![0xff])]);
         assert_eq!(cids, [(0x20, 0x7e, 1)]);
+    }
+
+    #[test]
+    fn codespaces_are_deduplicated_and_at_most_four_bytes() {
+        let cmap = "3 begincodespacerange <00> <7F> <00> <7F> <0000000000> <FFFFFFFFFF> endcodespacerange";
+        let (spaces, ..) = parse_cmap(cmap.as_bytes());
+        assert_eq!(spaces, vec![(1, vec![0x00], vec![0x7F])]);
+        let many: String = (0..2000).map(|_| "<0000> <FFFF>\n").collect();
+        let (spaces, ..) = parse_cmap(format!("2000 begincodespacerange\n{many}endcodespacerange").as_bytes());
+        assert_eq!(spaces.len(), 1);
+    }
+
+    /// A codespace range of five bytes, or one whose ends differ in length, can't be kept and is
+    /// said to be dropped; a repeated range is not a loss.
+    #[test]
+    fn a_dropped_codespace_range_is_reported() {
+        assert!(parse_cmap(b"1 begincodespacerange <0000000000> <FFFFFFFFFF> endcodespacerange").2);
+        assert!(parse_cmap(b"1 begincodespacerange <00> <FFFF> endcodespacerange").2);
+        assert!(!parse_cmap(b"2 begincodespacerange <0000> <FFFF> <0000> <FFFF> endcodespacerange").2);
     }
 
     #[test]
@@ -1453,7 +1483,7 @@ mod tests {
         let map = to_unicode(b"1 beginbfrange <0001> <0003> [<0041> <zz> <0043>] endbfrange");
         assert_eq!((map.get(&2), map.get(&3).map(String::as_str)), (None, Some("C")));
         let mut m = Metrics::fallback();
-        (_, m.cid_map) = parse_cmap(b"1 begincidrange <0000> <FFFF> 4294967295 endcidrange");
+        (_, m.cid_map, _) = parse_cmap(b"1 begincidrange <0000> <FFFF> 4294967295 endcidrange");
         assert_eq!(m.cid(5), u32::MAX);
         let mut doc = Document::new_empty();
         let mut enc = Dict::new();

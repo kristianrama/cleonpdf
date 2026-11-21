@@ -1361,26 +1361,21 @@ impl<'a> Device<'a> for Renderer {
         self.ctx.set_paint_transform(Affine::IDENTITY);
         self.ctx.set_aliasing_threshold(Some(1));
 
-        let target_width = (transform * Point::new(image.width() as f64, 0.0))
-            .to_vec2()
-            .length()
-            .ceil() as u32;
-        let target_height = (transform * Point::new(0.0, image.height() as f64))
-            .to_vec2()
-            .length()
-            .ceil() as u32;
+        // CleonPDF patch: the decode-size hint is the lengths of the image's axes on the device,
+        // from the transform's linear part. Mapping the corners as points took in the
+        // translation, so on a `/Rotate 90` page a corner on the device origin gave a side of 0,
+        // which `hayro-jpeg2000` divides the image size by (a crash on every rotated JPX page).
+        // As the hint each side is at least 1. `as` saturates, and turns NaN into 0.
+        let (x_axis, y_axis) = x_y_advances(&transform);
+        let drawn_width = (f64::from(image.width()) * x_axis.length()).ceil() as u32;
+        let drawn_height = (f64::from(image.height()) * y_axis.length()).ceil() as u32;
 
         // PdfCraft patch: previews skip images that would cover only a few device pixels.
-        // Final renders always draw them. (Measured as axis lengths: the `target_*` above
-        // map a point, so they include the translation and only suit the decode hint.)
-        if self.preview {
-            let c = transform.as_coeffs();
-            let tiny_w = (f64::from(image.width()) * (c[0] * c[0] + c[1] * c[1]).sqrt()).ceil() as u32;
-            let tiny_h = (f64::from(image.height()) * (c[2] * c[2] + c[3] * c[3]).sqrt()).ceil() as u32;
-            if tiny_w.saturating_mul(tiny_h) < PREVIEW_MIN_IMAGE_AREA {
-                return;
-            }
+        // Final renders always draw them.
+        if self.preview && drawn_width.saturating_mul(drawn_height) < PREVIEW_MIN_IMAGE_AREA {
+            return;
         }
+        let (target_width, target_height) = (drawn_width.max(1), drawn_height.max(1));
 
         match image {
             hayro_interpret::Image::Stencil(s) => {
