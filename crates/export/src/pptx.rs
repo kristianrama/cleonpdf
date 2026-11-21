@@ -714,9 +714,16 @@ mod tests {
     fn pptx_opens_in_libreoffice() {
         let p = sample_page();
         let bytes = pptx(&[p], "LibreOffice Check");
-        let dir = std::env::temp_dir().join(format!("cleonpdf-pptx-lo-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let _ = std::fs::create_dir_all(&dir);
+        // A new folder of our own, never one left (or planted) at a guessable name.
+        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+        let dir = std::env::temp_dir().join(format!("cleonpdf-pptx-lo-{}-{nanos:x}", std::process::id()));
+        let mut made = std::fs::DirBuilder::new();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::DirBuilderExt as _;
+            made.mode(0o700);
+        }
+        made.create(&dir).expect("a fresh test folder");
         let pptx_path = dir.join("test.pptx");
         std::fs::write(&pptx_path, &bytes).unwrap();
 
