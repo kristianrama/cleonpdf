@@ -717,6 +717,7 @@ mod tests {
         // A new folder of our own, never one left (or planted) at a guessable name.
         let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
         let dir = std::env::temp_dir().join(format!("cleonpdf-pptx-lo-{}-{nanos:x}", std::process::id()));
+        #[cfg_attr(not(unix), allow(unused_mut))] // only Unix sets a mode
         let mut made = std::fs::DirBuilder::new();
         #[cfg(unix)]
         {
