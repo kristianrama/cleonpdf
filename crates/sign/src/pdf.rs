@@ -27,6 +27,9 @@ use crate::x509::{Certificate, build_chain, build_chain_noted};
 #[cfg(test)]
 #[path = "pdf_discovery_tests.rs"]
 mod discovery_tests;
+#[cfg(test)]
+#[path = "pdf_unlisted_tests.rs"]
+mod unlisted_tests;
 
 /// Digests of signed byte ranges (and parsed signed revisions), kept across revalidations of
 /// one document: incremental edits only append to the file, so the signed bytes and their
@@ -1416,6 +1419,8 @@ fn classify_changes(doc: &Document, old: Option<Document>, p: Option<u8>, locks:
             disallowed.push(what);
         }
     }
+    let signed_role = |num: u32| old_content.iter().chain(signed_pages.iter()).any(|r| r.num == num);
+    refuse_unlisted_bodies(doc, &old, &signed_role, &mut disallowed);
     // The trailer chooses the catalog. A later revision that points it at another catalog (one
     // already in the signed file, so no object changes) shows another document.
     if doc.root() != old.root() && !disallowed.contains(&kind::STRUCTURE) {
@@ -1425,16 +1430,23 @@ fn classify_changes(doc: &Document, old: Option<Document>, p: Option<u8>, locks:
         if same_place(num) {
             continue;
         }
+        // A new place for the object. What is read there is what the renderer reads only when
+        // the entry locates the object itself: where this reader had to search for it, another
+        // reader may arrive at a different body, and an entry that leads to no object at all
+        // (which this reader reads as null, and so as nothing) makes the renderer rebuild its
+        // object index from the file's headers. Whatever the object reads as here, no writer has
+        // a reason to write such an entry after signing.
+        if !doc.is_edited(num) && !doc.xref_entry_is_exact(num) {
+            if !disallowed.contains(&kind::OTHER) {
+                disallowed.push(kind::OTHER);
+            }
+            continue;
+        }
         let r = ObjRef { num, generation: doc.generation(num) };
         let new = doc.get(r);
         let before = old.try_get(num).ok().filter(|o| !matches!(**o, Object::Null));
         if before.as_deref() == Some(&*new) {
-            // The same content at a new place. That is true for the renderer as well only when
-            // the entry locates the object itself: where this reader had to search for the
-            // object, another reader may arrive at a different one.
-            if !doc.is_edited(num) && !doc.xref_entry_is_exact(num) && !disallowed.contains(&kind::OTHER) {
-                disallowed.push(kind::OTHER);
-            }
+            // The same content at a new place.
             continue;
         }
         let what = match &*new {
@@ -1492,6 +1504,180 @@ fn classify_changes(doc: &Document, old: Option<Document>, p: Option<u8>, locks:
         disallowed.push(kind::LOCKED_FIELDS);
     }
     if disallowed.is_empty() { Modification::Allowed(allowed) } else { Modification::Disallowed(disallowed) }
+}
+
+/// When an entry it follows leads to no object, the renderer rebuilds its object index from the
+/// `N G obj` headers in the file, and there the last header for a number wins. A body appended
+/// after signing that is not where this reader reads its number can then be drawn in place of
+/// the object compared: a new body for a signed page's content that no section lists, or a
+/// revision written back to an earlier body. No writer leaves one, so each is refused, as page
+/// content when the number had a signed role (`signed_role`).
+fn refuse_unlisted_bodies(doc: &Document, old: &Document, signed_role: &dyn Fn(u32) -> bool, disallowed: &mut Vec<&'static str>) {
+    let refused: Vec<&'static str> = match unlisted_bodies(doc, old) {
+        Some(nums) => nums.into_iter().map(|num| if signed_role(num) { kind::PAGE_CONTENT } else { kind::OTHER }).collect(),
+        None => vec![kind::OTHER],
+    };
+    for what in refused {
+        if !disallowed.contains(&what) {
+            disallowed.push(what);
+        }
+    }
+}
+
+/// The object numbers with a body in the bytes appended after the signed revision `old` that
+/// `doc` does not read for them: for each number and generation, the last `N G obj` header there
+/// must be where `doc`'s cross-reference entry for that number points, with that generation. A
+/// renderer that rebuilds its object index from the file's headers takes the last one, so any
+/// other body is one it may draw while this reader compares another. `None` past a bound on the
+/// headers found, or on the work spent finding them, when the appended bytes cannot be judged.
+///
+/// The scan finds more headers than a renderer's would (it does not skip dictionaries or check
+/// that an object follows), so it errs towards refusing.
+fn unlisted_bodies(doc: &Document, old: &Document) -> Option<Vec<u32>> {
+    const MAX_HEADERS: usize = 1 << 20;
+    let data = doc.bytes();
+    let start = old.bytes().len();
+    let Some(appended) = data.get(start..) else { return Some(Vec::new()) };
+    // Each candidate header may read a comment, a generation token or white space to its end, and
+    // later ones can start inside or before it: without a bound, that is quadratic in the
+    // appended bytes. Ordinary bytes, binary stream data included, spend a small fraction of it.
+    let mut work = appended.len().saturating_mul(16).saturating_add(1 << 20);
+    let mut last: HashMap<(u32, u16), usize> = HashMap::new();
+    let mut i = 0;
+    while let Some(b) = appended.get(i) {
+        if work == 0 {
+            return None;
+        }
+        let starts_number = b.is_ascii_digit() && i.checked_sub(1).and_then(|p| appended.get(p)).is_none_or(|p| !p.is_ascii_digit());
+        if let Some((num, generation, end)) = starts_number.then(|| object_header(appended, i, &mut work)).flatten() {
+            last.insert((num, generation), start.saturating_add(i));
+            if last.len() > MAX_HEADERS {
+                return None;
+            }
+            i = end;
+        } else {
+            i += 1;
+        }
+    }
+    // Where an offset leads, past any white space before the header, that white space spent from
+    // `work`: many entries can point before one long run of it. Offsets may count from a `%PDF-`
+    // header that does not start the file.
+    let header_at = |offset: u64, work: &mut usize| -> Vec<usize> {
+        let Ok(offset) = usize::try_from(offset) else { return Vec::new() };
+        let shifted = (doc.header_offset() != 0).then(|| offset.checked_add(doc.header_offset())).flatten();
+        let mut found = Vec::new();
+        for at in [Some(offset), shifted].into_iter().flatten() {
+            let Some(rest) = data.get(at..).filter(|_| *work > 0) else { continue };
+            let blank = rest.iter().take_while(|b| is_white_space(**b)).count();
+            *work = work.saturating_sub(blank);
+            found.push(at.saturating_add(blank));
+        }
+        found
+    };
+    // A revision's own cross-reference stream with no row for itself, as many writers leave it
+    // (ISO 32000-2 §7.5.8.3 asks for one; readers do without): the section this reader followed
+    // from `startxref` or `/Prev`, so the object there is that stream. Exempt only at exactly
+    // where such a section starts, and only under a number that names nothing else: the signed
+    // revision has no entry for it, this one lists none, and nothing refers to it.
+    let mut sections: Vec<usize> = Vec::new();
+    for r in doc.revisions().iter().filter(|r| r.is_stream) {
+        sections.extend(header_at(r.xref_offset, &mut work));
+    }
+    let referenced = std::cell::OnceCell::new();
+    let own_section = |num: u32, at: usize| {
+        sections.contains(&at)
+            && old.xref_entry(num).is_none()
+            && referenced.get_or_init(|| references(doc)).as_ref().is_some_and(|found: &HashSet<ObjRef>| !found.iter().any(|r| r.num == num))
+    };
+    let mut unlisted: Vec<u32> = last
+        .into_iter()
+        .filter(|((num, generation), at)| match doc.xref_entry(*num) {
+            Some(cleonpdf_cos::XrefEntry::InFile { offset, generation: g }) => g != *generation || !header_at(offset, &mut work).contains(at),
+            None => !own_section(*num, *at),
+            _ => true,
+        })
+        .map(|((num, _), _)| num)
+        .collect();
+    if work == 0 {
+        return None;
+    }
+    unlisted.sort_unstable();
+    unlisted.dedup();
+    Some(unlisted)
+}
+
+/// Every reference in `doc`'s objects and trailer; `None` past a bound on references or depth.
+fn references(doc: &Document) -> Option<HashSet<ObjRef>> {
+    const MAX_REFERENCES: usize = 1 << 22;
+    const MAX_DEPTH: u8 = 64;
+    fn walk(o: &Object, depth: u8, found: &mut HashSet<ObjRef>) -> bool {
+        if depth > MAX_DEPTH {
+            return false;
+        }
+        match o {
+            Object::Ref(r) => {
+                found.insert(*r);
+                found.len() <= MAX_REFERENCES
+            }
+            Object::Dict(d) => d.iter().all(|(_, v)| walk(v, depth + 1, found)),
+            Object::Stream(s) => s.dict.iter().all(|(_, v)| walk(v, depth + 1, found)),
+            Object::Array(a) => a.iter().all(|v| walk(v, depth + 1, found)),
+            _ => true,
+        }
+    }
+    let mut found = HashSet::new();
+    for num in doc.object_numbers() {
+        if !walk(&*doc.try_get(num).ok()?, 0, &mut found) {
+            return None;
+        }
+    }
+    doc.trailer().iter().all(|(_, v)| walk(v, 0, &mut found)).then_some(found)
+}
+
+/// PDF white space (ISO 32000-2 §7.2.3, Table 1).
+fn is_white_space(b: u8) -> bool {
+    matches!(b, b'\0' | b'\t' | b'\n' | b'\x0c' | b'\r' | b' ')
+}
+
+/// An `N G obj` header starting at `at` in `bytes`: its number, its generation (0 when it is no
+/// generation number, as a renderer rebuilding its index reads it) and where it ends. White space
+/// and comments may separate the parts. The white space, comment and generation bytes read are
+/// spent from `work`.
+fn object_header(bytes: &[u8], at: usize, work: &mut usize) -> Option<(u32, u16, usize)> {
+    let number_end = at.checked_add(count_while(bytes, at, |c| c.is_ascii_digit()))?;
+    let num = std::str::from_utf8(bytes.get(at..number_end)?).ok()?.parse::<u32>().ok()?;
+    let generation_at = skip_space_and_comments(bytes, number_end, work);
+    let generation_len = count_while(bytes, generation_at, |c| c.is_ascii_digit() || matches!(c, b'.' | b'+' | b'-'));
+    *work = work.saturating_sub(generation_len);
+    if generation_len == 0 {
+        return None;
+    }
+    let generation_end = generation_at.checked_add(generation_len)?;
+    let generation = std::str::from_utf8(bytes.get(generation_at..generation_end)?).ok().and_then(|g| g.parse::<u16>().ok()).unwrap_or(0);
+    let keyword = skip_space_and_comments(bytes, generation_end, work);
+    (bytes.get(keyword..keyword.checked_add(3)?)? == b"obj").then_some((num, generation, keyword.saturating_add(3)))
+}
+
+/// How many bytes from `from` on `accept` takes.
+fn count_while(bytes: &[u8], from: usize, accept: fn(u8) -> bool) -> usize {
+    bytes.get(from..).map_or(0, |rest| rest.iter().take_while(|b| accept(**b)).count())
+}
+
+/// Where the white space and comments from `from` end, every byte passed spent from `work`.
+fn skip_space_and_comments(bytes: &[u8], mut from: usize, work: &mut usize) -> usize {
+    while let Some(b) = bytes.get(from) {
+        if is_white_space(*b) {
+            *work = work.saturating_sub(1);
+            from = from.saturating_add(1);
+        } else if *b == b'%' {
+            let comment = count_while(bytes, from.saturating_add(1), |c| c != b'\n' && c != b'\r').saturating_add(1);
+            *work = work.saturating_sub(comment);
+            from = from.saturating_add(comment);
+        } else {
+            break;
+        }
+    }
+    from
 }
 
 /// The FieldMDP locks in a signature dictionary's `/Reference` array (at most 8 entries read).
