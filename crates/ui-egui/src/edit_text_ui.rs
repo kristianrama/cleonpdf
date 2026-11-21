@@ -1,7 +1,8 @@
 //! Edit a PDF ▸ Edit text & images: boxes around the paragraphs and images already on the page.
 //! Click a paragraph to edit it in place (⌘Enter or clicking away applies and rewraps it to the
-//! box, Esc cancels); drag it to move it, or drag the handle on its left or right edge to rewrap
-//! it to a new width. Click an image to select it: drag to move, drag a corner to resize (keeping
+//! box, Esc cancels); drag it to move it, or drag the handle at either end of its baseline (its
+//! left or right edge when upright, along the way it reads when turned) to rewrap it to a new
+//! width. Click an image to select it: drag to move, drag a corner to resize (keeping
 //! its proportions), right-click for rotate, flip, replace, save and delete; Delete removes it.
 
 use std::collections::BTreeMap;
@@ -9,7 +10,7 @@ use std::sync::Arc;
 
 use cleonpdf_engine::{Edit, ObjectKind, ObjectTarget};
 use cleonpdf_render::DocInfo;
-use egui::{Color32, CornerRadius, FontFamily, FontId, Pos2, Rect, Stroke};
+use egui::{Color32, CornerRadius, FontFamily, FontId, Pos2, Rect, Stroke, Vec2};
 
 use crate::canvas::{DocView, PageXform};
 
@@ -357,9 +358,10 @@ pub(crate) fn image_owns_pointer(ui: &egui::Ui, xf: &PageXform, page: usize, inf
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Grip {
     Move,
-    /// An edge (screen left or right), dragged to rewrap the paragraph.
-    Left,
-    Right,
+    /// The end of the box its baseline starts from, or the one it runs to, dragged to rewrap the
+    /// paragraph (the left and right edges of upright text).
+    Start,
+    End,
 }
 
 /// A paragraph box being dragged: moved, or (from a handle on its left or right edge) resized.
@@ -377,34 +379,116 @@ pub struct BlockDrag {
 /// How far an edge grip reaches either side of a box's edge (screen pixels).
 const EDGE_REACH: f32 = 6.0;
 
-/// The rewrap handles drawn on a paragraph box's left and right edges (screen).
-fn width_handles(b: Rect) -> [Rect; 2] {
-    let h = (b.height() * 0.5).clamp(14.0, 28.0);
-    [b.left(), b.right()].map(|x| Rect::from_center_size(Pos2::new(x, b.center().y), egui::vec2(7.0, h)))
+/// Which way a paragraph's baseline runs on screen, as a unit vector: its angle in user space
+/// turned by the page's `/Rotate` and the view's rotation. Within half a degree of an axis it is
+/// that axis, so upright text keeps exactly horizontal handles.
+fn baseline_dir(xf: &PageXform, info: &DocInfo, page: usize, block: &cleonpdf_engine::TextBlock) -> Vec2 {
+    let (sin, cos) = block.rotation.to_radians().sin_cos();
+    let [x0, y0, x1, y1] = block.rect;
+    let (cx, cy) = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+    let at = |x: f64, y: f64| xf.user_rect(info, page, [x as f32, y as f32, x as f32, y as f32]).min;
+    let d = at(cx + 100.0 * cos, cy + 100.0 * sin) - at(cx, cy);
+    let n = d.length();
+    if !(n.is_finite() && n > 1e-3) {
+        return Vec2::X;
+    }
+    let u = d / n;
+    // sin 0.5° ≈ 0.0087
+    if u.y.abs() < 0.0087 {
+        Vec2::new(u.x.signum(), 0.0)
+    } else if u.x.abs() < 0.0087 {
+        Vec2::new(0.0, u.y.signum())
+    } else {
+        u
+    }
 }
 
-/// The edge of `b` that `p` grabs: anywhere along its height, within reach of the line. A narrow
-/// box keeps its middle for moving.
-fn edge_at(b: Rect, p: Pos2) -> Option<Grip> {
-    if p.y < b.top() - EDGE_REACH || p.y > b.bottom() + EDGE_REACH {
+/// How far the line through `b`'s centre along `u` runs before it leaves `b` (half the box's
+/// length along the baseline, for a box whose sides follow it).
+fn half_length(b: Rect, u: Vec2) -> f32 {
+    let tx = if u.x.abs() > 1e-6 { b.width() / 2.0 / u.x.abs() } else { f32::INFINITY };
+    let ty = if u.y.abs() > 1e-6 { b.height() / 2.0 / u.y.abs() } else { f32::INFINITY };
+    let t = tx.min(ty);
+    if t.is_finite() { t.max(0.0) } else { 0.0 }
+}
+
+/// The rewrap handles of a paragraph box whose baseline runs along `u` on screen: where the line
+/// through its centre along the baseline leaves it, at the start and at the end (the left and right
+/// edges of upright text).
+fn width_handles(b: Rect, u: Vec2) -> [Rect; 2] {
+    let t = half_length(b, u);
+    let flat = u.x.abs() >= u.y.abs();
+    let len = (if flat { b.height() } else { b.width() } * 0.5).clamp(14.0, 28.0);
+    let size = if flat { egui::vec2(7.0, len) } else { egui::vec2(len, 7.0) };
+    [b.center() - u * t, b.center() + u * t].map(|c| Rect::from_center_size(c, size))
+}
+
+/// The end of `b` that `p` grabs, for a baseline running along `u`: anywhere across the box,
+/// within reach of where the baseline leaves it. A short box keeps its middle for moving.
+fn edge_at(b: Rect, u: Vec2, p: Pos2) -> Option<Grip> {
+    if !b.expand(EDGE_REACH).contains(p) {
         return None;
     }
-    let inside = EDGE_REACH.min(b.width() / 4.0);
-    let (dl, dr) = (p.x - b.left(), b.right() - p.x);
-    match (dl >= -EDGE_REACH && dl <= inside, dr >= -EDGE_REACH && dr <= inside) {
-        (true, true) if dl <= dr => Some(Grip::Left),
-        (_, true) => Some(Grip::Right),
-        (true, false) => Some(Grip::Left),
+    let half = half_length(b, u);
+    let s = (p - b.center()).dot(u);
+    let inside = EDGE_REACH.min(half / 2.0);
+    let (ds, de) = (s + half, half - s);
+    match (ds >= -EDGE_REACH && ds <= inside, de >= -EDGE_REACH && de <= inside) {
+        (true, true) if ds <= de => Some(Grip::Start),
+        (_, true) => Some(Grip::End),
+        (true, false) => Some(Grip::Start),
         _ => None,
     }
 }
 
-/// The topmost box under `p` and what it grabs there; edges only on an upright page.
-fn grab_at(boxes: &[Rect], p: Pos2, upright: bool) -> Option<(usize, Grip)> {
-    boxes.iter().enumerate().rev().find_map(|(i, b)| match upright.then(|| edge_at(*b, p)).flatten() {
+/// The topmost box under `p` and what it grabs there; `dirs` are the boxes' baselines on screen.
+fn grab_at(boxes: &[Rect], dirs: &[Vec2], p: Pos2) -> Option<(usize, Grip)> {
+    boxes.iter().enumerate().rev().find_map(|(i, b)| match edge_at(*b, dirs.get(i).copied().unwrap_or(Vec2::X), p) {
         Some(g) => Some((i, g)),
         None => b.contains(p).then_some((i, Grip::Move)),
     })
+}
+
+/// `b` with the side that `u` points to moved `by` pixels along `u` (outward when positive).
+fn stretch(b: Rect, u: Vec2, by: f32) -> Rect {
+    let dv = u * by;
+    let (mut min, mut max) = (b.min, b.max);
+    if u.x > 0.0 {
+        max.x += dv.x;
+    } else {
+        min.x += dv.x;
+    }
+    if u.y > 0.0 {
+        max.y += dv.y;
+    } else {
+        min.y += dv.y;
+    }
+    Rect::from_two_pos(min, max)
+}
+
+/// The resize cursor for a baseline running along `u` on screen.
+fn resize_cursor(u: Vec2) -> egui::CursorIcon {
+    if u.y.abs() < 0.0087 {
+        egui::CursorIcon::ResizeHorizontal
+    } else if u.x.abs() < 0.0087 {
+        egui::CursorIcon::ResizeVertical
+    } else if u.x * u.y > 0.0 {
+        egui::CursorIcon::ResizeNwSe
+    } else {
+        egui::CursorIcon::ResizeNeSw
+    }
+}
+
+/// A paragraph's length along its baseline in user space: its box's corners projected onto the
+/// baseline (its width when upright; exact at quarter turns, as the engine measures it).
+fn along_length(block: &cleonpdf_engine::TextBlock) -> f64 {
+    let [x0, y0, x1, y1] = block.rect;
+    let (sin, cos) = block.rotation.to_radians().sin_cos();
+    let (lo, hi) = [(x0, y0), (x1, y0), (x0, y1), (x1, y1)]
+        .iter()
+        .map(|(x, y)| x * cos + y * sin)
+        .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), v| (lo.min(v), hi.max(v)));
+    hi - lo
 }
 
 /// What a right-click on a selected image asks for.
@@ -417,10 +501,15 @@ pub(crate) enum ImageAction {
 }
 
 fn user_box(xf: &PageXform, info: &DocInfo, page: usize, r: Rect) -> [f64; 4] {
-    let p = &info.pages[page];
-    let (a, b) = (xf.screen_to_view(r.min), xf.screen_to_view(r.max));
-    let (u, v) = (p.view_to_user(a.0, a.1), p.view_to_user(b.0, b.1));
-    [u[0].min(v[0]) as f64, u[1].min(v[1]) as f64, u[0].max(v[0]) as f64, u[1].max(v[1]) as f64]
+    let (u, v) = (user_point(xf, info, page, r.min), user_point(xf, info, page, r.max));
+    [u[0].min(v[0]), u[1].min(v[1]), u[0].max(v[0]), u[1].max(v[1])]
+}
+
+/// A screen point in the page's user space.
+fn user_point(xf: &PageXform, info: &DocInfo, page: usize, p: Pos2) -> [f64; 2] {
+    let a = xf.screen_to_view(p);
+    let u = info.pages[page].view_to_user(a.0, a.1);
+    [f64::from(u[0]), f64::from(u[1])]
 }
 
 /// Images on a page: select, move, resize, right-click. Returns `true` when the pointer was used.
@@ -662,11 +751,12 @@ pub(crate) fn page_input(
     if !allow_interaction {
         return false;
     }
-    // The width handle needs the page upright (or upside down): on a quarter-turned page the
-    // screen's horizontal is the paragraph's vertical.
-    let upright = info.pages.get(page).is_some_and(|p| p.rotation % 180 == 0);
-    let draw_handles = |b: Rect| {
-        for h in width_handles(b) {
+    // Each paragraph's handles sit where its own baseline leaves its box on screen, so turned
+    // text (or text on a turned page) rewraps along the way it reads.
+    let dirs: Vec<Vec2> = lines.iter().map(|l| baseline_dir(xf, info, page, l)).collect();
+    let dir = |i: usize| dirs.get(i).copied().unwrap_or(Vec2::X);
+    let draw_handles = |b: Rect, u: Vec2| {
+        for h in width_handles(b, u) {
             painter.rect(h, CornerRadius::same(2), Color32::WHITE, Stroke::new(1.0, ACCENT), egui::StrokeKind::Middle);
         }
     };
@@ -675,28 +765,45 @@ pub(crate) fn page_input(
         && let (Some(b), Some(l)) = (boxes.get(d.block).copied(), lines.get(d.block))
     {
         let p = ui.input(|i| i.pointer.interact_pos()).unwrap_or(d.start);
-        let dx = p.x - d.start.x;
+        let u = dir(d.block);
+        // How far the pointer went along the baseline, and how far the grabbed end grows outward
+        // (never leaving the box shorter than 12 pixels).
+        let along = (p - d.start).dot(u);
+        let shortest = 12.0 - 2.0 * half_length(b, u);
+        let growth = match d.grip {
+            Grip::Move => 0.0,
+            Grip::Start => (-along).max(shortest),
+            Grip::End => along.max(shortest),
+        };
         let preview = match d.grip {
             Grip::Move => b.translate(p - d.start),
-            Grip::Left => Rect::from_min_max(Pos2::new((b.left() + dx).min(b.right() - 12.0), b.min.y), b.max),
-            Grip::Right => Rect::from_min_max(b.min, Pos2::new((b.right() + dx).max(b.left() + 12.0), b.max.y)),
+            Grip::Start => stretch(b, -u, growth),
+            Grip::End => stretch(b, u, growth),
         };
         painter.rect_stroke(preview, CornerRadius::same(2), Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
         let resizing = d.grip != Grip::Move;
         if resizing {
-            draw_handles(preview);
+            draw_handles(preview, u);
         }
-        ui.ctx().set_cursor_icon(if resizing { egui::CursorIcon::ResizeHorizontal } else { egui::CursorIcon::Grabbing });
+        ui.ctx().set_cursor_icon(if resizing { resize_cursor(u) } else { egui::CursorIcon::Grabbing });
         if resp.drag_stopped() || !ui.input(|i| i.pointer.any_down()) {
             view.block_drag = None;
             let (from, to) = (user_box(xf, info, page, b), user_box(xf, info, page, preview));
             let edit = if resizing {
-                // The new width in user space: the box's change, added to the paragraph's own. A
-                // moved left side (in user space; on an upside-down page that's the screen's right
-                // edge) moves the paragraph with it.
-                let width = (l.rect[2] - l.rect[0]) + (to[2] - to[0]) - (from[2] - from[0]);
-                let shift = to[0] - from[0];
-                let style = cleonpdf_engine::BlockStyle { width: Some(width), offset: (shift != 0.0).then_some([shift, 0.0]), ..Default::default() };
+                // The growth in user space, along the paragraph's own baseline, added to its
+                // length there. A moved start (the left edge of upright text) moves the paragraph
+                // with it.
+                let c = b.center();
+                let (a, z) = (user_point(xf, info, page, c), user_point(xf, info, page, c + u * growth));
+                let grown = (z[0] - a[0]).hypot(z[1] - a[1]).copysign(f64::from(growth));
+                let width = along_length(l) + grown;
+                let shift = if d.grip == Grip::Start {
+                    let s = user_point(xf, info, page, c - u * growth);
+                    [s[0] - a[0], s[1] - a[1]]
+                } else {
+                    [0.0, 0.0]
+                };
+                let style = cleonpdf_engine::BlockStyle { width: Some(width), offset: (shift != [0.0, 0.0]).then_some(shift), ..Default::default() };
                 Edit::EditTextBlock { page, block: d.block, text: l.text.clone(), style }
             } else {
                 // Translation must keep the selected source operators. Rewriting unchanged text
@@ -720,21 +827,21 @@ pub(crate) fn page_input(
     if resp.drag_started()
         && active.is_none()
         && let Some(o) = ui.input(|i| i.pointer.press_origin())
-        && let Some((block, grip)) = grab_at(&boxes, o, upright)
+        && let Some((block, grip)) = grab_at(&boxes, &dirs, o)
     {
         view.block_drag = Some(BlockDrag { page, block, generation: doc.edit_generation(), start: o, grip });
         return true;
     }
     let Some(p) = ui.input(|i| i.pointer.hover_pos()).filter(|p| xf.rect.contains(*p)) else { return false };
-    let Some((hit, grip)) = grab_at(&boxes, p, upright) else { return false };
+    let Some((hit, grip)) = grab_at(&boxes, &dirs, p) else { return false };
     if active != Some(hit) {
         painter.rect_stroke(boxes[hit], CornerRadius::same(2), Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
     }
     let on_edge = active.is_none() && grip != Grip::Move;
-    if upright && active.is_none() {
-        draw_handles(boxes[hit]);
+    if active.is_none() {
+        draw_handles(boxes[hit], dir(hit));
     }
-    ui.ctx().set_cursor_icon(if on_edge { egui::CursorIcon::ResizeHorizontal } else { egui::CursorIcon::Text });
+    ui.ctx().set_cursor_icon(if on_edge { resize_cursor(dir(hit)) } else { egui::CursorIcon::Text });
     if resp.clicked() {
         view.image_selection = None;
         let l = &lines[hit];
@@ -990,7 +1097,7 @@ fn editing_rect(block: &cleonpdf_engine::TextBlock, turn: u16) -> Option<([f32; 
         let (lo, hi) = corners.iter().map(|(x, y)| f(*x, *y)).fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), v| (lo.min(v), hi.max(v)));
         hi - lo
     };
-    let along = extent(&|x, y| x * cos + y * sin).max(1.0);
+    let along = along_length(block).max(1.0);
     let across = extent(&|x, y| y * cos - x * sin).max(1.0);
     let (w, h) = if turn % 180 == 90 { (across, along) } else { (along, across) };
     let (cx, cy) = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
@@ -1156,6 +1263,48 @@ pub(crate) fn caret_color_on(fill: Color32) -> Color32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn upright_boxes_grab_their_left_and_right_edges_as_before() {
+        let b = Rect::from_min_max(Pos2::new(100.0, 50.0), Pos2::new(300.0, 80.0));
+        assert_eq!(edge_at(b, Vec2::X, Pos2::new(98.0, 52.0)), Some(Grip::Start));
+        assert_eq!(edge_at(b, Vec2::X, Pos2::new(305.0, 78.0)), Some(Grip::End));
+        assert_eq!(edge_at(b, Vec2::X, Pos2::new(200.0, 50.0)), None, "the top edge isn't a handle");
+        assert_eq!(edge_at(b, Vec2::X, Pos2::new(90.0, 65.0)), None, "out of reach");
+        // Upside down, the baseline starts on the right.
+        assert_eq!(edge_at(b, -Vec2::X, Pos2::new(98.0, 65.0)), Some(Grip::End));
+        let [start, end] = width_handles(b, Vec2::X);
+        assert_eq!((start.center(), end.center()), (Pos2::new(100.0, 65.0), Pos2::new(300.0, 65.0)));
+        assert_eq!(start.size(), egui::vec2(7.0, 15.0));
+        // A grown or shrunk end moves only its own side, never past the other.
+        assert_eq!(stretch(b, Vec2::X, 20.0), Rect::from_min_max(b.min, Pos2::new(320.0, 80.0)));
+        assert_eq!(stretch(b, -Vec2::X, -30.0), Rect::from_min_max(Pos2::new(130.0, 50.0), b.max));
+    }
+
+    #[test]
+    fn a_turned_box_is_grabbed_where_its_baseline_leaves_it() {
+        // Text turned 90° counterclockwise reads up the screen: its baseline starts at the
+        // bottom of its tall box and runs to the top.
+        let b = Rect::from_min_max(Pos2::new(100.0, 50.0), Pos2::new(120.0, 250.0));
+        let up = -Vec2::Y;
+        assert_eq!(edge_at(b, up, Pos2::new(110.0, 252.0)), Some(Grip::Start));
+        assert_eq!(edge_at(b, up, Pos2::new(101.0, 48.0)), Some(Grip::End));
+        assert_eq!(edge_at(b, up, Pos2::new(99.0, 150.0)), None, "its long sides are for moving");
+        assert_eq!(grab_at(&[b], &[up], Pos2::new(110.0, 150.0)), Some((0, Grip::Move)));
+        let [start, end] = width_handles(b, up);
+        assert_eq!((start.center(), end.center()), (Pos2::new(110.0, 250.0), Pos2::new(110.0, 50.0)));
+        assert_eq!(start.size(), egui::vec2(14.0, 7.0));
+        assert_eq!(resize_cursor(up), egui::CursorIcon::ResizeVertical);
+        // Dragging the top end down shortens the box from the top only.
+        assert_eq!(stretch(b, up, -40.0), Rect::from_min_max(Pos2::new(100.0, 90.0), b.max));
+        // At 45° the handles sit where the diagonal through the centre meets the box.
+        let d = Vec2::new(1.0, -1.0).normalized();
+        let sq = Rect::from_min_max(Pos2::new(0.0, 0.0), Pos2::new(100.0, 100.0));
+        let [s, e] = width_handles(sq, d);
+        assert!(s.center().distance(Pos2::new(0.0, 100.0)) < 0.01 && e.center().distance(Pos2::new(100.0, 0.0)) < 0.01);
+        assert_eq!(edge_at(sq, d, Pos2::new(98.0, 2.0)), Some(Grip::End));
+        assert_eq!(half_length(Rect::NOTHING, Vec2::ZERO), 0.0, "no direction, no length");
+    }
 
     #[test]
     fn text_background_is_cached_without_editing_and_released_on_cancel() {

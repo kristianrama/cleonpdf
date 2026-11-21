@@ -4278,3 +4278,65 @@ fn private_new_chinese_keyboard_input_preserves_font_layout_and_saved_pixels() {
     assert_eq!(std::fs::read(path).unwrap(), original);
     println!("verified Chinese keyboard insertion/deletion and save/reopen rendering on {pages} pages");
 }
+
+/// The screen box of the paragraph reading `text` and the transform, as the canvas draws it.
+fn paragraph_screen_box(h: &Harness<'static, CleonPdfApp>, text: &str) -> (cleonpdf_engine::TextBlock, egui::Rect) {
+    let app = h.state();
+    let view = &app.views[0];
+    let doc = app.session.get(view.id).unwrap();
+    let b = doc.text_blocks(0).into_iter().find(|b| b.text.starts_with(text)).unwrap();
+    let xf = cleonpdf_ui_egui::canvas::PageXform {
+        rect: view.page_screen_rect(0).unwrap(),
+        rot: view.rotation,
+        pw: doc.info.pages[0].width,
+        ph: doc.info.pages[0].height,
+    };
+    let r = xf.user_rect(&doc.info, 0, b.rect.map(|v| v as f32)).expand(2.0);
+    (b, r)
+}
+
+#[test]
+fn a_turned_paragraph_rewraps_from_the_ends_of_its_own_baseline() {
+    // Turned a quarter counterclockwise on an upright page, the line reads up the screen: its
+    // baseline starts at the bottom of its tall box and ends at the top.
+    let content = "BT /F1 12 Tf 0 1 -1 0 150 120 Tm (Turned words here) Tj ET";
+    let mut h = paragraph_drag_harness(paragraph_drag_fixture(content, 0, 1), 0);
+    let (before, r) = paragraph_screen_box(&h, "Turned");
+    let length = (before.rect[3] - before.rect[1]) as f32;
+    let k = (r.height() - 4.0) / length;
+    // Pull the top end down to about 80 pt, along its baseline: "Turned words" fits and "here"
+    // wraps, still turned, still starting where it did.
+    let top = egui::pos2(r.center().x, r.top() + 1.0);
+    flick(&mut h, top, top + egui::vec2(0.0, (length - 80.0) * k));
+    let lines: Vec<cleonpdf_engine::TextBlock> = dragged_paragraphs(&h);
+    let after = lines.iter().find(|b| b.text.starts_with("Turned")).unwrap();
+    assert_eq!(after.rows.len(), 2, "rewrapped to 80 pt along its baseline: {after:?}");
+    assert!((after.rotation - 90.0).abs() < 0.5, "{}", after.rotation);
+    assert!((after.rect[1] - before.rect[1]).abs() < 1.5, "its start stays: {:?} → {:?}", before.rect, after.rect);
+    assert!(after.rect[3] - after.rect[1] <= 81.0, "{:?}", after.rect);
+    // Pull its bottom end (the start) up 10 pt: the start follows the pointer.
+    let (b, r) = paragraph_screen_box(&h, "Turned");
+    let bottom = egui::pos2(r.center().x, r.bottom() - 1.0);
+    flick(&mut h, bottom, bottom - egui::vec2(0.0, 10.0 * k));
+    let after2 = dragged_paragraphs(&h).into_iter().find(|x| x.text.starts_with("Turned")).unwrap();
+    assert!((after2.rotation - 90.0).abs() < 0.5);
+    assert!((after2.rect[1] - (b.rect[1] + 10.0)).abs() < 2.0, "the start moved up 10 pt: {:?} → {:?}", b.rect, after2.rect);
+    assert!(h.state().views[0].line_editor.is_none());
+}
+
+#[test]
+fn text_reading_upright_on_a_turned_page_rewraps_from_its_screen_edges() {
+    // Drawn at 90° on a page turned 90°, the line reads upright: its handles are on the screen's
+    // left and right, where before a turned page had none.
+    let content = "BT /F1 12 Tf 0 1 -1 0 150 120 Tm (Sideways page words) Tj ET";
+    let mut h = paragraph_drag_harness(paragraph_drag_fixture(content, 90, 1), 0);
+    let (before, r) = paragraph_screen_box(&h, "Sideways");
+    let length = (before.rect[3] - before.rect[1]) as f32;
+    let k = (r.width() - 4.0) / length;
+    let right = egui::pos2(r.right() - 1.0, r.center().y);
+    flick(&mut h, right, right - egui::vec2((length - 50.0) * k, 0.0));
+    let after = dragged_paragraphs(&h).into_iter().find(|b| b.text.starts_with("Sideways")).unwrap();
+    assert!(after.rows.len() >= 2, "rewrapped: {after:?}");
+    assert!((after.rotation - 90.0).abs() < 0.5);
+    assert!((after.rect[1] - before.rect[1]).abs() < 1.5, "{:?} → {:?}", before.rect, after.rect);
+}
