@@ -1043,4 +1043,22 @@ fn redacting_every_inheriting_page_retires_the_parent_resources() {
         assert_eq!(under(&mut saved, page, &[[0.0, 190.0, 300.0, 220.0]]), 0);
     }
 }
+/// A CMap with a codespace range the font parser can't keep (five bytes) makes the page's text a
+/// guess: apply refuses while a mark is pending.
+#[test]
+fn a_cmap_with_a_dropped_codespace_range_fails_closed() {
+    let program = "/CIDInit /ProcSet findresource begin 12 dict begin begincmap 2 begincodespacerange <0000> <FFFF> <0000000000> <FFFFFFFFFF> endcodespacerange 1 begincidrange <0000> <FFFF> 0 endcidrange endcmap CMapName currentdict /CMap defineresource pop end end";
+    let mut doc = pdf(vec![
+        b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_vec(),
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Contents 4 0 R /Resources << /Font << /F2 5 0 R >> >> >>".to_vec(),
+        stream("", b"BT /F2 10 Tf 100 50 Td <0001000200030004> Tj ET"),
+        b"<< /Type /Font /Subtype /Type0 /BaseFont /X /Encoding 6 0 R /DescendantFonts [<< /Type /Font /Subtype /CIDFontType2 /BaseFont /X /DW 1000 >>] >>".to_vec(),
+        stream("/Type /CMap /CMapName /Custom", program.as_bytes()),
+    ]);
+    mark(&mut doc, 0, &[[95.0, 40.0, 140.0, 70.0]], "");
+    let result = apply(&mut doc, None);
+    assert!(matches!(result, Err(RedactError::DroppedCodespace(1))), "{result:?}");
+}
+
 mod annotation_geometry;

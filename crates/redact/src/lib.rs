@@ -46,6 +46,10 @@ pub enum RedactError {
         "page {0} has vertical-writing text while a redaction mark is pending, and CleonPDF cannot tell whether that text lies under the mark yet, so nothing was changed"
     )]
     VerticalText(usize),
+    #[error(
+        "page {0} shows text in a font whose CMap has codespace ranges CleonPDF could not read, so it cannot tell which text a string holds while a redaction mark is pending; nothing was changed"
+    )]
+    DroppedCodespace(usize),
     /// An annotation's position cannot be judged. Keeping it could leave its text or appearance
     /// in a supposedly redacted file, so the caller must repair or remove it before applying.
     #[error(
@@ -498,6 +502,9 @@ pub fn apply(doc: &mut Document, pages: Option<&[usize]>) -> Result<Report, Reda
         // removal is a future enhancement.
         if out.vertical {
             return Err(RedactError::VerticalText(pi + 1));
+        }
+        if out.dropped_codes {
+            return Err(RedactError::DroppedCodespace(pi + 1));
         }
         doomed_xobjects.extend_from_slice(&out.doomed);
         let mut new_list = list.clone();

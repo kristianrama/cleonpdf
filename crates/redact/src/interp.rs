@@ -71,6 +71,9 @@ pub(crate) struct Output {
     /// Apply mode met vertical-writing text (which it cannot remove) while a redaction region was
     /// in force: the operation must fail closed rather than leave that text under the mark.
     pub vertical: bool,
+    /// Apply mode met text in a font whose CMap dropped codespace ranges while a redaction region
+    /// was in force: which text its strings hold is a guess, so the operation must fail closed.
+    pub dropped_codes: bool,
     pub tag_changes: Vec<(ObjRef, ObjRef, HashSet<i64>, HashSet<i64>)>,
 }
 
@@ -561,6 +564,14 @@ pub(crate) fn process(doc: &mut Document, scope: &mut Scope<'_>, streams: &[Vec<
                     {
                         out.vertical = true;
                     }
+                    if gs.font.codespaces_dropped
+                        && scope.mode == Mode::Apply
+                        && scope.hidden_text.is_none()
+                        && !scope.rects.is_empty()
+                        && items.iter().any(|o| matches!(o, Object::String(s) if !s.bytes.is_empty()))
+                    {
+                        out.dropped_codes = true;
+                    }
                     let (new_items, removed) = show(scope, &gs, &mut tm, &items);
                     if removed == 0 {
                         ops.push(op);
@@ -802,6 +813,7 @@ fn xobject(
             scope.fonts = saved_fonts;
             out.residue += inner.residue;
             out.vertical |= inner.vertical;
+            out.dropped_codes |= inner.dropped_codes;
             out.doomed.extend_from_slice(&inner.doomed);
             out.tag_changes.extend(inner.tag_changes);
             if scope.mode == Mode::Verify {
