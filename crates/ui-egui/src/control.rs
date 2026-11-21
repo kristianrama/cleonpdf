@@ -957,10 +957,35 @@ fn serve_with(client: ControlClient, limits: Limits) -> std::io::Result<Endpoint
                         break;
                     }
                 }
+                // Its place is free before the farewell is seen off.
+                drop(slot.take());
+                close_gently(&write);
             });
         }
     })?;
     Ok(Endpoint { port, token })
+}
+
+/// End a connection without losing what was last written to it. Closing a socket that still
+/// has unread input makes the system reset the connection, and a reset can discard a farewell
+/// (an error saying why the connection ends) before the client reads it. So the writing side is
+/// shut first, which the client reads as the end of the stream after the farewell, and whatever
+/// it still sends is read and dropped, for at most half a second and a mebibyte.
+#[cfg(not(target_arch = "wasm32"))]
+fn close_gently(stream: &std::net::TcpStream) {
+    use std::io::Read;
+    let _ = stream.shutdown(std::net::Shutdown::Write);
+    let until = std::time::Instant::now() + std::time::Duration::from_millis(500);
+    let _ = stream.set_read_timeout(Some(std::time::Duration::from_millis(100)));
+    let mut sink = [0u8; 8192];
+    let mut total = 0usize;
+    let mut reader = stream;
+    while std::time::Instant::now() < until && total < 1 << 20 {
+        match reader.read(&mut sink) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => total = total.saturating_add(n),
+        }
+    }
 }
 
 /// Longest line read before a connection has authenticated. The only acceptable request then is
@@ -1089,6 +1114,29 @@ mod transport_tests {
             Err(e) => matches!(e.kind(), ErrorKind::ConnectionReset | ErrorKind::ConnectionAborted),
         };
         assert!(closed, "the connection stayed open: {next:?}");
+    }
+
+    /// A farewell survives input the client sent after it: closing a socket with unread input
+    /// resets the connection, and the reset can discard the reply before the client reads it
+    /// (once on CI the deadline's farewell went missing this way, with a byte dripped in late).
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn a_farewell_is_read_even_with_input_left_unread() {
+        use std::io::{BufRead, BufReader, Write};
+        let (_control, client) = super::attach(&egui::Context::default());
+        let ep = super::serve(client).unwrap();
+        let s = std::net::TcpStream::connect(("127.0.0.1", ep.port)).unwrap();
+        s.set_read_timeout(Some(std::time::Duration::from_secs(5))).unwrap();
+        // Far past the limit: the server stops reading at the limit and leaves the rest.
+        s.try_clone().unwrap().write_all(&vec![b'x'; 16 * super::MAX_AUTH_LINE]).unwrap();
+        // Let the server answer and close before reading anything.
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        let mut r = BufReader::new(s);
+        let mut first = String::new();
+        let read = r.read_line(&mut first);
+        assert!(matches!(read, Ok(n) if n > 0), "the farewell was lost: {read:?}");
+        let reply: serde_json::Value = serde_json::from_str(&first).unwrap();
+        assert_eq!(reply["error"]["code"], -32600, "{first}");
     }
 
     /// Small limits for the tests below: a 300 ms deadline, two places to wait in.

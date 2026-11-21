@@ -145,6 +145,20 @@ impl CleonPdfApp {
         self.start_check(true);
     }
 
+    /// An update check is under way (started by the user or by itself), its answer not yet
+    /// picked up. Lets tests wait for a silent automatic check.
+    #[doc(hidden)]
+    pub fn update_check_running(&self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            matches!(self.updates.check, Check::Running(_))
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            false
+        }
+    }
+
     fn start_check(&mut self, automatic: bool) {
         let Some(source) = self.update_source.clone() else {
             if !automatic {
