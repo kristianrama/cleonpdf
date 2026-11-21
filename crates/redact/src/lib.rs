@@ -46,6 +46,16 @@ pub enum RedactError {
         "page {0} has vertical-writing text while a redaction mark is pending, and CleonPDF cannot tell whether that text lies under the mark yet, so nothing was changed"
     )]
     VerticalText(usize),
+    #[error(
+        "page {0} shows text in a font whose CMap has codespace ranges CleonPDF could not read, so it cannot tell which text a string holds while a redaction mark is pending; nothing was changed"
+    )]
+    DroppedCodespace(usize),
+    /// An annotation's position cannot be judged. Keeping it could leave its text or appearance
+    /// in a supposedly redacted file, so the caller must repair or remove it before applying.
+    #[error(
+        "annotation {annotation} on page {page} has no readable Rect of four finite numbers, so its overlap with the redaction marks can't be checked; repair or remove that annotation, then apply again (nothing was changed)"
+    )]
+    UnreadableAnnotation { page: usize, annotation: usize },
     #[error(transparent)]
     Edit(#[from] cleonpdf_edit::EditError),
     #[error(transparent)]
@@ -121,9 +131,84 @@ pub struct Report {
     pub xfa_removed: bool,
 }
 
+/// A rectangle of exactly four finite numbers (entries by reference read), normalized. Anything
+/// else is `None`: an entry that isn't a number is not skipped.
 fn rect_of(doc: &Document, o: Option<&Object>) -> Option<[f64; 4]> {
-    let v: Vec<f64> = doc.resolve(o?).as_array()?.iter().filter_map(|x| doc.resolve(x).as_f64()).collect();
-    (v.len() == 4 && v.iter().all(|x| x.is_finite())).then(|| [v[0].min(v[2]), v[1].min(v[3]), v[0].max(v[2]), v[1].max(v[3])])
+    let obj = doc.resolve(o?);
+    let [x0, y0, x1, y1] = obj.as_array()?.as_slice() else { return None };
+    let [x0, y0, x1, y1] = [x0, y0, x1, y1].map(|x| doc.resolve(x).as_f64());
+    let (x0, y0, x1, y1) = (x0?, y0?, x1?, y1?);
+    [x0, y0, x1, y1].iter().all(|x| x.is_finite()).then(|| [x0.min(x1), y0.min(y1), x0.max(x1), y0.max(y1)])
+}
+
+/// An annotation's `/Subtype`, read through a reference.
+fn subtype_of(doc: &Document, d: &Dict) -> Vec<u8> {
+    d.get(b"Subtype").and_then(|s| doc.resolve(s).as_name().map(<[u8]>::to_vec)).unwrap_or_default()
+}
+
+/// The annotation types (ISO 32000-2 Table 171).
+const ANNOTATION_SUBTYPES: [&[u8]; 28] = [
+    b"Text",
+    b"Link",
+    b"FreeText",
+    b"Line",
+    b"Square",
+    b"Circle",
+    b"Polygon",
+    b"PolyLine",
+    b"Highlight",
+    b"Underline",
+    b"Squiggly",
+    b"StrikeOut",
+    b"Caret",
+    b"Stamp",
+    b"Ink",
+    b"Popup",
+    b"FileAttachment",
+    b"Sound",
+    b"Movie",
+    b"Screen",
+    b"Widget",
+    b"PrinterMark",
+    b"TrapNet",
+    b"Watermark",
+    b"3D",
+    b"Redact",
+    b"Projection",
+    b"RichMedia",
+];
+
+/// Whether `d`, an entry of `/Annots` with `/Subtype` `kind`, says it is something other than an
+/// annotation: its `/Type` is a name that isn't `/Annot` (ISO 32000-2 Table 166) and `kind` is no
+/// annotation type. A dictionary with an annotation type is an annotation whatever its `/Type`
+/// says, since a viewer may still show it.
+fn names_another_type(doc: &Document, d: &Dict, kind: &[u8]) -> bool {
+    let other = d.get(b"Type").is_some_and(|t| doc.resolve(t).as_name().is_some_and(|n| n != b"Annot".as_slice()));
+    other && !ANNOTATION_SUBTYPES.contains(&kind)
+}
+
+/// The first annotation on the pages `pages` (0-based) whose `/Rect` can't be read, as 1-based
+/// `(page, annotation)`. Unknown geometry is no evidence that the annotation misses every mark,
+/// so Apply refuses before anything changes rather than keep its text after reporting success.
+/// Marks and pop-ups (which go with their parent) are not judged by place; nor is a dictionary
+/// of another type that a writer listed in `/Annots`.
+fn unreadable_annotation(doc: &Document, pages: &[usize]) -> Option<(usize, usize)> {
+    let all = cleonpdf_model::pages(doc);
+    for &pi in pages {
+        let Some(page) = all.get(pi) else { continue };
+        for (i, a) in annots_of(doc, &page.dict).iter().enumerate() {
+            let obj = doc.resolve(a);
+            let Some(d) = obj.as_dict() else { continue };
+            let kind = subtype_of(doc, d);
+            if kind == b"Redact" || kind == b"Popup" || names_another_type(doc, d, &kind) {
+                continue;
+            }
+            if rect_of(doc, d.get(b"Rect")).is_none() {
+                return Some((pi + 1, i + 1));
+            }
+        }
+    }
+    None
 }
 
 fn color(doc: &Document, d: &Dict, key: &[u8]) -> Option<Rgb> {
@@ -388,6 +473,9 @@ pub fn apply(doc: &mut Document, pages: Option<&[usize]>) -> Result<Report, Reda
     by_page.sort_unstable();
     by_page.dedup();
     report.pages = by_page.len();
+    if let Some((page, annotation)) = unreadable_annotation(doc, &by_page) {
+        return Err(RedactError::UnreadableAnnotation { page, annotation });
+    }
     localize_resources(doc, &by_page)?;
     let mut doomed_fields: Vec<String> = Vec::new();
     // The original image and form XObjects the rewrite drops or replaces, on any page.
@@ -414,6 +502,9 @@ pub fn apply(doc: &mut Document, pages: Option<&[usize]>) -> Result<Report, Reda
         // removal is a future enhancement.
         if out.vertical {
             return Err(RedactError::VerticalText(pi + 1));
+        }
+        if out.dropped_codes {
+            return Err(RedactError::DroppedCodespace(pi + 1));
         }
         doomed_xobjects.extend_from_slice(&out.doomed);
         let mut new_list = list.clone();
@@ -470,21 +561,32 @@ pub fn apply(doc: &mut Document, pages: Option<&[usize]>) -> Result<Report, Reda
         // 2. Annotations: the marks, and whatever lies under them (with their pop-ups).
         let annots = annots_of(doc, &doc.get(page.obj).as_dict().cloned().unwrap_or_default());
         let mut removed: Vec<ObjRef> = Vec::new();
-        for a in &annots {
-            let Some(r) = a.as_ref() else { continue };
-            let obj = doc.get(r);
+        // Annotations written directly in `/Annots` (no object of their own) that go.
+        let mut inline_gone = vec![false; annots.len()];
+        for (i, a) in annots.iter().enumerate() {
+            let r = a.as_ref();
+            let obj = doc.resolve(a);
             let Some(d) = obj.as_dict() else { continue };
-            let subtype = d.name(b"Subtype").unwrap_or(b"");
+            let subtype = subtype_of(doc, d);
             if subtype == b"Redact" {
-                if page_marks.iter().any(|m| m.obj == r) {
+                if let Some(r) = r
+                    && page_marks.iter().any(|m| m.obj == r)
+                {
                     removed.push(r);
                 }
                 continue;
             }
-            if subtype == b"Popup" {
+            if subtype == b"Popup" || names_another_type(doc, d, &subtype) {
                 continue;
             }
             if rect_of(doc, d.get(b"Rect")).is_some_and(|b| rects.iter().any(|x| cleonpdf_content::overlaps(*x, b, 0.0))) {
+                let Some(r) = r else {
+                    if let Some(gone) = inline_gone.get_mut(i) {
+                        *gone = true;
+                    }
+                    report.annotations += 1;
+                    continue;
+                };
                 removed.push(r);
                 if subtype == b"Widget" {
                     if let Some((_, name)) = widget_owner.iter().find(|(w, _)| *w == r)
@@ -499,6 +601,9 @@ pub fn apply(doc: &mut Document, pages: Option<&[usize]>) -> Result<Report, Reda
         }
         let kept: Vec<Object> = annots
             .into_iter()
+            .enumerate()
+            .filter(|(i, _)| !inline_gone.get(*i).copied().unwrap_or(false))
+            .map(|(_, a)| a)
             .filter(|a| {
                 let Some(r) = a.as_ref() else { return true };
                 if removed.contains(&r) {

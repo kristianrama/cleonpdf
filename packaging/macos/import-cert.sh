@@ -17,7 +17,10 @@ if [ -z "${APPLE_CERTIFICATE:-}" ]; then
   exit 0
 fi
 
-TMP="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
+# A new, owner-only folder of its own: the certificate and keychain are never written through a
+# path someone else could have made first in a shared temporary folder. (The keychain must outlive
+# this script: the signing steps after it use it through MACOS_KEYCHAIN.)
+TMP="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/cleonpdf-signing.XXXXXXXX")"
 KEYCHAIN="$TMP/cleonpdf-signing.keychain-db"
 CERT="$TMP/cleonpdf-signing.p12"
 KC_PASS="${KEYCHAIN_PASSWORD:-$(openssl rand -hex 24)}"

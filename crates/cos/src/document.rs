@@ -543,6 +543,12 @@ impl Document {
         &self.revisions
     }
 
+    /// Where the `%PDF-` header starts (0 unless the file has bytes before it). Cross-reference
+    /// offsets may count from there.
+    pub fn header_offset(&self) -> usize {
+        self.header_offset
+    }
+
     /// Where each revision of the file ends (oldest first): the byte after the `%%EOF` (and its
     /// end-of-line) that closes its cross-reference section. `data[..end]` is that revision as it
     /// was saved. A linearized file's first-page section belongs to the revision it precedes, so

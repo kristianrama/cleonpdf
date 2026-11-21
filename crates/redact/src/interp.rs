@@ -71,6 +71,9 @@ pub(crate) struct Output {
     /// Apply mode met vertical-writing text (which it cannot remove) while a redaction region was
     /// in force: the operation must fail closed rather than leave that text under the mark.
     pub vertical: bool,
+    /// Apply mode met text in a font whose CMap dropped codespace ranges while a redaction region
+    /// was in force: which text its strings hold is a guess, so the operation must fail closed.
+    pub dropped_codes: bool,
     pub tag_changes: Vec<(ObjRef, ObjRef, HashSet<i64>, HashSet<i64>)>,
 }
 
@@ -168,7 +171,9 @@ fn res_dict(doc: &Document, res: &Dict, key: &[u8]) -> Dict {
 /// predefined CMap name ending in `-V` (Identity-V and the like), or an embedded CMap stream
 /// whose `/WMode` is 1 (ISO 32000-2 §9.7.5).
 fn is_vertical(doc: &Document, font: &Dict) -> bool {
-    if font.name(b"Subtype") != Some(b"Type0".as_slice()) {
+    // `/Subtype` may be written by reference.
+    let subtype = font.get(b"Subtype").map(|s| doc.resolve(s));
+    if subtype.as_deref().and_then(Object::as_name) != Some(b"Type0".as_slice()) {
         return false;
     }
     match font.get(b"Encoding").map(|e| doc.resolve(e)).as_deref() {
@@ -559,6 +564,14 @@ pub(crate) fn process(doc: &mut Document, scope: &mut Scope<'_>, streams: &[Vec<
                     {
                         out.vertical = true;
                     }
+                    if gs.font.codespaces_dropped
+                        && scope.mode == Mode::Apply
+                        && scope.hidden_text.is_none()
+                        && !scope.rects.is_empty()
+                        && items.iter().any(|o| matches!(o, Object::String(s) if !s.bytes.is_empty()))
+                    {
+                        out.dropped_codes = true;
+                    }
                     let (new_items, removed) = show(scope, &gs, &mut tm, &items);
                     if removed == 0 {
                         ops.push(op);
@@ -715,7 +728,10 @@ fn xobject(
     let r = xobjects.get(&name)?.as_ref()?;
     let obj = doc.get(r);
     let Object::Stream(s) = &*obj else { return None };
-    match s.dict.name(b"Subtype") {
+    // `/Subtype` may be written by reference, and the renderer follows it: an image named that way
+    // is still drawn, so it must still be redacted.
+    let subtype = s.dict.get(b"Subtype").map(|t| doc.resolve(t));
+    match subtype.as_deref().and_then(Object::as_name) {
         _ if s.dict.get(b"OC").is_some_and(|oc| scope.layer_hidden(doc, oc)) => {
             if scope.mode == Mode::Verify {
                 return None;
@@ -797,6 +813,7 @@ fn xobject(
             scope.fonts = saved_fonts;
             out.residue += inner.residue;
             out.vertical |= inner.vertical;
+            out.dropped_codes |= inner.dropped_codes;
             out.doomed.extend_from_slice(&inner.doomed);
             out.tag_changes.extend(inner.tag_changes);
             if scope.mode == Mode::Verify {
@@ -837,8 +854,89 @@ fn xobject(
             scope.report.forms_rewritten += 1;
             Some(Some(Op::new("Do", vec![Object::Name(n)])))
         }
-        _ => None,
+        // No `/Subtype`, or one the redactor does not read: what it draws is unknown, so a
+        // placement under a mark fails closed. Apply removes it, as it does a form it cannot read,
+        // and verification counts it as what may remain. Its place is the unit square an image
+        // fills or, when it has a `/BBox`, the box a form would draw in: either one under a mark
+        // counts. Entries by reference are read; a `/Matrix` or `/BBox` that is present but
+        // malformed leaves its place unknown, so it counts as under a mark.
+        _ => {
+            let unit = gs.ctm.bbox([0.0, 0.0, 1.0, 1.0]);
+            let framed = match (matrix_of(doc, &s.dict), bbox_of(doc, &s.dict)) {
+                (Ok(m), Ok(bbox)) => bbox.is_some_and(|b| scope.hits(m.then(&gs.ctm).bbox(b))),
+                _ => true,
+            };
+            if !scope.hits(unit) && !framed {
+                return None;
+            }
+            if scope.mode == Mode::Verify {
+                out.residue += 1;
+                return None;
+            }
+            scope.report.forms_removed += 1;
+            out.replaced.push(name);
+            out.doomed.push(r);
+            Some(None)
+        }
     }
+}
+
+/// A number, read through a reference; anything else (or a non-finite value) is `None`.
+fn number(doc: &Document, item: &Object) -> Option<f64> {
+    match item {
+        Object::Ref(_) => doc.resolve(item).as_f64(),
+        direct => direct.as_f64(),
+    }
+    .filter(|n| n.is_finite())
+}
+
+/// An XObject's `/Matrix`: absent is the identity, present but malformed is an error. Entries may
+/// be references; a direct array is read in place, not copied.
+fn matrix_of(doc: &Document, dict: &Dict) -> Result<Matrix, ()> {
+    let Some(m) = dict.get(b"Matrix") else { return Ok(Matrix::default()) };
+    let held;
+    let m = match m {
+        Object::Ref(_) => {
+            held = doc.resolve(m);
+            &*held
+        }
+        direct => direct,
+    };
+    if matches!(m, Object::Null) {
+        return Ok(Matrix::default());
+    }
+    let items = m.as_array().filter(|a| a.len() == 6).ok_or(())?;
+    let mut v = [0.0; 6];
+    for (value, item) in v.iter_mut().zip(items) {
+        *value = number(doc, item).ok_or(())?;
+    }
+    let [a, b, c, d, e, f] = v;
+    Ok(Matrix([a, b, c, d, e, f]))
+}
+
+/// An XObject's `/BBox` as `[x0 y0 x1 y1]`: absent or null is `None`, present but malformed is an
+/// error. The length is checked before any entry is read.
+fn bbox_of(doc: &Document, dict: &Dict) -> Result<Option<[f64; 4]>, ()> {
+    let Some(b) = dict.get(b"BBox") else { return Ok(None) };
+    let held;
+    let b = match b {
+        Object::Ref(_) => {
+            held = doc.resolve(b);
+            &*held
+        }
+        direct => direct,
+    };
+    // A null value is no entry (ISO 32000-2 §7.3.9), whether given directly or by reference.
+    if matches!(b, Object::Null) {
+        return Ok(None);
+    }
+    let items = b.as_array().filter(|a| a.len() == 4).ok_or(())?;
+    let mut v = [0.0; 4];
+    for (value, item) in v.iter_mut().zip(items) {
+        *value = number(doc, item).ok_or(())?;
+    }
+    let [a, b, c, d] = v;
+    Ok(Some([a.min(c), b.min(d), a.max(c), b.max(d)]))
 }
 
 /// Remove marked-content blocks of hidden layers (`/OC /name BDC … EMC`, nested blocks
