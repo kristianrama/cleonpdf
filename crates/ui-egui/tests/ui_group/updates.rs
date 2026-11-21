@@ -25,9 +25,11 @@ fn harness(answer: Result<&str, &str>) -> Harness<'static, CleonPdfApp> {
 
 /// Run frames until the background check has reported (or give up).
 fn settle(h: &mut Harness<'static, CleonPdfApp>) {
-    for _ in 0..200 {
+    // An automatic check shows nothing while it runs, so wait on the check itself, not on its
+    // dialog: on a slow machine its answer can take longer than a few frames (Windows CI).
+    for _ in 0..1000 {
         h.run_steps(2);
-        if h.query_by_label_contains("Checking for a newer version").is_none() {
+        if !h.state().update_check_running() && h.query_by_label_contains("Checking for a newer version").is_none() {
             break;
         }
         std::thread::sleep(std::time::Duration::from_millis(5));
